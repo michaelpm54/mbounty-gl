@@ -1,0 +1,149 @@
+[
+  {
+    "tile": [
+      5,
+      57
+    ],
+    "text": "Aurange is north"
+  },
+  {
+    "tile": [
+      14,
+      60
+    ],
+    "text": "Rent a boat and sail the seas. Explore the easy way!"
+  },
+  {
+    "tile": [
+      15,
+      53
+    ],
+    "text": "There are two artifacts per continent."
+  },
+  {
+    "tile": [
+      25,
+      52
+    ],
+    "text": "Peasant Way"
+  },
+  {
+    "tile": [
+      38,
+      60
+    ],
+    "text": "Six villains rule Continentia."
+  },
+  {
+    "tile": [
+      12,
+      53
+    ],
+    "text": "King's Treasure Garden"
+  },
+  {
+    "tile": [
+      3,
+      60
+    ],
+    "text": "\\tTreasure Island"
+  },
+  {
+    "tile": [
+      3,
+      54
+    ],
+    "text": "The Sceptre will never be found!"
+  },
+  {
+    "tile": [
+      20,
+      47
+    ],
+    "text": "Pond of Peril"
+  },
+  {
+    "tile": [
+      10,
+      35
+    ],
+    "text": "Irok guards the north."
+  },
+  {
+    "tile": [
+      9,
+      22
+    ],
+    "text": "Secret Pass"
+  },
+  {
+    "tile": [
+      7,
+      8
+    ],
+    "text": "Pirate's Cove"
+  },
+  {
+    "tile": [
+      24,
+      14
+    ],
+    "text": "Isle of Death"
+  },
+  {
+    "tile": [
+      43,
+      4
+    ],
+    "text": "Boon Docks"
+  },
+  {
+    "tile": [
+      55,
+      4
+    ],
+    "text": "Welcome to Kookamunga!"
+  },
+  {
+    "tile": [
+      34,
+      24
+    ],
+    "text": "Hidden Grove"
+  },
+  {
+    "tile": [
+      51,
+      25
+    ],
+    "text": "Bridge Port"
+  },
+  {
+    "tile": [
+      58,
+      30
+    ],
+    "text": "All maps are found in chests"
+  },
+  {
+    "tile": [
+      45,
+      47
+    ],
+    "text": "It takes time to cross the desert."
+  },
+  {
+    "tile": [
+      40,
+      51
+    ],
+    "text": "Wonder Woods"
+  },
+  {
+    "tile": [
+      32,
+      45
+    ],
+    "text": "Dead End"
+  }
+]

@@ -1,0 +1,34 @@
+{
+  "Articles of Nobility" :
+  {
+	"id": 0
+  },
+  "Shield of Protection" :
+  {
+	"id": 1
+  },
+  "Crown of Command" :
+  {
+	"id": 2
+  },
+  "Amulet of Augmentation" :
+  {
+	"id": 3
+  },
+  "Ring of Heroism" :
+  {
+	"id": 4
+  },
+  "Anchor of Admirality" :
+  {
+	"id": 5
+  },
+  "Book of Necros" :
+  {
+	"id": 6
+  },
+  "Sword of Prowess" :
+  {
+	"id": 7
+  }
+}
