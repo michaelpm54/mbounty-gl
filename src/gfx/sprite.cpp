@@ -43,4 +43,19 @@ void Sprite::set_scale(float x, float y)
     dirty_ = true;
 }
 
+void Sprite::set_fill_color(const glm::vec4 &color)
+{
+    fill_color_ = color;
+}
+
+void Sprite::set_outline_color(const glm::vec4 &color)
+{
+    outline_color_ = color;
+}
+
+void Sprite::set_outline_thickness(int n)
+{
+    outline_thickness_ = n;
+}
+
 }    // namespace bty

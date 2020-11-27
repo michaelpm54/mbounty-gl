@@ -11,9 +11,9 @@ Gfx *gfx_init()
 {
     Gfx *gfx = new Gfx();
 
-    glEnable(GL_DEPTH_TEST);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    // glEnable(GL_DEPTH_TEST);
+    // glEnable(GL_BLEND);
+    // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     glClearColor(0.3f, 0.6f, 0.3f, 1.0f);
 
@@ -68,7 +68,7 @@ void gfx_free(Gfx *gfx)
 void gfx_clear(Gfx *gfx)
 {
     (void)gfx;
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT);
 }
 
 void gfx_draw_sprite(Gfx *gfx, Sprite &sprite, glm::mat4 &camera)
@@ -79,7 +79,8 @@ void gfx_draw_sprite(Gfx *gfx, Sprite &sprite, glm::mat4 &camera)
 
     glUseProgram(gfx->sprite_shader);
     glBindVertexArray(gfx->sprite_vao);
-    glBindTextureUnit(0, sprite.get_texture()->handle);
+    if (sprite.get_texture())
+        glBindTextureUnit(0, sprite.get_texture()->handle);
     glDrawArrays(GL_TRIANGLES, 0, 6);
     glBindVertexArray(GL_NONE);
     glUseProgram(GL_NONE);

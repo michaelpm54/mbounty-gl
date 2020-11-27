@@ -3,6 +3,7 @@
 
 #include "gfx/sprite.hpp"
 #include "scene/scene.hpp"
+#include "gfx/textbox.hpp"
 
 namespace bty {
 class Assets;
@@ -19,6 +20,9 @@ public:
 private:
     bool loaded_ {false};
     bty::Sprite bg_;
+    bty::TextBox name_box_;
+    bty::TextBox diff_box_;
+    bty::TextBox help_box_;
     glm::mat4 camera_ {1.0f};
 };
 
