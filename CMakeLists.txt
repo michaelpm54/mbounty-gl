@@ -16,6 +16,7 @@ set(MBOUNTYGL_SRC
 	src/gfx/rect.cpp
 	src/gfx/shader.cpp
 	src/gfx/sprite.cpp
+	src/gfx/text.cpp
 	src/gfx/textbox.cpp
 	src/gfx/transformable.cpp
 	src/scene/scene.cpp

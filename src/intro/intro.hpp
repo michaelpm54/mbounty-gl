@@ -2,6 +2,7 @@
 #define BTY_INTRO_INTRO_HPP_
 
 #include "gfx/sprite.hpp"
+#include "gfx/text.hpp"
 #include "scene/scene.hpp"
 #include "gfx/textbox.hpp"
 
@@ -23,6 +24,7 @@ private:
     bty::TextBox name_box_;
     bty::TextBox diff_box_;
     bty::TextBox help_box_;
+    bty::Text name_text_;
     glm::mat4 camera_ {1.0f};
 };
 

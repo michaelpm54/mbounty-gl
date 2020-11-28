@@ -6,6 +6,7 @@
 
 #include "gfx/rect.hpp"
 #include "gfx/shader.hpp"
+#include "gfx/text.hpp"
 #include "gfx/sprite.hpp"
 
 namespace bty {
@@ -69,6 +70,21 @@ void gfx_draw_rect(Gfx *gfx, Rect &rect, glm::mat4 &camera)
     glUseProgram(GL_NONE);
 }
 
+void gfx_draw_text(Gfx *gfx, Text &text, glm::mat4 &camera)
+{
+    glProgramUniformMatrix4fv(gfx->text_shader, gfx->locations[Locations::TextTransform], 1, GL_FALSE, glm::value_ptr(text.get_transform()));
+    glProgramUniformMatrix4fv(gfx->text_shader, gfx->locations[Locations::TextCamera], 1, GL_FALSE, glm::value_ptr(camera));
+    glProgramUniform1i(gfx->text_shader, gfx->locations[Locations::TextTexture], 0);
+
+    glUseProgram(gfx->text_shader);
+    glBindVertexArray(text.get_vao());
+    if (text.get_texture())
+        glBindTextureUnit(0, text.get_texture()->handle);
+    glDrawArrays(GL_TRIANGLES, 0, text.get_num_vertices());
+    glBindVertexArray(GL_NONE);
+    glUseProgram(GL_NONE);
+}
+
 void gfx_get_uniform_locations(Gfx *gfx)
 {
     gfx->locations[Locations::SpriteTransform] = glGetUniformLocation(gfx->sprite_shader, "transform");
@@ -77,6 +93,9 @@ void gfx_get_uniform_locations(Gfx *gfx)
     gfx->locations[Locations::RectTransform] = glGetUniformLocation(gfx->rect_shader, "transform");
     gfx->locations[Locations::RectCamera] = glGetUniformLocation(gfx->rect_shader, "camera");
     gfx->locations[Locations::RectColor] = glGetUniformLocation(gfx->rect_shader, "fill_color");
+    gfx->locations[Locations::TextTransform] = glGetUniformLocation(gfx->text_shader, "transform");
+    gfx->locations[Locations::TextCamera] = glGetUniformLocation(gfx->text_shader, "camera");
+    gfx->locations[Locations::TextTexture] = glGetUniformLocation(gfx->text_shader, "image");
 
     for (int i = 0; i < Locations::Count; i++) {
         if (gfx->locations[i] == -1) {
@@ -95,12 +114,19 @@ void gfx_load_shaders(Gfx *gfx) {
     if (gfx->rect_shader == GL_NONE) {
         spdlog::warn("gfx_load_shaders: Failed to load rect shader");
     }
+    
+    gfx->text_shader = load_shader("data/shaders/text.glsl.vert", "data/shaders/text.glsl.frag");
+    if (gfx->text_shader == GL_NONE) {
+        spdlog::warn("gfx_load_shaders: Failed to load text shader");
+    }
 }
 
 void gfx_set_initial_gl_state(Gfx *gfx) {
+    (void)gfx;
     // glEnable(GL_DEPTH_TEST);
-    // glEnable(GL_BLEND);
-    // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    gfx->blending = true;
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     glClearColor(0.3f, 0.6f, 0.3f, 1.0f);
 }
@@ -133,6 +159,15 @@ void gfx_create_geometry(Gfx *gfx) {
     glBindVertexArray(GL_NONE);
 
     glDeleteBuffers(1, &quad_vbo);
+}
+
+void gfx_set_blending(Gfx *gfx, bool value) {
+    if (value)
+        glEnable(GL_BLEND);
+    else
+        glDisable(GL_BLEND);
+
+    gfx->blending = value;
 }
 
 }    // namespace bty

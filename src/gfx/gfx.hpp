@@ -14,17 +14,23 @@ enum Locations {
     RectTransform,
     RectCamera,
     RectColor,
+    TextTransform,
+    TextCamera,
+    TextTexture,
     Count,
 };
 
 class Rect;
 class Sprite;
+class Text;
 
 struct Gfx {
     GLuint sprite_shader;
     GLuint rect_shader;
+    GLuint text_shader;
     GLuint quad_vao;
     GLint locations[Locations::Count];
+    bool blending;
 };
 
 Gfx *gfx_init();
@@ -32,6 +38,9 @@ void gfx_free(Gfx *gfx);
 void gfx_clear(Gfx *gfx);
 void gfx_draw_sprite(Gfx *gfx, Sprite &sprite, glm::mat4 &camera);
 void gfx_draw_rect(Gfx *gfx, Rect &rect, glm::mat4 &camera);
+void gfx_draw_text(Gfx *gfx, Text &text, glm::mat4 &camera);
+void gfx_set_blending(bool value);
+bool gfx_get_blending();
 
 }    // namespace bty
 
