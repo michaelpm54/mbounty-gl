@@ -1,6 +1,7 @@
 #ifndef BTY_INTRO_INTRO_HPP_
 #define BTY_INTRO_INTRO_HPP_
 
+#include "gfx/font.hpp"
 #include "gfx/sprite.hpp"
 #include "gfx/text.hpp"
 #include "scene/scene.hpp"
@@ -20,6 +21,7 @@ public:
 
 private:
     bool loaded_ {false};
+    bty::Font font_;
     bty::Sprite bg_;
     bty::TextBox name_box_;
     bty::TextBox diff_box_;

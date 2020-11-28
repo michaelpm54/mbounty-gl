@@ -2,6 +2,7 @@
 
 #include <spdlog/spdlog.h>
 
+#include "gfx/font.hpp"
 #include "gfx/texture.hpp"
 
 namespace bty {
@@ -13,75 +14,60 @@ Text::~Text()
     }
 }
 
-void Text::create(int x, int y, const std::string &string, const Texture *texture)
+void Text::create(int x, int y, const std::string &string, const Font &font)
 {
-    set_texture(texture);
+    font_ = &font;
     set_string(string);
     set_position({x * 8.0f, y * 8.0f});
-}
-
-void Text::set_texture(const Texture *texture)
-{
-    if (!texture) {
-        spdlog::warn("Text::set_texture: nullptr");
-        return;
-    }
-
-    texture_ = texture;
-
-    if (!string_.empty())
-        set_string(string_);
 }
 
 void Text::set_string(const std::string &string)
 {
     string_ = string;
 
-    if (!texture_)
+    if (!font_) {
+        spdlog::warn("Text::set_string: no font");
         return;
+    }
 
     num_vertices_ = 6 * string.size();
 
-    std::vector<glm::vec4> vertices(num_vertices_);
+    struct Vertex {
+        glm::vec2 pos;
+        glm::vec2 tex_coord;
+    };
 
-    float glyph_size_x = texture_->width / 8.0f;
-    float glyph_size_y = texture_->height / 8.0f;
-
-    float adv_x = 1.0f / glyph_size_x;
-    float adv_y = 1.0f / glyph_size_y;
+    std::vector<Vertex> vertices(num_vertices_);
 
     float x = 0;
     float y = 0;
 
     for (int i = 0, s = string.size(); i < s; i++) {
-        uint16_t char_code = string[i] - 32;
+        switch (string[i]) {
+            case '\n':
+                x = 0;
+                y += 8;
+                continue;
+            case '\t':
+                x += 16;
+                continue;
+            default:
+                break;
+        }
 
-        int glyph_x = char_code % 16;
-        int glyph_y = char_code / 16;
-
-        float u = adv_x * glyph_x;
-        float v = adv_y * glyph_y;
+        uint16_t char_code = (string[i] - 32) & 0xFF;
+        const auto texture_coords = font_->get_texture_coordinates(char_code);
 
         auto *vertex = &vertices.data()[i * 6];
 
-        *vertex++ = { x,   y,   u,       v       };
-        *vertex++ = { x+8, y,   u+adv_x, v       };
-        *vertex++ = { x,   y+8, u,       v+adv_y };
-        *vertex++ = { x+8, y,   u+adv_x, v       };
-        *vertex++ = { x+8, y+8, u+adv_x, v+adv_y };
-        *vertex++ = { x,   y+8, u,       v+adv_y };
+        *vertex++ = { { x,   y   }, texture_coords[0] };
+        *vertex++ = { { x+8, y   }, texture_coords[1] };
+        *vertex++ = { { x,   y+8 }, texture_coords[2] };
+        *vertex++ = { { x+8, y   }, texture_coords[3] };
+        *vertex++ = { { x+8, y+8 }, texture_coords[4] };
+        *vertex++ = { { x,   y+8 }, texture_coords[5] };
 
-        switch (string[i]) {
-            case '\n':
-                y += 8;
-                break;
-            case '\t':
-                x += 16;
-                break;
-            default:
-                x += 8;
-                break;
-        }
+        x += 8;
     }
 
     if (vao_ != GL_NONE) {
@@ -108,9 +94,9 @@ void Text::set_string(const std::string &string)
     glDeleteBuffers(1, &vbo);
 }
 
-const Texture *Text::get_texture() const
+const Font *Text::get_font() const
 {
-    return texture_;
+    return font_;
 }
 
 GLuint Text::get_vao() const{

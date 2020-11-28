@@ -8,20 +8,21 @@
 
 namespace bty {
 
+class Font;
+
 class Text : public Transformable {
 public:
     ~Text();
-    void create(int x, int y, const std::string &string, const Texture *texture);
-    void set_texture(const Texture *texture);
+    void create(int x, int y, const std::string &string, const Font &font);
     void set_string(const std::string &string);
     GLuint get_vao() const;
     GLuint get_num_vertices() const;
-    const Texture *get_texture() const;
+    const Font *get_font() const;
 
 private:
+    const Font *font_{nullptr};
     GLuint vao_{GL_NONE};
     GLuint num_vertices_{0};
-    const Texture *texture_{nullptr};
     std::string string_;
 };
 

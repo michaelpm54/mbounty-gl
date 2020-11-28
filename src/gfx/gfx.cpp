@@ -4,6 +4,7 @@
 
 #include <glm/gtc/type_ptr.hpp>
 
+#include "gfx/font.hpp"
 #include "gfx/rect.hpp"
 #include "gfx/shader.hpp"
 #include "gfx/text.hpp"
@@ -78,8 +79,8 @@ void gfx_draw_text(Gfx *gfx, Text &text, glm::mat4 &camera)
 
     glUseProgram(gfx->text_shader);
     glBindVertexArray(text.get_vao());
-    if (text.get_texture())
-        glBindTextureUnit(0, text.get_texture()->handle);
+    if (text.get_font() && text.get_font()->get_texture())
+        glBindTextureUnit(0, text.get_font()->get_texture()->handle);
     glDrawArrays(GL_TRIANGLES, 0, text.get_num_vertices());
     glBindVertexArray(GL_NONE);
     glUseProgram(GL_NONE);
