@@ -26,7 +26,6 @@ private:
     bty::TextBox name_box_;
     bty::TextBox diff_box_;
     bty::TextBox help_box_;
-    bty::Text name_text_;
     glm::mat4 camera_ {1.0f};
 };
 

@@ -124,8 +124,7 @@ void gfx_load_shaders(Gfx *gfx) {
 
 void gfx_set_initial_gl_state(Gfx *gfx) {
     (void)gfx;
-    // glEnable(GL_DEPTH_TEST);
-    gfx->blending = true;
+    
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -160,15 +159,6 @@ void gfx_create_geometry(Gfx *gfx) {
     glBindVertexArray(GL_NONE);
 
     glDeleteBuffers(1, &quad_vbo);
-}
-
-void gfx_set_blending(Gfx *gfx, bool value) {
-    if (value)
-        glEnable(GL_BLEND);
-    else
-        glDisable(GL_BLEND);
-
-    gfx->blending = value;
 }
 
 }    // namespace bty

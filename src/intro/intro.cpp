@@ -31,11 +31,11 @@ bool Intro::load(bty::Assets &assets)
 
     font_.load_from_texture(assets.load_texture("fonts/genesis_custom.png", success), {8.0f, 8.0f});
 
-    name_box_.create(7, 1, 27, 3, accents, border_textures);
-    diff_box_.create(7, 10, 27, 8, accents, border_textures);
-    help_box_.create(1, 24, 38, 3, accents, border_textures);
+    name_box_.create(7, 1, 27, 3, accents, border_textures, font_);
+    diff_box_.create(7, 10, 27, 8, accents, border_textures, font_);
+    help_box_.create(1, 24, 38, 3, accents, border_textures, font_);
 
-    name_text_.create(9, 2, "Sir Crimsaun the Knight", font_);
+    name_box_.add_line(2, 1, "Sir Crimsaun the Knight");
 
     loaded_ = true;
     return success;
@@ -47,7 +47,6 @@ void Intro::draw(bty::Gfx &gfx)
     name_box_.draw(gfx, camera_);
     diff_box_.draw(gfx, camera_);
     help_box_.draw(gfx, camera_);
-    gfx_draw_text(&gfx, name_text_, camera_);
 }
 
 void Intro::key(int key, int scancode, int action, int mods)
@@ -60,12 +59,6 @@ void Intro::key(int key, int scancode, int action, int mods)
         case GLFW_PRESS:
             switch (key)
             {
-                case GLFW_KEY_B:
-                    if (glIsEnabled(GL_BLEND))
-                        glDisable(GL_BLEND);
-                    else
-                        glEnable(GL_BLEND);
-                    break;
                 default:
                     break;
             }

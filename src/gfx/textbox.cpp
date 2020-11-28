@@ -1,15 +1,25 @@
 #include "gfx/textbox.hpp"
 
-#include "gfx/sprite.hpp"
+#include "gfx/font.hpp"
 #include "gfx/gfx.hpp"
+#include "gfx/sprite.hpp"
+#include "gfx/text.hpp"
 
 #include <spdlog/spdlog.h>
 
 namespace bty {
 
-void TextBox::create(int x, int y, int w, int h, const glm::vec4 * const accents, const std::array<const Texture*, 8> &border_textures)
+/* clang-format off */
+void TextBox::create(
+	int x, int y,
+	int w, int h,
+	const glm::vec4 * const accents,
+	const std::array<const Texture*, 8> &border_textures,
+	const Font &font)
+/* clang-format on */
 {
-	// lines_.clear();
+	font_ = &font;
+	lines_.clear();
 
 	for (int i = 0; i < 8; i++) {
 		box_[i].set_texture(border_textures[i]);
@@ -68,20 +78,27 @@ void TextBox::draw(Gfx &gfx, glm::mat4 &camera)
 	gfx_draw_rect(&gfx, background_outline_, camera);
 	gfx_draw_rect(&gfx, background_, camera);
 
-	// for (auto const &line : textbox.lines)
-		// window.draw(line);
+	for (auto &line : lines_) {
+		gfx_draw_text(&gfx, line, camera);
+	}
 }
 
 void TextBox::add_line(int x, int y, std::string const &str)
 {
-	// lines_.push_back({str, Engine::s_font});
-	// lines_.back().setPosition(sf::Vector2f(textbox.x * 8 + x * 8, textbox.y * 8 + y * 8));
+	if (!font_) {
+		spdlog::warn("TextBox::add_line: no font");
+		return;
+	}
+
+	Text text;
+	text.create(x_ + x, y_ + y, str, *font_);
+	lines_.push_back(std::move(text));
 }
 
 void TextBox::set_line(int i, std::string const &str)
 {
-	// assert(i > -1 && lines_.size() > i);
-	// lines_[i].set_string(str);
+	assert(i > -1 && lines_.size() > i);
+	lines_[i].set_string(str);
 }
 
 void TextBox::set_colors(const glm::vec4 * const accents)

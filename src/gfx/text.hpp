@@ -12,7 +12,10 @@ class Font;
 
 class Text : public Transformable {
 public:
+    Text() = default;
     ~Text();
+    Text(Text &&other);
+
     void create(int x, int y, const std::string &string, const Font &font);
     void set_string(const std::string &string);
     GLuint get_vao() const;

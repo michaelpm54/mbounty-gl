@@ -14,6 +14,19 @@ Text::~Text()
     }
 }
 
+Text::Text(Text &&other)
+    : Transformable(other)
+{
+    string_ = other.string_;
+    num_vertices_ = other.num_vertices_;
+    font_ = other.font_;
+
+    /* Move constructor to prevent automatic destruction
+        of the VAO. */
+    vao_ = other.vao_;
+    other.vao_ = GL_NONE;
+}
+
 void Text::create(int x, int y, const std::string &string, const Font &font)
 {
     font_ = &font;
