@@ -17,8 +17,6 @@ void TextBox::create(int x, int y, int w, int h, const glm::vec4 * const accents
 
 	set_colors(accents);
 
-	background_.set_outline_thickness(1);
-
 	set_size(w, h);
 	set_position(x, y);
 }
@@ -30,14 +28,15 @@ void TextBox::set_size(int w, int h)
 	height_ = static_cast<float>(h-1) * 8;
 
 	// top bottom
-	box_[1].set_scale(width_, 4);
-	box_[5].set_scale(width_, 4);
+	box_[1].set_size(width_, 4);
+	box_[5].set_size(width_, 4);
 
 	// left right
-	box_[3].set_scale(4, height_);
-	box_[7].set_scale(4, height_);
+	box_[3].set_size(4, height_);
+	box_[7].set_size(4, height_);
 
-	// background_.set_scale(width_ - 2, height_ - 2);
+	background_.set_size(width_ - 2, height_ - 2);
+	background_outline_.set_size(width_, height_);
 }
 
 void TextBox::set_position(int x__, int y__)
@@ -58,6 +57,7 @@ void TextBox::set_position(int x__, int y__)
 	box_[7].set_position({x, y+4});
 
 	background_.set_position({x+5, y+5});
+	background_outline_.set_position({x+4, y+4});
 }
 
 void TextBox::draw(Gfx &gfx, glm::mat4 &camera)
@@ -65,7 +65,8 @@ void TextBox::draw(Gfx &gfx, glm::mat4 &camera)
 	for (int i = 0; i < 8; i++)
 		gfx_draw_sprite(&gfx, box_[i], camera);
 
-	// gfx_draw_sprite(&gfx, background_, camera);
+	gfx_draw_rect(&gfx, background_outline_, camera);
+	gfx_draw_rect(&gfx, background_, camera);
 
 	// for (auto const &line : textbox.lines)
 		// window.draw(line);
@@ -85,8 +86,8 @@ void TextBox::set_line(int i, std::string const &str)
 
 void TextBox::set_colors(const glm::vec4 * const accents)
 {
-	background_.set_fill_color(accents[0]);
-	background_.set_outline_color(accents[1]);
+	background_outline_.set_color(accents[0]);
+	background_.set_color(accents[1]);
 }
 
 }

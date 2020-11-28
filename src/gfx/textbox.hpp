@@ -6,6 +6,7 @@
 
 #include <glm/vec4.hpp>
 
+#include "gfx/rect.hpp"
 #include "gfx/sprite.hpp"
 #include "assets.hpp"
 
@@ -29,7 +30,8 @@ private:
 private:
 	std::array<Sprite, 8> box_;
 	// std::vector<> lines_;
-	Sprite background_;
+	Rect background_;
+	Rect background_outline_;
 	float width_;
 	float height_;
 	int x_;

@@ -11,14 +11,19 @@ enum Locations {
     SpriteTransform,
     SpriteCamera,
     SpriteTexture,
+    RectTransform,
+    RectCamera,
+    RectColor,
     Count,
 };
 
+class Rect;
 class Sprite;
 
 struct Gfx {
     GLuint sprite_shader;
-    GLuint sprite_vao;
+    GLuint rect_shader;
+    GLuint quad_vao;
     GLint locations[Locations::Count];
 };
 
@@ -26,6 +31,7 @@ Gfx *gfx_init();
 void gfx_free(Gfx *gfx);
 void gfx_clear(Gfx *gfx);
 void gfx_draw_sprite(Gfx *gfx, Sprite &sprite, glm::mat4 &camera);
+void gfx_draw_rect(Gfx *gfx, Rect &rect, glm::mat4 &camera);
 
 }    // namespace bty
 

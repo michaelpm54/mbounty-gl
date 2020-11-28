@@ -30,7 +30,7 @@ bool Intro::load(bty::Assets &assets)
 
     name_box_.create(7, 1, 27, 3, accents, border_textures);
     diff_box_.create(7, 10, 27, 8, accents, border_textures);
-    help_box_.create(7, 24, 27, 3, accents, border_textures);
+    help_box_.create(1, 24, 38, 3, accents, border_textures);
 
     loaded_ = true;
     return success;

@@ -25,9 +25,11 @@ GLuint load_shader(const std::string &vs_path, const std::string &fs_path)
     glShaderSource(fs, 1, &fs_src, nullptr);
 
     if (!compile_shader(vs)) {
+        spdlog::error("Fragment shader compilation failed");
         return GL_NONE;
     }
     if (!compile_shader(fs)) {
+        spdlog::error("Vertex shader compilation failed");
         glDeleteShader(vs);
         return GL_NONE;
     }
@@ -36,6 +38,7 @@ GLuint load_shader(const std::string &vs_path, const std::string &fs_path)
     glAttachShader(program, vs);
     glAttachShader(program, fs);
     if (!link_program(program)) {
+        spdlog::error("Program link failed");
         glDetachShader(program, vs);
         glDetachShader(program, fs);
         glDeleteShader(vs);
