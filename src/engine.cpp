@@ -24,8 +24,10 @@ Engine::Engine(Window &window)
 
 void Engine::run()
 {
+    float dt = 1.0f/60.0f;
     while (run_) {
         window_events(window_);
+        scene_->update(dt);
         gfx_->clear();
         scene_->draw(*gfx_);
         window_swap(window_);

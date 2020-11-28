@@ -19,6 +19,7 @@ public:
     void draw(bty::Gfx &gfx) override;
     void key(int key, int scancode, int action, int mods) override;
     bool loaded() override;
+    void update(float dt) override;
 
 private:
     bool loaded_ {false};

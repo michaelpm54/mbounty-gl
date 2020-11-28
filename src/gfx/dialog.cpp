@@ -113,7 +113,10 @@ void Dialog::update_arrow()
 	if (options_.empty())
 		return;
 
-	arrow_.set_position(options_[selection_].get_position() - glm::vec2(arrow_.get_texture()->width, 0.0f));
+	if (!arrow_.get_texture())
+		return;
+
+	arrow_.set_position(options_[selection_].get_position() - glm::vec2(arrow_.get_texture()->frame_width, 0.0f));
 }
 
 void Dialog::disable_option(int index)
@@ -124,6 +127,11 @@ void Dialog::disable_option(int index)
 	disabled_options_.insert(index);
 	if (selection_ == index)
 		next();
+}
+
+void Dialog::animate(float dt)
+{
+	arrow_.animate(dt);
 }
 
 }

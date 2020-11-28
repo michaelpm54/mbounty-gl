@@ -8,17 +8,45 @@ namespace bty {
 
 void Sprite::set_texture(const Texture *texture)
 {
-    if (!texture)
+    if (!texture) {
         spdlog::warn("Sprite::set_texture: nullptr");
+        return;
+    }
     else
-        set_size(texture->width, texture->height);
+        set_size(texture->frame_width, texture->frame_height);
 
     texture_ = texture;
+
+    if (texture->num_frames_x && texture->num_frames_y) {
+        load_animation();
+    }
 }
 
 const Texture *Sprite::get_texture() const
 {
     return texture_;
+}
+
+void Sprite::load_animation() {
+    animation_.exists = true;
+    animation_.total_frames = texture_->num_frames_x * texture_->num_frames_y;
+    animation_.time_per_frame = 0.1f;
+}
+
+void Sprite::animate(float dt) {
+    if (!animation_.exists) {
+        return;
+    }
+
+    animation_.current_time += dt;
+    if (animation_.current_time >= animation_.time_per_frame) {
+        animation_.current_frame = (animation_.current_frame + 1) % animation_.total_frames;
+        animation_.current_time = animation_.current_time - animation_.time_per_frame;
+    }
+}
+
+int Sprite::get_frame() const {
+    return animation_.current_frame;
 }
 
 }    // namespace bty

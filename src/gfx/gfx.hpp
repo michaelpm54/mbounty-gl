@@ -11,6 +11,7 @@ enum Locations {
     SpriteTransform,
     SpriteCamera,
     SpriteTexture,
+    SpriteFrame,
     RectTransform,
     RectCamera,
     RectColor,

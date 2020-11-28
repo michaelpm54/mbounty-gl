@@ -40,6 +40,7 @@ public:
 	void set_selection(int index);
 	void disable_option(int index);
 	void draw(Gfx &gfx, glm::mat4 &camera);
+	void animate(float dt);
 
 private:
 	void update_arrow();

@@ -6,8 +6,10 @@ namespace bty {
 
 void Font::load_from_texture(const Texture *texture, glm::vec2 glyph_size)
 {
-    if (!texture)
+    if (!texture) {
         spdlog::warn("Font::load_from_texture: nullptr");
+        return;
+    }
 
     columns_ = texture->width / glyph_size.x;
     rows_ = texture->height / glyph_size.y;

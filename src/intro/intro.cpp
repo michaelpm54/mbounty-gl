@@ -19,7 +19,7 @@ bool Intro::load(bty::Assets &assets)
 
     for (int i = 0; i < 8; i++) {
         std::string filename = fmt::format("border-normal/box{}.png", i);
-        border_textures[i] = assets.load_texture(filename, success);
+        border_textures[i] = assets.get_texture(filename);
     }
 
     glm::vec4 accents[2] = {
@@ -27,16 +27,18 @@ bool Intro::load(bty::Assets &assets)
         {33.0f/255.0f, 163.0f/255.0f, 232.0f/255.0f, 1.0f}
     };
 
-    bg_.set_texture(assets.load_texture("bg/intro.png", success));
+    bg_.set_texture(assets.get_texture("bg/intro.png"));
 
-    font_.load_from_texture(assets.load_texture("fonts/genesis_custom.png", success), {8.0f, 8.0f});
+    font_.load_from_texture(assets.get_texture("fonts/genesis_custom.png"), {8.0f, 8.0f});
 
     name_box_.create(7, 1, 27, 3, accents, border_textures, font_);
     help_box_.create(1, 24, 38, 3, accents, border_textures, font_);
 
     name_box_.add_line(2, 1, "Sir Crimsaun the Knight");
 
-    diff_box_.create(7, 10, 27, 8, accents, border_textures, font_, assets.load_texture("arrow.png", success));
+    auto *arrow = assets.get_texture("arrow.png", {2, 2});
+
+    diff_box_.create(7, 10, 27, 8, accents, border_textures, font_, arrow);
     diff_box_.add_option(3, 3, "Test A");
     diff_box_.add_option(3, 4, "Test B");
     diff_box_.add_option(3, 5, "Test C");
@@ -86,4 +88,9 @@ void Intro::key(int key, int scancode, int action, int mods)
 bool Intro::loaded()
 {
     return loaded_;
+}
+
+void Intro::update(float dt)
+{
+    diff_box_.animate(dt);
 }

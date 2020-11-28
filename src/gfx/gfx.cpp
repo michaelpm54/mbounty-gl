@@ -38,6 +38,7 @@ void Gfx::draw_sprite(Sprite &sprite, glm::mat4 &camera)
     glProgramUniformMatrix4fv(sprite_shader_, locations_[Locations::SpriteTransform], 1, GL_FALSE, glm::value_ptr(sprite.get_transform()));
     glProgramUniformMatrix4fv(sprite_shader_, locations_[Locations::SpriteCamera], 1, GL_FALSE, glm::value_ptr(camera));
     glProgramUniform1i(sprite_shader_, locations_[Locations::SpriteTexture], 0);
+    glProgramUniform1i(sprite_shader_, locations_[Locations::SpriteFrame], sprite.get_frame());
 
     glUseProgram(sprite_shader_);
     glBindVertexArray(quad_vao_);
@@ -81,6 +82,7 @@ void Gfx::get_uniform_locations()
     locations_[Locations::SpriteTransform] = glGetUniformLocation(sprite_shader_, "transform");
     locations_[Locations::SpriteCamera] = glGetUniformLocation(sprite_shader_, "camera");
     locations_[Locations::SpriteTexture] = glGetUniformLocation(sprite_shader_, "image");
+    locations_[Locations::SpriteFrame] = glGetUniformLocation(sprite_shader_, "frame");
     locations_[Locations::RectTransform] = glGetUniformLocation(rect_shader_, "transform");
     locations_[Locations::RectCamera] = glGetUniformLocation(rect_shader_, "camera");
     locations_[Locations::RectColor] = glGetUniformLocation(rect_shader_, "fill_color");
