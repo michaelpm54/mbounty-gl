@@ -2,15 +2,20 @@
 #include <GL/glew.h>
 /* clang-format on */
 
-#include "window/window.hpp"
+#include "window.hpp"
 
 #include <GLFW/glfw3.h>
 #include <spdlog/spdlog.h>
 
-#include "input/window-engine-interface.hpp"
-#include "window/error.hpp"
+#include "window-engine-interface.hpp"
 
 namespace bty {
+
+void window_error(int error_code, const char *description)
+{
+    (void)error_code;
+    spdlog::error("glfw: {}", description);
+}
 
 Window *window_init()
 {

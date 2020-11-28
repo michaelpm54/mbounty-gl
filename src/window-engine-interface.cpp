@@ -1,6 +1,6 @@
-#include "input/window-engine-interface.hpp"
+#include "window-engine-interface.hpp"
 
-#include "engine/engine.hpp"
+#include "engine.hpp"
 
 #include <GLFW/glfw3.h>
 

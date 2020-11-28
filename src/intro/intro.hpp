@@ -1,7 +1,7 @@
 #ifndef BTY_INTRO_INTRO_HPP_
 #define BTY_INTRO_INTRO_HPP_
 
-#include "scene/scene.hpp"
+#include "scene.hpp"
 #include "gfx/font.hpp"
 #include "gfx/sprite.hpp"
 #include "gfx/text.hpp"

@@ -1,5 +1,5 @@
-#ifndef BTY_WINDOW_WINDOW_HPP_
-#define BTY_WINDOW_WINDOW_HPP_
+#ifndef BTY_WINDOW_HPP_
+#define BTY_WINDOW_HPP_
 
 #include <GLFW/glfw3.h>
 
@@ -23,4 +23,4 @@ void window_swap(Window *window);
 
 }    // namespace bty
 
-#endif    // BTY_WINDOW_WINDOW_HPP_
+#endif    // BTY_WINDOW_HPP_

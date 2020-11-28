@@ -1,5 +1,5 @@
-#ifndef BTY_SCENE_SCENE_HPP_
-#define BTY_SCENE_SCENE_HPP_
+#ifndef BTY_SCENE_HPP_
+#define BTY_SCENE_HPP_
 
 namespace bty {
 
@@ -20,4 +20,4 @@ private:
 
 }    // namespace bty
 
-#endif    // BTY_SCENE_SCENE_HPP_
+#endif    // BTY_SCENE_HPP_

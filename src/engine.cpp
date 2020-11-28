@@ -2,14 +2,14 @@
 #include "assets.hpp"
 /* clang-format on */
 
-#include "engine/engine.hpp"
+#include "engine.hpp"
 
 #include <GLFW/glfw3.h>
 #include <spdlog/spdlog.h>
 
 #include "gfx/gfx.hpp"
-#include "scene/scene.hpp"
-#include "window/window.hpp"
+#include "scene.hpp"
+#include "window.hpp"
 
 namespace bty {
 

@@ -1,8 +1,7 @@
-#include "engine/engine.hpp"
+#include "engine.hpp"
+#include "window.hpp"
 #include "intro/intro.hpp"
-#include "spdlog/common.h"
-#include "spdlog/spdlog.h"
-#include "window/window.hpp"
+#include <spdlog/spdlog.h>
 
 void APIENTRY glDebugOutput(GLenum source,
                             GLenum type,

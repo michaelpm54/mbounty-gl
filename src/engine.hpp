@@ -1,10 +1,10 @@
-#ifndef BTY_ENGINE_ENGINE_HPP_
-#define BTY_ENGINE_ENGINE_HPP_
+#ifndef BTY_ENGINE_HPP_
+#define BTY_ENGINE_HPP_
 
 #include <memory>
 
 #include "gfx/gfx.hpp"
-#include "input/window-engine-interface.hpp"
+#include "window-engine-interface.hpp"
 
 namespace bty {
 
@@ -31,4 +31,4 @@ private:
 
 }    // namespace bty
 
-#endif    // BTY_ENGINE_ENGINE_HPP_
+#endif    // BTY_ENGINE_HPP_

@@ -1,5 +1,5 @@
-#ifndef BTY_INPUT_WINDOW_ENGINE_INTERFACE_HPP_
-#define BTY_INPUT_WINDOW_ENGINE_INTERFACE_HPP_
+#ifndef BTY_WINDOW_ENGINE_INTERFACE_HPP_
+#define BTY_WINDOW_ENGINE_INTERFACE_HPP_
 
 struct GLFWwindow;
 
@@ -21,4 +21,4 @@ struct InputHandler {
 
 }    // namespace bty
 
-#endif    // BTY_INPUT_WINDOW_ENGINE_INTERFACE_HPP_
+#endif    // BTY_WINDOW_ENGINE_INTERFACE_HPP_

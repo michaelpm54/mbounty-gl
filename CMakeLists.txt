@@ -11,7 +11,9 @@ set(PROJECT_NAME bounty)
 set(MBOUNTYGL_SRC
 	src/main.cpp
 	src/assets.cpp
-	src/engine/engine.cpp
+	src/engine.cpp
+	src/window.cpp
+	src/window-engine-interface.cpp
 	src/gfx/dialog.cpp
 	src/gfx/font.cpp
 	src/gfx/gfx.cpp
@@ -21,10 +23,6 @@ set(MBOUNTYGL_SRC
 	src/gfx/text.cpp
 	src/gfx/textbox.cpp
 	src/gfx/transformable.cpp
-	src/scene/scene.cpp
-	src/window/error.cpp
-	src/window/window.cpp
-	src/input/window-engine-interface.cpp
 	src/intro/intro.cpp
 )
 
