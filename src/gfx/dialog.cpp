@@ -101,10 +101,10 @@ void Dialog::draw(Gfx &gfx, glm::mat4 &camera)
 	if (options_.empty())
 		return;
 
-	gfx_draw_sprite(&gfx, arrow_, camera);
+	gfx.draw_sprite(arrow_, camera);
 	
 	for (auto &option : options_) {
-		gfx_draw_text(&gfx, option, camera);
+		gfx.draw_text(option, camera);
 	}
 }
 

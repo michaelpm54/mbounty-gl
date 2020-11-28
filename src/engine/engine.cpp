@@ -13,69 +13,52 @@
 
 namespace bty {
 
-Engine *engine_init(Window *window)
+Engine::Engine(Window &window)
+    : assets_(std::make_unique<Assets>())
+    , gfx_(std::make_unique<Gfx>())
+    , input_({.engine = this})
+    , window_(&window)
 {
-    Engine *engine = new Engine();
-
-    engine->assets = std::make_unique<Assets>();
-
-    engine->input.engine = engine;
-
-    engine->window = window;
-    window_init_callbacks(window, &engine->input);
-
-    engine->gfx = gfx_init();
-    if (!engine->gfx) {
-        spdlog::error("Engine init failed");
-        return nullptr;
-    }
-
-    return engine;
+    window_init_callbacks(window_, &input_);
 }
 
-void engine_free(Engine *engine)
+void Engine::run()
 {
-    gfx_free(engine->gfx);
-    delete engine;
-}
-
-void engine_run(Engine *engine)
-{
-    while (engine->run) {
-        window_events(engine->window);
-        gfx_clear(engine->gfx);
-        engine->scene->draw(*engine->gfx);
-        window_swap(engine->window);
+    while (run_) {
+        window_events(window_);
+        gfx_->clear();
+        scene_->draw(*gfx_);
+        window_swap(window_);
     }
 }
 
-void engine_key(Engine *engine, int key, int scancode, int action, int mods)
+void Engine::key(int key, int scancode, int action, int mods)
 {
     switch (key) {
         case GLFW_KEY_Q:
-            engine_quit(engine);
+            quit();
             break;
         default:
-            engine->scene->key(key, scancode, action, mods);
+            scene_->key(key, scancode, action, mods);
             break;
     }
 }
 
-void engine_quit(Engine *engine)
+void Engine::quit()
 {
-    engine->run = false;
+    run_ = false;
 }
 
-bool engine_set_scene(Engine *engine, Scene *scene)
+bool Engine::set_scene(Scene *scene)
 {
     if (!scene->loaded()) {
-        if (!scene->load(*engine->assets)) {
+        if (!scene->load(*assets_)) {
             spdlog::error("Scene failed to load");
             return false;
         }
     }
 
-    engine->scene = scene;
+    scene_ = scene;
     return true;
 }
 

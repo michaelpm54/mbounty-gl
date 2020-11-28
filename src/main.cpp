@@ -29,18 +29,15 @@ int main(int argc, char *argv[])
     glDebugMessageCallback(glDebugOutput, nullptr);
     glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
 
-    bty::Engine *engine = bty::engine_init(window);
-    if (!engine) {
-        bty::window_free(window);
-        return 1;
+    {
+        bty::Engine engine(*window);
+
+        Intro intro;
+
+        if (engine.set_scene(&intro))
+            engine.run();
     }
 
-    Intro intro;
-
-    if (engine_set_scene(engine, &intro))
-        engine_run(engine);
-
-    engine_free(engine);
     window_free(window);
 
     return 0;
@@ -52,8 +49,11 @@ void APIENTRY glDebugOutput(GLenum source,
                             GLenum severity,
                             GLsizei length,
                             const char *msg,
-                            const void *userParam)
+                            const void *user_param)
 {
+    (void)length;
+    (void)user_param;
+
     // ignore non-significant error/warning codes
     if (id == 131169 || id == 131185 || id == 131218 || id == 131204)
         return;

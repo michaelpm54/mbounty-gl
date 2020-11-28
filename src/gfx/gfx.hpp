@@ -24,20 +24,28 @@ class Rect;
 class Sprite;
 class Text;
 
-struct Gfx {
-    GLuint sprite_shader;
-    GLuint rect_shader;
-    GLuint text_shader;
-    GLuint quad_vao;
-    GLint locations[Locations::Count];
-};
+class Gfx {
+public:
+    Gfx();
+    ~Gfx();
+    void clear();
+    void draw_sprite(Sprite &sprite, glm::mat4 &camera);
+    void draw_rect(Rect &rect, glm::mat4 &camera);
+    void draw_text(Text &text, glm::mat4 &camera);
 
-Gfx *gfx_init();
-void gfx_free(Gfx *gfx);
-void gfx_clear(Gfx *gfx);
-void gfx_draw_sprite(Gfx *gfx, Sprite &sprite, glm::mat4 &camera);
-void gfx_draw_rect(Gfx *gfx, Rect &rect, glm::mat4 &camera);
-void gfx_draw_text(Gfx *gfx, Text &text, glm::mat4 &camera);
+private:
+    void set_initial_gl_state();
+    void load_shaders();
+    void get_uniform_locations();
+    void create_geometry();
+
+private:
+    GLuint sprite_shader_;
+    GLuint rect_shader_;
+    GLuint text_shader_;
+    GLuint quad_vao_;
+    GLint locations_[Locations::Count];
+};
 
 }    // namespace bty
 

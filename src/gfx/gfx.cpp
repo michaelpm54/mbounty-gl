@@ -12,45 +12,35 @@
 
 namespace bty {
 
-void gfx_set_initial_gl_state(Gfx *gfx);
-void gfx_load_shaders(Gfx *gfx);
-void gfx_get_uniform_locations(Gfx *gfx);
-void gfx_create_geometry(Gfx *gfx);
-
-Gfx *gfx_init()
+Gfx::Gfx()
 {
-    Gfx *gfx = new Gfx();
-
-    gfx_set_initial_gl_state(gfx);
-    gfx_load_shaders(gfx);
-    gfx_get_uniform_locations(gfx);
-    gfx_create_geometry(gfx);
-
-    return gfx;
+    set_initial_gl_state();
+    load_shaders();
+    get_uniform_locations();
+    create_geometry();
 }
 
-void gfx_free(Gfx *gfx)
+Gfx::~Gfx()
 {
-    glDeleteProgram(gfx->sprite_shader);
-    glDeleteProgram(gfx->rect_shader);
-    glDeleteVertexArrays(1, &gfx->quad_vao);
-    delete gfx;
+    glDeleteProgram(sprite_shader_);
+    glDeleteProgram(rect_shader_);
+    glDeleteProgram(text_shader_);
+    glDeleteVertexArrays(1, &quad_vao_);
 }
 
-void gfx_clear(Gfx *gfx)
+void Gfx::clear()
 {
-    (void)gfx;
     glClear(GL_COLOR_BUFFER_BIT);
 }
 
-void gfx_draw_sprite(Gfx *gfx, Sprite &sprite, glm::mat4 &camera)
+void Gfx::draw_sprite(Sprite &sprite, glm::mat4 &camera)
 {
-    glProgramUniformMatrix4fv(gfx->sprite_shader, gfx->locations[Locations::SpriteTransform], 1, GL_FALSE, glm::value_ptr(sprite.get_transform()));
-    glProgramUniformMatrix4fv(gfx->sprite_shader, gfx->locations[Locations::SpriteCamera], 1, GL_FALSE, glm::value_ptr(camera));
-    glProgramUniform1i(gfx->sprite_shader, gfx->locations[Locations::SpriteTexture], 0);
+    glProgramUniformMatrix4fv(sprite_shader_, locations_[Locations::SpriteTransform], 1, GL_FALSE, glm::value_ptr(sprite.get_transform()));
+    glProgramUniformMatrix4fv(sprite_shader_, locations_[Locations::SpriteCamera], 1, GL_FALSE, glm::value_ptr(camera));
+    glProgramUniform1i(sprite_shader_, locations_[Locations::SpriteTexture], 0);
 
-    glUseProgram(gfx->sprite_shader);
-    glBindVertexArray(gfx->quad_vao);
+    glUseProgram(sprite_shader_);
+    glBindVertexArray(quad_vao_);
     if (sprite.get_texture())
         glBindTextureUnit(0, sprite.get_texture()->handle);
     glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -58,26 +48,26 @@ void gfx_draw_sprite(Gfx *gfx, Sprite &sprite, glm::mat4 &camera)
     glUseProgram(GL_NONE);
 }
 
-void gfx_draw_rect(Gfx *gfx, Rect &rect, glm::mat4 &camera)
+void Gfx::draw_rect(Rect &rect, glm::mat4 &camera)
 {
-    glProgramUniformMatrix4fv(gfx->rect_shader, gfx->locations[Locations::RectTransform], 1, GL_FALSE, glm::value_ptr(rect.get_transform()));
-    glProgramUniformMatrix4fv(gfx->rect_shader, gfx->locations[Locations::RectCamera], 1, GL_FALSE, glm::value_ptr(camera));
-    glProgramUniform4fv(gfx->rect_shader, gfx->locations[Locations::RectColor], 1, glm::value_ptr(rect.get_color()));
+    glProgramUniformMatrix4fv(rect_shader_, locations_[Locations::RectTransform], 1, GL_FALSE, glm::value_ptr(rect.get_transform()));
+    glProgramUniformMatrix4fv(rect_shader_, locations_[Locations::RectCamera], 1, GL_FALSE, glm::value_ptr(camera));
+    glProgramUniform4fv(rect_shader_, locations_[Locations::RectColor], 1, glm::value_ptr(rect.get_color()));
 
-    glUseProgram(gfx->rect_shader);
-    glBindVertexArray(gfx->quad_vao);
+    glUseProgram(rect_shader_);
+    glBindVertexArray(quad_vao_);
     glDrawArrays(GL_TRIANGLES, 0, 6);
     glBindVertexArray(GL_NONE);
     glUseProgram(GL_NONE);
 }
 
-void gfx_draw_text(Gfx *gfx, Text &text, glm::mat4 &camera)
+void Gfx::draw_text(Text &text, glm::mat4 &camera)
 {
-    glProgramUniformMatrix4fv(gfx->text_shader, gfx->locations[Locations::TextTransform], 1, GL_FALSE, glm::value_ptr(text.get_transform()));
-    glProgramUniformMatrix4fv(gfx->text_shader, gfx->locations[Locations::TextCamera], 1, GL_FALSE, glm::value_ptr(camera));
-    glProgramUniform1i(gfx->text_shader, gfx->locations[Locations::TextTexture], 0);
+    glProgramUniformMatrix4fv(text_shader_, locations_[Locations::TextTransform], 1, GL_FALSE, glm::value_ptr(text.get_transform()));
+    glProgramUniformMatrix4fv(text_shader_, locations_[Locations::TextCamera], 1, GL_FALSE, glm::value_ptr(camera));
+    glProgramUniform1i(text_shader_, locations_[Locations::TextTexture], 0);
 
-    glUseProgram(gfx->text_shader);
+    glUseProgram(text_shader_);
     glBindVertexArray(text.get_vao());
     if (text.get_font() && text.get_font()->get_texture())
         glBindTextureUnit(0, text.get_font()->get_texture()->handle);
@@ -86,52 +76,50 @@ void gfx_draw_text(Gfx *gfx, Text &text, glm::mat4 &camera)
     glUseProgram(GL_NONE);
 }
 
-void gfx_get_uniform_locations(Gfx *gfx)
+void Gfx::get_uniform_locations()
 {
-    gfx->locations[Locations::SpriteTransform] = glGetUniformLocation(gfx->sprite_shader, "transform");
-    gfx->locations[Locations::SpriteCamera] = glGetUniformLocation(gfx->sprite_shader, "camera");
-    gfx->locations[Locations::SpriteTexture] = glGetUniformLocation(gfx->sprite_shader, "image");
-    gfx->locations[Locations::RectTransform] = glGetUniformLocation(gfx->rect_shader, "transform");
-    gfx->locations[Locations::RectCamera] = glGetUniformLocation(gfx->rect_shader, "camera");
-    gfx->locations[Locations::RectColor] = glGetUniformLocation(gfx->rect_shader, "fill_color");
-    gfx->locations[Locations::TextTransform] = glGetUniformLocation(gfx->text_shader, "transform");
-    gfx->locations[Locations::TextCamera] = glGetUniformLocation(gfx->text_shader, "camera");
-    gfx->locations[Locations::TextTexture] = glGetUniformLocation(gfx->text_shader, "image");
+    locations_[Locations::SpriteTransform] = glGetUniformLocation(sprite_shader_, "transform");
+    locations_[Locations::SpriteCamera] = glGetUniformLocation(sprite_shader_, "camera");
+    locations_[Locations::SpriteTexture] = glGetUniformLocation(sprite_shader_, "image");
+    locations_[Locations::RectTransform] = glGetUniformLocation(rect_shader_, "transform");
+    locations_[Locations::RectCamera] = glGetUniformLocation(rect_shader_, "camera");
+    locations_[Locations::RectColor] = glGetUniformLocation(rect_shader_, "fill_color");
+    locations_[Locations::TextTransform] = glGetUniformLocation(text_shader_, "transform");
+    locations_[Locations::TextCamera] = glGetUniformLocation(text_shader_, "camera");
+    locations_[Locations::TextTexture] = glGetUniformLocation(text_shader_, "image");
 
     for (int i = 0; i < Locations::Count; i++) {
-        if (gfx->locations[i] == -1) {
+        if (locations_[i] == -1) {
             spdlog::warn("Uniform {} not found", i);
         }
     }
 }
 
-void gfx_load_shaders(Gfx *gfx) {
-    gfx->sprite_shader = load_shader("data/shaders/sprite.glsl.vert", "data/shaders/sprite.glsl.frag");
-    if (gfx->sprite_shader == GL_NONE) {
-        spdlog::warn("gfx_load_shaders: Failed to load sprite shader");
+void Gfx::load_shaders() {
+    sprite_shader_ = load_shader("data/shaders/sprite.glsl.vert", "data/shaders/sprite.glsl.frag");
+    if (sprite_shader_ == GL_NONE) {
+        spdlog::warn("Gfx::load_shaders: Failed to load sprite shader");
     }
 
-    gfx->rect_shader = load_shader("data/shaders/rect.glsl.vert", "data/shaders/rect.glsl.frag");
-    if (gfx->rect_shader == GL_NONE) {
-        spdlog::warn("gfx_load_shaders: Failed to load rect shader");
+    rect_shader_ = load_shader("data/shaders/rect.glsl.vert", "data/shaders/rect.glsl.frag");
+    if (rect_shader_ == GL_NONE) {
+        spdlog::warn("Gfx::load_shaders: Failed to load rect shader");
     }
     
-    gfx->text_shader = load_shader("data/shaders/text.glsl.vert", "data/shaders/text.glsl.frag");
-    if (gfx->text_shader == GL_NONE) {
-        spdlog::warn("gfx_load_shaders: Failed to load text shader");
+    text_shader_ = load_shader("data/shaders/text.glsl.vert", "data/shaders/text.glsl.frag");
+    if (text_shader_ == GL_NONE) {
+        spdlog::warn("Gfx::load_shaders: Failed to load text shader");
     }
 }
 
-void gfx_set_initial_gl_state(Gfx *gfx) {
-    (void)gfx;
-    
+void Gfx::set_initial_gl_state() {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     glClearColor(0.3f, 0.6f, 0.3f, 1.0f);
 }
 
-void gfx_create_geometry(Gfx *gfx) {
+void Gfx::create_geometry() {
     GLuint quad_vbo;
     glGenBuffers(1, &quad_vbo);
 
@@ -151,8 +139,8 @@ void gfx_create_geometry(Gfx *gfx) {
     glBufferData(GL_ARRAY_BUFFER, 48, quad_vertices, GL_STATIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, GL_NONE);
 
-    glCreateVertexArrays(1, &gfx->quad_vao);
-    glBindVertexArray(gfx->quad_vao);
+    glCreateVertexArrays(1, &quad_vao_);
+    glBindVertexArray(quad_vao_);
     glBindBuffer(GL_ARRAY_BUFFER, quad_vbo);
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 2, nullptr);
     glEnableVertexAttribArray(0);

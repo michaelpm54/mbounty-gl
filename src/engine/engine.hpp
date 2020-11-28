@@ -3,30 +3,31 @@
 
 #include <memory>
 
+#include "gfx/gfx.hpp"
 #include "input/window-engine-interface.hpp"
 
 namespace bty {
 
-struct Gfx;
 struct Scene;
 struct Window;
 class Assets;
 
-struct Engine {
-    std::unique_ptr<Assets> assets;
-    input::InputHandler input;
-    Window *window {nullptr};
-    Gfx *gfx;
-    Scene *scene;
-    bool run {true};
-};
+class Engine {
+public:
+    Engine(Window &window);
+    void run();
+    void key(int key, int scancode, int action, int mods);
+    void quit();
+    bool set_scene(Scene *scene);
 
-Engine *engine_init(Window *window);
-void engine_free(Engine *engine);
-void engine_run(Engine *engine);
-void engine_key(Engine *engine, int key, int scancode, int action, int mods);
-void engine_quit(Engine *engine);
-bool engine_set_scene(Engine *engine, Scene *scene);
+private:
+    std::unique_ptr<Assets> assets_;
+    std::unique_ptr<Gfx> gfx_;
+    input::InputHandler input_;
+    Window *window_ {nullptr};
+    Scene *scene_;
+    bool run_ {true};
+};
 
 }    // namespace bty
 

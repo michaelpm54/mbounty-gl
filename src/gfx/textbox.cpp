@@ -73,13 +73,13 @@ void TextBox::set_position(int x__, int y__)
 void TextBox::draw(Gfx &gfx, glm::mat4 &camera)
 {
 	for (int i = 0; i < 8; i++)
-		gfx_draw_sprite(&gfx, box_[i], camera);
+		gfx.draw_sprite(box_[i], camera);
 
-	gfx_draw_rect(&gfx, background_outline_, camera);
-	gfx_draw_rect(&gfx, background_, camera);
+	gfx.draw_rect(background_outline_, camera);
+	gfx.draw_rect(background_, camera);
 
 	for (auto &line : lines_) {
-		gfx_draw_text(&gfx, line, camera);
+		gfx.draw_text(line, camera);
 	}
 }
 

@@ -48,7 +48,7 @@ bool Intro::load(bty::Assets &assets)
 
 void Intro::draw(bty::Gfx &gfx)
 {
-    gfx_draw_sprite(&gfx, bg_, camera_);
+    gfx.draw_sprite(bg_, camera_);
     name_box_.draw(gfx, camera_);
     diff_box_.draw(gfx, camera_);
     help_box_.draw(gfx, camera_);
