@@ -1,125 +1,129 @@
-#include "dialog.h"
+#include "gfx/dialog.hpp"
 
 #include <cassert>
 
-#include "bounty.h"
-#include "engine.h"
+#include "gfx/gfx.hpp"
+#include "gfx/text.hpp"
+#include "gfx/texture.hpp"
 
-void Dialog_UpdateArrow(Dialog &dialog);
+namespace bty {
 
-void Dialog_Next(Dialog &dialog)
+void Dialog::next()
 {
 	int count = 0;
-	int sel = dialog.selection;
+	int sel = selection_;
 	do {
-		sel = (sel + 1) % dialog.options.size();
+		sel = (sel + 1) % options_.size();
 		count++;
-	} while (count < dialog.options.size() && dialog.disabledOptions.contains(sel));
+	} while (count < static_cast<int>(options_.size()) && disabled_options_.contains(sel));
 
-	Dialog_SetSelection(dialog, sel);
+	set_selection(sel);
 }
 
-void Dialog_Prev(Dialog &dialog)
+void Dialog::prev()
 {
+	if (options_.empty())
+		return;
+
 	int count = 0;
-	int sel = dialog.selection;
+	int sel = selection_;
 	do {
-		sel = sel = (sel - 1 + dialog.options.size()) % dialog.options.size();
+		sel = sel = (sel - 1 + options_.size()) % options_.size();
 		count++;
-	} while (count < dialog.options.size() && dialog.disabledOptions.contains(sel));
+	} while (count < options_.size() && disabled_options_.contains(sel));
 
-	Dialog_SetSelection(dialog, sel);
+	set_selection(sel);
 }
 
-void Dialog_SetPosition(Dialog &dialog, int x_, int y_)
+void Dialog::set_position(int x, int y)
 {
-	TextBox_SetPosition(dialog.textbox, x_, y_);
+	TextBox::set_position(x, y);
 
-	for (int i = 0; i < dialog.options.size(); i++)
+	for (int i = 0; i < options_.size(); i++)
 	{
-		dialog.options[i].setPosition({
-			(dialog.textbox.x * 8) + (static_cast<float>(dialog.optionPositions[i].x) * 8),
-			(dialog.textbox.y * 8) + (static_cast<float>(dialog.optionPositions[i].y) * 8) + (static_cast<float>(i) * 8),
-		});
+		options_[i].set_position({x_ + x, y_ + y});
 	}
 }
 
-void Dialog_InitOptions(Dialog &dialog)
+/* clang-format off */
+void Dialog::create(
+	int x, int y,
+	int w, int h,
+	const glm::vec4 * const accents,
+	const std::array<const Texture*, 8> &border_textures,
+	const Font &font,
+	const Texture *arrow
+)
+/* clang-format on */
 {
-	dialog.options.clear();
-	dialog.optionPositions.clear();
-	dialog.selection = 0;
-	dialog.arrow.setTexture(Engine::s_arrow);
+	TextBox::create(x, y, w, h, accents, border_textures, font);
+	TextBox::set_size(w, h);
+
+	options_.clear();
+	selection_ = 0;
+	arrow_.set_texture(arrow);
+
+	set_position(x, y);
 }
 
-void Dialog_Create(Dialog &dialog, int x, int y, int w, int h)
+void Dialog::add_option(int x, int y, const std::string &str)
 {
-	TextBox_Create(dialog.textbox, x, y, w, h);
-	TextBox_SetSize(dialog.textbox, w, h);
-	Dialog_InitOptions(dialog);
-	Dialog_SetPosition(dialog, x, y);
+	Text text;
+	text.create(x_ + x, y_ + y, str, *font_);
+
+	options_.push_back(std::move(text));
+
+	set_selection(0);
 }
 
-void Dialog_AddOption(Dialog &dialog, int x, int y, std::string const &str)
+void Dialog::set_option(int index, std::string const &str)
 {
-	auto &opt = dialog.options.emplace_back(dbr::sfml::BitmapText{str, Engine::s_font});
-	opt.setPosition(sf::Vector2f(dialog.textbox.x * 8 + x * 8, dialog.textbox.y * 8 + y * 8));
-	dialog.optionPositions.push_back({x, y});
-	Dialog_SetSelection(dialog, 0);
+	assert(index > -1 && index < static_cast<int>(options_.size()));
+	options_[index].set_string(str);
 }
 
-void Dialog_SetOption(Dialog &dialog, int i, std::string const &str)
+void Dialog::set_selection(int index)
 {
-	assert(i > -1 && i < dialog.options.size());
-	dialog.options[i].setString(str);
-}
+	assert(index > -1 && index < static_cast<int>(options_.size()));
 
-void Dialog_SetSelection(Dialog &dialog, int i)
-{
-	assert(i > -1 && i < dialog.options.size());
-
-	if (dialog.options.empty())
+	if (options_.empty())
 		return;
 
-	dialog.selection = i;
+	selection_ = index;
 
-	Dialog_UpdateArrow(dialog);
+	update_arrow();
 }
 
-void Dialog_Draw(Dialog &dialog, sf::RenderWindow &window)
+void Dialog::draw(Gfx &gfx, glm::mat4 &camera)
 {
-	TextBox_Draw(dialog.textbox, window);
+	TextBox::draw(gfx, camera);
 
-	window.draw(dialog.arrow);
-
-	for (auto const &opt : dialog.options)
-		window.draw(opt);
-}
-
-void Dialog_UpdateArrow(Dialog &dialog)
-{
-	if (dialog.options.empty())
+	if (options_.empty())
 		return;
 
-	dialog.arrow.setPosition(dialog.options[dialog.selection].getPosition() - sf::Vector2f(16, 0));
+	gfx_draw_sprite(&gfx, arrow_, camera);
+	
+	for (auto &option : options_) {
+		gfx_draw_text(&gfx, option, camera);
+	}
 }
 
-void Dialog_DisableOption(Dialog &dialog, int i)
+void Dialog::update_arrow()
 {
-	if (dialog.disabledOptions.contains(i))
+	if (options_.empty())
 		return;
 
-	dialog.disabledOptions.insert(i);
-	if (dialog.selection == i)
-		Dialog_Next(dialog);
+	arrow_.set_position(options_[selection_].get_position() - glm::vec2(arrow_.get_texture()->width, 0.0f));
 }
 
-void Dialog_SetColors(Dialog &dialog, sf::Color outline, sf::Color bg)
+void Dialog::disable_option(int index)
 {
-	TextBox_SetColors(dialog.textbox, outline, bg);
+	if (disabled_options_.contains(index))
+		return;
+
+	disabled_options_.insert(index);
+	if (selection_ == index)
+		next();
 }
 
-void Dialog_AddLine(Dialog &dialog, int x, int y, std::string const &str)
-{
-	TextBox_AddLine(dialog.textbox, x, y, str);
 }

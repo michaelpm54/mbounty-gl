@@ -10,6 +10,11 @@ void Transformable::set_position(const glm::vec2 &position)
     dirty_ = true;
 }
 
+glm::vec2 Transformable::get_position() const
+{
+    return position_;
+}
+
 glm::mat4 &Transformable::get_transform()
 {
     if (dirty_) {

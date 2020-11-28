@@ -32,10 +32,15 @@ bool Intro::load(bty::Assets &assets)
     font_.load_from_texture(assets.load_texture("fonts/genesis_custom.png", success), {8.0f, 8.0f});
 
     name_box_.create(7, 1, 27, 3, accents, border_textures, font_);
-    diff_box_.create(7, 10, 27, 8, accents, border_textures, font_);
     help_box_.create(1, 24, 38, 3, accents, border_textures, font_);
 
     name_box_.add_line(2, 1, "Sir Crimsaun the Knight");
+
+    diff_box_.create(7, 10, 27, 8, accents, border_textures, font_, assets.load_texture("arrow.png", success));
+    diff_box_.add_option(3, 3, "Test A");
+    diff_box_.add_option(3, 4, "Test B");
+    diff_box_.add_option(3, 5, "Test C");
+    diff_box_.add_option(3, 6, "Test D");
 
     loaded_ = true;
     return success;
@@ -59,6 +64,16 @@ void Intro::key(int key, int scancode, int action, int mods)
         case GLFW_PRESS:
             switch (key)
             {
+                case GLFW_KEY_LEFT:
+                    break;
+                case GLFW_KEY_RIGHT:
+                    break;
+                case GLFW_KEY_UP:
+                    diff_box_.prev();
+                    break;
+                case GLFW_KEY_DOWN:
+                    diff_box_.next();
+                    break;
                 default:
                     break;
             }

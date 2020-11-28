@@ -1,36 +1,56 @@
-#ifndef KH_DIALOG_H
-#define KH_DIALOG_H
+#ifndef BTY_GFX_DIALOG_HPP_
+#define BTY_GFX_DIALOG_HPP_
 
 #include <array>
+#include <string>
 #include <unordered_set>
 #include <vector>
-#include <SFML/Graphics/RenderWindow.hpp>
-#include <SFML/Graphics/Sprite.hpp>
-#include <SFML/Graphics/RectangleShape.hpp>
-#include "BitmapText.hpp"
-#include "textbox.h"
 
-struct Dialog
-{
-	TextBox textbox;
-	int selection{0};
-	std::unordered_set<int> disabledOptions;
-	std::vector<dbr::sfml::BitmapText> options;
-	std::vector<sf::Vector2i> optionPositions;
-	sf::Sprite arrow;
+#include <glm/mat4x4.hpp>
+#include <glm/vec4.hpp>
+
+#include "gfx/text.hpp"
+#include "gfx/textbox.hpp"
+#include "gfx/texture.hpp"
+#include "gfx/sprite.hpp"
+
+namespace bty {
+
+struct Gfx;
+class Text;
+struct Texture;
+
+class Dialog : public TextBox {
+public:
+	/* clang-format off */
+	void create(
+		int x, int y,
+		int w, int h,
+		const glm::vec4 * const accents,
+		const std::array<const Texture*, 8> &border_textures,
+		const Font &font,
+		const Texture *arrow
+	);
+	/* clang-format on */
+	void set_position(int x, int y);
+	void add_option(int x, int y, const std::string &str);
+	void set_option(int index, std::string const &str);
+	void next();
+	void prev();
+	void set_selection(int index);
+	void disable_option(int index);
+	void draw(Gfx &gfx, glm::mat4 &camera);
+
+private:
+	void update_arrow();
+
+private:
+	std::vector<Text> options_;
+	std::unordered_set<int> disabled_options_;
+	Sprite arrow_;
+	int selection_{0};
 };
 
-void Dialog_Create(Dialog &dialog, int x, int y, int w, int h);
-void Dialog_Draw(Dialog &dialog, sf::RenderWindow &window);
-void Dialog_Prev(Dialog &dialog);
-void Dialog_Next(Dialog &dialog);
-void Dialog_SetSize(Dialog &dialog, int w, int h);
-void Dialog_SetPosition(Dialog &dialog, int x, int y);
-void Dialog_SetSelection(Dialog &dialog, int i);
-void Dialog_SetOption(Dialog &dialog, int i, std::string const &str);
-void Dialog_DisableOption(Dialog &dialog, int i);
-void Dialog_AddLine(Dialog &dialog, int x, int y, std::string const &str);
-void Dialog_AddOption(Dialog &dialog, int x, int y, std::string const &str);
-void Dialog_SetColors(Dialog &dialog, sf::Color outline, sf::Color bg);
+}
 
-#endif // KH_DIALOG_H
+#endif // BTY_GFX_DIALOG_HPP_

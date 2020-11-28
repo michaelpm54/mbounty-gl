@@ -12,6 +12,7 @@ set(MBOUNTYGL_SRC
 	src/main.cpp
 	src/assets.cpp
 	src/engine/engine.cpp
+	src/gfx/dialog.cpp
 	src/gfx/font.cpp
 	src/gfx/gfx.cpp
 	src/gfx/rect.cpp

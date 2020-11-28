@@ -1,11 +1,12 @@
 #ifndef BTY_INTRO_INTRO_HPP_
 #define BTY_INTRO_INTRO_HPP_
 
+#include "scene/scene.hpp"
 #include "gfx/font.hpp"
 #include "gfx/sprite.hpp"
 #include "gfx/text.hpp"
-#include "scene/scene.hpp"
 #include "gfx/textbox.hpp"
+#include "gfx/dialog.hpp"
 
 namespace bty {
 class Assets;
@@ -24,7 +25,7 @@ private:
     bty::Font font_;
     bty::Sprite bg_;
     bty::TextBox name_box_;
-    bty::TextBox diff_box_;
+    bty::Dialog diff_box_;
     bty::TextBox help_box_;
     glm::mat4 camera_ {1.0f};
 };

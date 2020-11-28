@@ -34,19 +34,21 @@ public:
 	void add_line(int x, int y, std::string const &str);
 	void set_line(int i, std::string const &str);
 
-private:
+protected:
 	void set_size(int w, int h);
 	void set_position(int x, int y);
 	void set_colors(const glm::vec4 * const accents);
 
 private:
 	std::array<Sprite, 8> box_;
-	const Font *font_;
 	std::vector<Text> lines_;
 	Rect background_;
 	Rect background_outline_;
 	float width_;
 	float height_;
+
+protected:
+	const Font *font_;
 	int x_;
 	int y_;
 };
