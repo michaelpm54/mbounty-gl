@@ -5,14 +5,9 @@
 #include <unordered_map>
 
 #include "gfx/gl.hpp"
+#include "gfx/texture.hpp"
 
 namespace bty {
-
-struct Texture {
-    int width;
-    int height;
-    GLuint handle;
-};
 
 class Assets {
 public:
