@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
         scene_switcher.add_scene(SceneId::Intro, intro);
         scene_switcher.add_scene(SceneId::Game, game);
 
-        if (scene_switcher.set_scene(SceneId::Intro))
+        if (scene_switcher.set_scene(SceneId::Game))
             engine.run();
     }
 

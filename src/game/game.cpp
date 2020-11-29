@@ -38,7 +38,7 @@ bool Game::load(bty::Assets &assets)
     }
 
     font_.load_from_texture(assets.get_texture("fonts/genesis_custom.png"), {8.0f, 8.0f});
-    hud_.set_texture(assets.get_texture("frame/game-hud.png"));
+    hud_.load(assets, font_, scene_switcher_->state());
 
     loaded_ = true;
     return success;
@@ -46,7 +46,7 @@ bool Game::load(bty::Assets &assets)
 
 void Game::draw(bty::Gfx &gfx)
 {
-    gfx.draw_sprite(hud_, camera_);
+    hud_.draw(gfx, camera_);
 }
 
 void Game::key(int key, int scancode, int action, int mods)
@@ -67,6 +67,15 @@ void Game::key(int key, int scancode, int action, int mods)
                         state_ = GameState::Unpaused;
                     }
                     break;
+                case GLFW_KEY_M:
+                    scene_switcher_->state().siege = !scene_switcher_->state().siege;
+                    scene_switcher_->state().magic = !scene_switcher_->state().magic;
+                    hud_.update_state();
+                    break;
+                case GLFW_KEY_C:
+                    scene_switcher_->state().contract = (scene_switcher_->state().contract + 1) % 18;
+                    hud_.update_state();
+                    break;
                 default:
                     break;
             }
@@ -83,5 +92,5 @@ bool Game::loaded()
 
 void Game::update(float dt)
 {
-    (void)dt;
+    hud_.update(dt);
 }

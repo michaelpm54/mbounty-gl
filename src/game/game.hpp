@@ -8,6 +8,8 @@
 #include "gfx/textbox.hpp"
 #include "gfx/dialog.hpp"
 
+#include "game/hud.hpp"
+
 namespace bty {
 class Assets;
 struct Gfx;
@@ -34,8 +36,9 @@ private:
     GameState state_{GameState::Unpaused};
     bool loaded_ {false};
     bty::Font font_;
-    bty::Sprite hud_;
     glm::mat4 camera_ {1.0f};
+
+    Hud hud_;
 };
 
 #endif    // BTY_GAME_GAME_HPP_

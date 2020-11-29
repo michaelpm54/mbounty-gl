@@ -30,7 +30,7 @@ const Texture *Sprite::get_texture() const
 void Sprite::load_animation() {
     animation_.exists = true;
     animation_.total_frames = texture_->num_frames_x * texture_->num_frames_y;
-    animation_.time_per_frame = 0.1f;
+    animation_.time_per_frame = 0.14f;
 }
 
 void Sprite::animate(float dt) {

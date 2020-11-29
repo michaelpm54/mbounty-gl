@@ -26,6 +26,7 @@ set(MBOUNTYGL_SRC
 	src/gfx/transformable.cpp
 	src/intro/intro.cpp
 	src/game/game.cpp
+	src/game/hud.cpp
 )
 
 add_executable(${PROJECT_NAME}
