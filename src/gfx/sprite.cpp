@@ -49,4 +49,12 @@ int Sprite::get_frame() const {
     return animation_.current_frame;
 }
 
+void Sprite::set_flip(bool val) {
+    flip_ = val;
+}
+
+bool Sprite::get_flip() const {
+    return flip_;
+}
+
 }    // namespace bty

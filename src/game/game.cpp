@@ -43,7 +43,12 @@ bool Game::load(bty::Assets &assets)
 
     map_.load(assets);
 
-    hero_.set_texture(assets.get_texture("hero/walk-moving.png", {4, 1}));
+    hero_walk_moving_texture_ = assets.get_texture("hero/walk-moving.png", {4, 1});
+    hero_walk_stationary_texture_ = assets.get_texture("hero/walk-stationary.png", {4, 1});
+    hero_boat_moving_texture_ = assets.get_texture("hero/boat-moving.png", {4, 1});
+    hero_boat_stationary_texture_ = assets.get_texture("hero/boat-stationary.png", {2, 1});
+
+    hero_.set_texture(hero_walk_stationary_texture_);
 
     hero_.set_tile(11, 57);
     update_camera();
@@ -55,7 +60,7 @@ bool Game::load(bty::Assets &assets)
 void Game::update_camera()
 {
     glm::vec2 cam_centre = hero_.get_center();
-    camera_pos_ = {cam_centre.x - 210, cam_centre.y - 120, 0.0f};
+    camera_pos_ = {cam_centre.x - 140, cam_centre.y - 120, 0.0f};
     game_camera_ = camera_ * glm::translate(-camera_pos_);
     // game_camera_ = zoom_;
     // game_camera_ = camera_;
@@ -85,6 +90,9 @@ void Game::key(int key, int scancode, int action, int mods)
                     else if (state_ == GameState::Paused) {
                         state_ = GameState::Unpaused;
                     }
+                    break;
+                case GLFW_KEY_B:
+                    in_boat_ = !in_boat_;
                     break;
                 case GLFW_KEY_M:
                     scene_switcher_->state().siege = !scene_switcher_->state().siege;
@@ -142,8 +150,30 @@ bool Game::loaded()
 void Game::update(float dt)
 {
     if (move_flags_) {
+        if ((move_flags_ & MOVE_FLAGS_LEFT) && !(move_flags_ & MOVE_FLAGS_RIGHT)) {
+            hero_.set_flip(true);
+        }
+        else if ((move_flags_ & MOVE_FLAGS_RIGHT) && !(move_flags_ & MOVE_FLAGS_LEFT)) {
+            hero_.set_flip(false);
+        }
+
         hero_.move(dt, move_flags_, map_);
         update_camera();
+
+        if (in_boat_) {
+            hero_.set_texture(hero_boat_moving_texture_);
+        }
+        else {
+            hero_.set_texture(hero_walk_moving_texture_);
+        }
+    }
+    else {
+        if (in_boat_) {
+            hero_.set_texture(hero_boat_stationary_texture_);
+        }
+        else {
+            hero_.set_texture(hero_walk_stationary_texture_);
+        }
     }
 
     hud_.update(dt);

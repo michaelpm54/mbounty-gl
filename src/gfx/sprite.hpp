@@ -24,14 +24,17 @@ public:
     const Texture *get_texture() const;
     void animate(float dt);
     int get_frame() const;
+    void set_flip(bool val);
+    bool get_flip() const;
 
 private:
     void load_animation();
 
 protected:
     const Texture *texture_ {nullptr};
-    
+
 private:
+    bool flip_{false};
     Animation animation_;
 };
 

@@ -22,8 +22,8 @@ void Entity::set_tile(int tx, int ty)
         h = texture_->frame_height;
     }
 
-    float x = tx * 48.0f + (w / 4);
-    float y = ty * 40.0f + (h / 4);
+    float x = tx * 48.0f + 8;
+    float y = ty * 40.0f + 8;
 
     collider.set_position(x, y);
 
@@ -36,5 +36,5 @@ glm::vec2 Entity::get_center() const
         return get_position();
     }
 
-    return {position_.x + texture_->width / 2, position_.y + texture_->height / 2};
+    return {position_.x + 16, position_.y + 16};
 }
