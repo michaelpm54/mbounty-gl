@@ -10,6 +10,8 @@
 
 #include "game/hud.hpp"
 #include "game/map.hpp"
+#include "game/move-flags.hpp"
+#include "game/entity.hpp"
 
 namespace bty {
 class Assets;
@@ -28,17 +30,12 @@ public:
     void update(float dt) override;
 
 private:
+    void update_camera();
+
+private:
     enum class GameState {
         Unpaused,
         Paused,
-    };
-
-    enum MoveFlags {
-        MOVE_FLAGS_NONE = 0,
-        MOVE_FLAGS_LEFT = 1 << 0,
-        MOVE_FLAGS_RIGHT = 1 << 1,
-        MOVE_FLAGS_UP = 1 << 2,
-        MOVE_FLAGS_DOWN = 1 << 3,
     };
     
     bty::SceneSwitcher *scene_switcher_;
@@ -52,8 +49,11 @@ private:
 
     glm::vec3 camera_pos_{0};
     glm::mat4 game_camera_{1};
+    glm::mat4 zoom_{0};
 
     uint8_t move_flags_{MOVE_FLAGS_NONE};
+
+    Entity hero_;
 };
 
 #endif    // BTY_GAME_GAME_HPP_

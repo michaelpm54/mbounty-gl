@@ -4,6 +4,7 @@
 #include <spdlog/spdlog.h>
 
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/transform.hpp>
 
 #include "assets.hpp"
 #include "scene-switcher.hpp"
@@ -40,26 +41,30 @@ bool Game::load(bty::Assets &assets)
     font_.load_from_texture(assets.get_texture("fonts/genesis_custom.png"), {8.0f, 8.0f});
     hud_.load(assets, font_, scene_switcher_->state());
 
-    FILE *map_stream = fopen("data/maps/genesis/continentia.bin", "rb");
-    if (!map_stream) {
-        spdlog::error("Failed to load map");
-        return false;
-    }
-    unsigned char *map_data = new unsigned char[4096];
-    fread(map_data, 1, 4096, map_stream);
-    fclose(map_stream);
-    map_.load(assets, map_data);
-    delete[] map_data;
+    map_.load(assets);
 
-    game_camera_ = glm::translate(camera_, camera_pos_);
+    hero_.set_texture(assets.get_texture("hero/walk-moving.png", {4, 1}));
+
+    hero_.set_tile(11, 57);
+    update_camera();
 
     loaded_ = true;
     return success;
 }
 
+void Game::update_camera()
+{
+    glm::vec2 cam_centre = hero_.get_center();
+    camera_pos_ = {cam_centre.x - 210, cam_centre.y - 120, 0.0f};
+    game_camera_ = camera_ * glm::translate(-camera_pos_);
+    // game_camera_ = zoom_;
+    // game_camera_ = camera_;
+}
+
 void Game::draw(bty::Gfx &gfx)
 {
     map_.draw(game_camera_);
+    gfx.draw_sprite(hero_, game_camera_);
     hud_.draw(gfx, camera_);
 }
 
@@ -137,22 +142,11 @@ bool Game::loaded()
 void Game::update(float dt)
 {
     if (move_flags_) {
-        if (move_flags_ & MOVE_FLAGS_LEFT) {
-            camera_pos_.x += 2.0f;
-        }
-        if (move_flags_ & MOVE_FLAGS_RIGHT) {
-            camera_pos_.x -= 2.0f;
-        }
-        if (move_flags_ & MOVE_FLAGS_UP) {
-            camera_pos_.y += 2.0f;
-        }
-        if (move_flags_ & MOVE_FLAGS_DOWN) {
-            camera_pos_.y -= 2.0f;
-        }
-
-        game_camera_ = glm::translate(camera_, camera_pos_);
+        hero_.move(dt, move_flags_, map_);
+        update_camera();
     }
 
     hud_.update(dt);
     map_.update(dt);
+    hero_.animate(dt);
 }

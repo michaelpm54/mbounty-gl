@@ -10,14 +10,27 @@
 
 Map::~Map()
 {
+    delete[] data_;
     glDeleteVertexArrays(1, &vao_);
     glDeleteProgram(program_);
 }
 
-void Map::load(bty::Assets &assets, unsigned char *data) {
+void Map::load(bty::Assets &assets) {
     for (int i = 0; i < 10; i++) {
         tilesets_[i] = assets.get_texture(fmt::format("tilesets/tileset{}.png", i));
     }
+
+    num_vertices_ = 4096 * 6;
+
+    FILE *map_stream = fopen("data/maps/genesis/continentia.bin", "rb");
+    if (!map_stream) {
+        spdlog::error("Failed to load map");
+        num_vertices_ = 0;
+        return;
+    }
+    data_ = new unsigned char[4096];
+    fread(data_, 1, 4096, map_stream);
+    fclose(map_stream);
 
     struct Vertex {
         glm::vec2 pos;
@@ -41,7 +54,7 @@ void Map::load(bty::Assets &assets, unsigned char *data) {
             float r = (i + 1) * 48.0f;
             float b = (j + 1) * 40.0f;
 
-            int tile_id = data[j * 64 + i];
+            int tile_id = data_[j * 64 + i];
             int tile_x = tile_id % 16;
             int tile_y = tile_id / 16;
 
@@ -91,7 +104,7 @@ void Map::draw(glm::mat4 &camera) {
     glUseProgram(program_);
     glBindVertexArray(vao_);
     glBindTextureUnit(0, tilesets_[tileset_index_]->handle);
-    glDrawArrays(GL_TRIANGLES, 0, 4096*6);
+    glDrawArrays(GL_TRIANGLES, 0, num_vertices_);
     glBindVertexArray(GL_NONE);
     glUseProgram(GL_NONE);
 }
@@ -102,4 +115,27 @@ void Map::update(float dt) {
         tileset_anim_timer_ = 0;
         tileset_index_ = (tileset_index_ + 1) % 10;
     }
+}
+
+int Map::get_tile(int tx, int ty) const
+{
+    if (tx < 0 || tx > 63 || ty < 0 || ty > 63) {
+        spdlog::warn("Tile index out of range: {}, {}", tx, ty);
+        return -1;
+    }
+
+    return data_[ty * 64 + tx];
+}
+
+int Map::get_tile(float x, float y) const
+{
+    int tx = x / 48.0f;
+    int ty = y / 40.0f;
+
+    if (tx < 0 || tx > 63 || ty < 0 || ty > 63) {
+        spdlog::warn("Tile index out of range: {}, {}", tx, ty);
+        return -1;
+    }
+
+    return data_[ty * 64 + tx];
 }

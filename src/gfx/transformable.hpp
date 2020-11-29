@@ -18,10 +18,12 @@ public:
     void set_size(float x, float y);
     glm::mat4 &get_transform();
 
-private:
+protected:
     glm::vec3 position_ {0.0f};
-    glm::mat4 transform_ {1.0f};
     glm::vec3 scale_ {1.0f};
+
+private:
+    glm::mat4 transform_ {1.0f};
     bool dirty_ {false};
 };
 

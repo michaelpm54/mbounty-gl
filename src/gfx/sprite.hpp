@@ -28,8 +28,10 @@ public:
 private:
     void load_animation();
 
-private:
+protected:
     const Texture *texture_ {nullptr};
+    
+private:
     Animation animation_;
 };
 
