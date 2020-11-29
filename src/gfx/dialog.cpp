@@ -134,4 +134,9 @@ void Dialog::animate(float dt)
 	arrow_.animate(dt);
 }
 
+int Dialog::get_selection() const
+{
+	return selection_;
+}
+
 }

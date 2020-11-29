@@ -41,6 +41,7 @@ public:
 	void disable_option(int index);
 	void draw(Gfx &gfx, glm::mat4 &camera);
 	void animate(float dt);
+	int get_selection() const;
 
 private:
 	void update_arrow();

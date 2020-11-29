@@ -97,8 +97,18 @@ void TextBox::add_line(int x, int y, std::string const &str)
 
 void TextBox::set_line(int i, std::string const &str)
 {
-	assert(i > -1 && lines_.size() > i);
-	lines_[i].set_string(str);
+	if (i < 0) {
+		spdlog::warn("TextBox::set_line: i < 0");
+	}
+	else if (i >= static_cast<int>(lines_.size())) {
+		spdlog::warn("TextBox::set_line: didn't exist so adding '{}'", str);
+		Text text;
+		text.create(x_ + 2, y_ + i, str, *font_);
+		lines_.push_back(std::move(text));
+	}
+	else {
+		lines_[i].set_string(str);
+	}
 }
 
 void TextBox::set_colors(const glm::vec4 * const accents)

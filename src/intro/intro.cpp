@@ -9,6 +9,14 @@
 
 #include "gfx/gfx.hpp"
 
+static constexpr const char *kNames[] = 
+{
+    "Sir Crimsaun the Knight",
+    "Lord Palmer the Paladin",
+    "Mad Moham the Barbarian",
+    "Tynnestra the Sorceress",
+};
+
 bool Intro::load(bty::Assets &assets)
 {
     bool success {true};
@@ -33,16 +41,38 @@ bool Intro::load(bty::Assets &assets)
 
     name_box_.create(7, 1, 27, 3, accents, border_textures, font_);
     help_box_.create(1, 24, 38, 3, accents, border_textures, font_);
+    help_box_.add_line(2, 1, "Select a character and press Enter");
 
-    name_box_.add_line(2, 1, "Sir Crimsaun the Knight");
+    name_box_.add_line(2, 1, kNames[hero_]);
 
     auto *arrow = assets.get_texture("arrow.png", {2, 2});
 
     diff_box_.create(7, 10, 27, 8, accents, border_textures, font_, arrow);
-    diff_box_.add_option(3, 3, "Test A");
-    diff_box_.add_option(3, 4, "Test B");
-    diff_box_.add_option(3, 5, "Test C");
-    diff_box_.add_option(3, 6, "Test D");
+    diff_box_.add_line(2, 1, "Difficulty");
+    diff_box_.add_line(15, 1, "Days");
+    diff_box_.add_line(21, 1, "Score");
+
+    static constexpr char *difficulties[4][3] =
+	{
+		{"Easy", "900", "x.5"},
+		{"Normal", "600", " x1"},
+		{"Hard", "400", " x2"},
+		{"Impossible?", "200", " x4"},
+	};
+
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 3; j++) {
+            if (j == 0) {
+                diff_box_.add_option(3, 3 + i, difficulties[i][j]);
+            }
+            else if (j == 1) {
+                diff_box_.add_line(16, 3 + i, difficulties[i][j]);
+            }
+            else if (j == 2) {
+                diff_box_.add_line(22, 3 + i, difficulties[i][j]);
+            }
+        }
+    }
 
     loaded_ = true;
     return success;
@@ -52,7 +82,9 @@ void Intro::draw(bty::Gfx &gfx)
 {
     gfx.draw_sprite(bg_, camera_);
     name_box_.draw(gfx, camera_);
-    diff_box_.draw(gfx, camera_);
+    if (state_ == IntroState::ChoosingDifficulty) {
+        diff_box_.draw(gfx, camera_);
+    }
     help_box_.draw(gfx, camera_);
 }
 
@@ -67,8 +99,25 @@ void Intro::key(int key, int scancode, int action, int mods)
             switch (key)
             {
                 case GLFW_KEY_LEFT:
+                    if (state_ == IntroState::ChoosingHero) {
+                        hero_--;
+                        if (hero_ == -1) {
+                            hero_ = 3;
+                        }
+                        name_box_.set_line(0, kNames[hero_]);
+                    }
                     break;
                 case GLFW_KEY_RIGHT:
+                    if (state_ == IntroState::ChoosingHero) {
+                        hero_ = (hero_ + 1) % 4;
+                        name_box_.set_line(0, kNames[hero_]);
+                    }
+                    break;
+                case GLFW_KEY_ENTER:
+                    if (state_ == IntroState::ChoosingHero) {
+                        help_box_.set_line(0, "Select a difficulty and press Enter");
+                        state_ = IntroState::ChoosingDifficulty;
+                    }
                     break;
                 case GLFW_KEY_UP:
                     diff_box_.prev();

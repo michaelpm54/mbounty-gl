@@ -22,6 +22,13 @@ public:
     void update(float dt) override;
 
 private:
+    enum class IntroState {
+        ChoosingHero,
+        ChoosingDifficulty,
+    };
+
+    IntroState state_{IntroState::ChoosingHero};
+    int hero_{0};
     bool loaded_ {false};
     bty::Font font_;
     bty::Sprite bg_;
