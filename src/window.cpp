@@ -81,4 +81,18 @@ void window_swap(Window *window)
     glfwSwapBuffers(window->handle);
 }
 
+int window_width(Window *window)
+{
+    int w,h;
+    glfwGetWindowSize(window->handle, &w,&h);
+    return w;
+}
+
+int window_height(Window *window)
+{
+    int w,h;
+    glfwGetWindowSize(window->handle, &w,&h);
+    return h;
+}
+
 }    // namespace bty

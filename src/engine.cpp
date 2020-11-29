@@ -1,23 +1,19 @@
-/* clang-format off */
-#include "assets.hpp"
-/* clang-format on */
-
 #include "engine.hpp"
 
 #include <GLFW/glfw3.h>
 #include <spdlog/spdlog.h>
 
 #include "gfx/gfx.hpp"
-#include "scene.hpp"
+#include "scene-switcher.hpp"
 #include "window.hpp"
 
 namespace bty {
 
-Engine::Engine(Window &window)
-    : assets_(std::make_unique<Assets>())
-    , gfx_(std::make_unique<Gfx>())
+Engine::Engine(Window &window, SceneSwitcher &scene_switcher)
+    : gfx_(std::make_unique<Gfx>())
     , input_({.engine = this})
     , window_(&window)
+    , scene_switcher_(&scene_switcher)
 {
     window_init_callbacks(window_, &input_);
 }
@@ -27,9 +23,9 @@ void Engine::run()
     float dt = 1.0f/60.0f;
     while (run_) {
         window_events(window_);
-        scene_->update(dt);
+        scene_switcher_->update(dt);
         gfx_->clear();
-        scene_->draw(*gfx_);
+        scene_switcher_->draw(*gfx_);
         window_swap(window_);
     }
 }
@@ -41,7 +37,7 @@ void Engine::key(int key, int scancode, int action, int mods)
             quit();
             break;
         default:
-            scene_->key(key, scancode, action, mods);
+            scene_switcher_->key(key, scancode, action, mods);
             break;
     }
 }
@@ -49,19 +45,6 @@ void Engine::key(int key, int scancode, int action, int mods)
 void Engine::quit()
 {
     run_ = false;
-}
-
-bool Engine::set_scene(Scene *scene)
-{
-    if (!scene->loaded()) {
-        if (!scene->load(*assets_)) {
-            spdlog::error("Scene failed to load");
-            return false;
-        }
-    }
-
-    scene_ = scene;
-    return true;
 }
 
 }    // namespace bty

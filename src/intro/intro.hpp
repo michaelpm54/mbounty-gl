@@ -11,10 +11,13 @@
 namespace bty {
 class Assets;
 struct Gfx;
+class SceneSwitcher;
 }    // namespace bty
+
 
 class Intro : public bty::Scene {
 public:
+    Intro(bty::SceneSwitcher &scene_switcher);
     bool load(bty::Assets &assets) override;
     void draw(bty::Gfx &gfx) override;
     void key(int key, int scancode, int action, int mods) override;
@@ -26,7 +29,8 @@ private:
         ChoosingHero,
         ChoosingDifficulty,
     };
-
+    
+    bty::SceneSwitcher *scene_switcher_;
     IntroState state_{IntroState::ChoosingHero};
     int hero_{0};
     bool loaded_ {false};

@@ -6,6 +6,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "assets.hpp"
+#include "scene-switcher.hpp"
+#include "shared-state.hpp"
 
 #include "gfx/gfx.hpp"
 
@@ -16,6 +18,11 @@ static constexpr const char *kNames[] =
     "Mad Moham the Barbarian",
     "Tynnestra the Sorceress",
 };
+
+Intro::Intro(bty::SceneSwitcher &scene_switcher)
+    : scene_switcher_(&scene_switcher)
+{
+}
 
 bool Intro::load(bty::Assets &assets)
 {
@@ -52,7 +59,7 @@ bool Intro::load(bty::Assets &assets)
     diff_box_.add_line(15, 1, "Days");
     diff_box_.add_line(21, 1, "Score");
 
-    static constexpr char *difficulties[4][3] =
+    static const std::string difficulties[4][3] =
 	{
 		{"Easy", "900", "x.5"},
 		{"Normal", "600", " x1"},
@@ -117,6 +124,11 @@ void Intro::key(int key, int scancode, int action, int mods)
                     if (state_ == IntroState::ChoosingHero) {
                         help_box_.set_line(0, "Select a difficulty and press Enter");
                         state_ = IntroState::ChoosingDifficulty;
+                    }
+                    else if (state_ == IntroState::ChoosingDifficulty) {
+                        scene_switcher_->state().hero_id = hero_;
+                        scene_switcher_->state().difficulty_level = diff_box_.get_selection();
+                        scene_switcher_->fade_to(SceneId::Game);
                     }
                     break;
                 case GLFW_KEY_UP:

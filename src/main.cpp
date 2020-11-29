@@ -1,6 +1,9 @@
 #include "engine.hpp"
 #include "window.hpp"
+#include "scene-switcher.hpp"
 #include "intro/intro.hpp"
+#include "scene-id.hpp"
+
 #include <spdlog/spdlog.h>
 
 void APIENTRY glDebugOutput(GLenum source,
@@ -29,11 +32,14 @@ int main(int argc, char *argv[])
     glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
 
     {
-        bty::Engine engine(*window);
+        bty::Assets assets;
+        bty::SceneSwitcher scene_switcher(window_width(window), window_height(window), assets);
+        bty::Engine engine(*window, scene_switcher);
 
-        Intro intro;
+        Intro intro(scene_switcher);
+        scene_switcher.add_scene(SceneId::Intro, intro);
 
-        if (engine.set_scene(&intro))
+        if (scene_switcher.set_scene(SceneId::Intro))
             engine.run();
     }
 

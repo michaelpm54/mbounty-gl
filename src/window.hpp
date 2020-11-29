@@ -20,6 +20,8 @@ void window_free(Window *window);
 void window_events(Window *window);
 void window_init_callbacks(Window *window, input::InputHandler *input);
 void window_swap(Window *window);
+int window_width(Window *window);
+int window_height(Window *window);
 
 }    // namespace bty
 

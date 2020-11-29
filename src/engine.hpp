@@ -11,21 +11,20 @@ namespace bty {
 struct Scene;
 struct Window;
 class Assets;
+class SceneSwitcher;
 
 class Engine {
 public:
-    Engine(Window &window);
+    Engine(Window &window, SceneSwitcher &scene_switcher);
     void run();
     void key(int key, int scancode, int action, int mods);
     void quit();
-    bool set_scene(Scene *scene);
 
 private:
-    std::unique_ptr<Assets> assets_;
     std::unique_ptr<Gfx> gfx_;
     input::InputHandler input_;
     Window *window_ {nullptr};
-    Scene *scene_;
+    SceneSwitcher *scene_switcher_;
     bool run_ {true};
 };
 
