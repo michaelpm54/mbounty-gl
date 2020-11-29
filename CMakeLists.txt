@@ -27,6 +27,7 @@ set(MBOUNTYGL_SRC
 	src/intro/intro.cpp
 	src/game/game.cpp
 	src/game/hud.cpp
+	src/game/map.cpp
 )
 
 add_executable(${PROJECT_NAME}
