@@ -2,6 +2,7 @@
 #include "window.hpp"
 #include "scene-switcher.hpp"
 #include "intro/intro.hpp"
+#include "game/game.hpp"
 #include "scene-id.hpp"
 
 #include <spdlog/spdlog.h>
@@ -37,7 +38,10 @@ int main(int argc, char *argv[])
         bty::Engine engine(*window, scene_switcher);
 
         Intro intro(scene_switcher);
+        Game game(scene_switcher);
+
         scene_switcher.add_scene(SceneId::Intro, intro);
+        scene_switcher.add_scene(SceneId::Game, game);
 
         if (scene_switcher.set_scene(SceneId::Intro))
             engine.run();

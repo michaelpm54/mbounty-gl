@@ -22,13 +22,18 @@ void SceneSwitcher::fade_to(SceneId id)
         spdlog::warn("SceneSwitcher::fade_to: No scene by ID {}", id);
     }
     else {
-        next_scene_ = scene_map_[id];
+        if (!scene_map_[id]->loaded()) {
+            if (!scene_map_[id]->load(*assets_)) {
+                spdlog::warn("SceneSwitcher::set_scene: Loading scene ID {} failed", id);
+            }
+            else {
+                next_scene_ = scene_map_[id];
+            }
+        }
     }
 
     fade_alpha_ = 0;
     state_ = SwitchState::FadingOut;
-
-    spdlog::debug("FadeOut starting");
 }
 
 void SceneSwitcher::update(float dt) {

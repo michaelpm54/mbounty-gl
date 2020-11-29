@@ -25,6 +25,7 @@ set(MBOUNTYGL_SRC
 	src/gfx/textbox.cpp
 	src/gfx/transformable.cpp
 	src/intro/intro.cpp
+	src/game/game.cpp
 )
 
 add_executable(${PROJECT_NAME}
