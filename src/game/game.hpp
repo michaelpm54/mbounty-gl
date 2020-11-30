@@ -31,6 +31,7 @@ public:
 
 private:
     void update_camera();
+    void collide(Tile &tile);
 
 private:
     enum class GameState {

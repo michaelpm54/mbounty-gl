@@ -13,6 +13,9 @@ public:
     Transformable(Transformable &&other) = default;
     Transformable(const Transformable &other) = default;
 
+    void move(glm::vec2 d);
+    void move(float dx, float dy);
+
     void set_position(const glm::vec2 &position);
     glm::vec2 get_position() const;
     void set_size(float x, float y);

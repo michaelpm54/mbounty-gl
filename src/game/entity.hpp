@@ -4,17 +4,18 @@
 #include "gfx/sprite.hpp"
 #include "game/entity-collider.hpp"
 
-class Map;
+#include "game/map.hpp"
 
 class Entity : public bty::Sprite {
 public:
-    void move(float dt, uint8_t axes, Map &map);
+    EntityCollider::CollisionManifold move(float dt, uint8_t axes, Map &map);
     void set_position(float x, float y);
     void set_tile(int tx, int ty);
     glm::vec2 get_center() const;
 
 private:
     EntityCollider collider;
+    Tile tile_{};
 };
 
 #endif // BTY_GAME_ENTITY_HPP_

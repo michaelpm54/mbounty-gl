@@ -127,15 +127,20 @@ int Map::get_tile(int tx, int ty) const
     return data_[ty * 64 + tx];
 }
 
-int Map::get_tile(float x, float y) const
+Tile Map::get_tile(float x, float y) const
 {
     int tx = x / 48.0f;
     int ty = y / 40.0f;
 
     if (tx < 0 || tx > 63 || ty < 0 || ty > 63) {
-        spdlog::warn("Tile index out of range: {}, {}", tx, ty);
-        return -1;
+        spdlog::warn("Map::get_tile: Tile index out of range: {}, {}", tx, ty);
+        return {-1, -1, -1};
     }
 
-    return data_[ty * 64 + tx];
+    return {tx, ty, get_tile(tx, ty)};
+}
+
+Tile Map::get_tile(glm::vec2 pos) const
+{
+    return get_tile(pos.x, pos.y);
 }

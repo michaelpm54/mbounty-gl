@@ -26,17 +26,17 @@ bool EntityCollider::collides(float x, float y) const
     return c2AABBtoAABB(shape_, tileAABB);
 }
 
-void EntityCollider::resolve_collision(float dx, float dy, Map &map)
+bool EntityCollider::resolve_collision(float dx, float dy, Map &map)
 {
-    glm::vec2 next_pos { shape_.min.x + dx, shape_.min.y + dy };
+    glm::vec2 next_pos { shape_.min.x, shape_.min.y };
 
     bool block { false };
 
-    int tile {map.get_tile(next_pos.x, next_pos.y)};
+    int tile {map.get_tile(next_pos.x, next_pos.y).id};
 
     // Out of bounds, treat as collision
     if (tile == -1)
-        block = true;
+        return true;
 
     float tx = next_pos.x / 48.0f;
     float ty = next_pos.y / 40.0f;
@@ -46,20 +46,21 @@ void EntityCollider::resolve_collision(float dx, float dy, Map &map)
         block = true;
 
     if (block)
-    {
     	move(-dx, -dy);
-    	// mCollisions.insert({tile, int(tx), int(ty)});
-    }
-    // else if (isEventTile(tile))
-    {
-    	// mCollisions.insert({tile, int(tx), int(ty)});
-    }
+
+	return block;
 }
 
-glm::vec2 EntityCollider::move(float dt, std::uint8_t axes, Map &map)
+EntityCollider::CollisionManifold EntityCollider::resolve(float dt, std::uint8_t axes, Map &map)
 {
-	if (axes == MOVE_FLAGS_NONE)
-		return {shape_.min.x - offset_.x, shape_.min.y - offset_.y};
+	CollisionManifold manifold;
+
+	if (axes == MOVE_FLAGS_NONE) {
+		manifold.new_position = {shape_.min.x - offset_.x, shape_.min.y - offset_.y};
+		manifold.collided = false;
+		manifold.new_tile = {-1,-1,-1};
+		return manifold;
+	}
 
 	glm::vec2 dir{0.0f};
 
@@ -77,33 +78,32 @@ glm::vec2 EntityCollider::move(float dt, std::uint8_t axes, Map &map)
 	float dx = dir.x * vel;
 	float dy = dir.y * vel;
 
-	// const auto oldTile = mTile;
+	Tile new_tile;
 
     /* Resolve X move */
 	move(dx, 0);
-	resolve_collision(dx, 0, map);
+	new_tile = map.get_tile({ shape_.min.x, shape_.min.y });
+	if (resolve_collision(dx, 0, map)) {
+		manifold.collided = true;
+		manifold.collided_tiles.push_back(new_tile);
+	}
 
     /* Resolve Y move */
 	move(0, dy);
-	resolve_collision(0, dy, map);
+	new_tile = map.get_tile({ shape_.min.x, shape_.min.y });
+	if (resolve_collision(0, dy, map)) {
+		manifold.collided = true;
+		manifold.collided_tiles.push_back(new_tile);
+	}
 
-    /*
 	auto centre = c2Mulvs(c2Add(shape_.min, shape_.max), 0.5f);
-    
 	int tx = centre.x / 48.0f;
 	int ty = centre.y / 40.0f;
-	mTile = {map->get_tile(tx, ty), tx, ty};
 
-	const auto newTile = mTile;
+	manifold.new_tile = {tx, ty, map.get_tile(tx, ty)};
+	manifold.new_position = {shape_.min.x - offset_.x, shape_.min.y - offset_.y};
 
-	if (oldTile != newTile)
-	{
-		mChangedTile = true;
-		mNewTile = newTile;
-	}
-    */
-
-    return {shape_.min.x - offset_.x, shape_.min.y - offset_.y};
+    return manifold;
 }
 
 void EntityCollider::move(float dx, float dy)

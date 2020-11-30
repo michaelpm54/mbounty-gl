@@ -10,6 +10,12 @@ class Assets;
 class Texture;
 }
 
+struct Tile {
+    int tx;
+    int ty;
+    int id;
+};
+
 class Map {
 public:
     ~Map();
@@ -17,7 +23,8 @@ public:
     void draw(glm::mat4 &camera);
     void update(float dt);
     int get_tile(int tx, int ty) const;
-    int get_tile(float x, float y) const;
+    Tile get_tile(float x, float y) const;
+    Tile get_tile(glm::vec2 pos) const;
 
 private:
     int num_vertices_{0};
@@ -29,6 +36,97 @@ private:
     float tileset_anim_timer_{0};
     int tileset_index_{0};
     unsigned char *data_{nullptr};
+};
+
+enum TileId
+{
+    Grass = 0,
+    GrassInFrontOfCastle,
+    CastleTopLeft,
+    CastleBottomLeft,
+    CastleTopMid,
+    CastleGate_Unused,
+    CastleTopRight,
+    CastleBottomRight,
+    BridgeHorizontal,
+    BridgeVertical,
+    Town_Unused,
+    Chest,
+    ShopWagon,
+    ShopTree,
+    ShopCave,
+    ShopDungeon,
+    Sign_Unused,
+    AfctScroll = 0x11,
+    AfctRing,
+    WaterInTopRight,
+    WaterInTopLeft,
+    WaterInBottomLeft,
+    WaterInBottomRight,
+    WaterOutTopLeft,
+    WaterOutBottomLeft,
+    WaterOutTopRight,
+    WaterOutBottomRight,
+    WaterRight,
+    WaterLeft,
+    WaterTop,
+    WaterBottom,
+    WaterOpen = 0x20,
+    TreeOutBottomRight,
+    TreeOutTopRight,
+    TreeOutBottomLeft,
+    TreeOutTopLeft,
+    TreeInTopLeft,
+    TreeInBottomLeft,
+    TreeInTopRight,
+    TreeInBottomRight,
+    TreeRight,
+    TreeLeft,
+    TreeTop,
+    TreeBottom,
+    TreeOpen = 0x31,
+    SandUnk0,
+    SandUnk1,
+    SandUnk2,
+    SandUnk3,
+    SandUnk4,
+    SandUnk5,
+    SandUnk6,
+    SandUnk7,
+    SandOpen,
+    RockOutTopLeft,
+    RockOutBottomLeft,
+    RockOutTopRight,
+    RockOutBottomRight,
+    RockInBottomRight,
+    RockInBottomLeft,
+    RockInTopRight,
+    RockInTopLeft,
+    RockLeft,
+    RockRight,
+    RockTop,
+    RockBottom,
+    RockOpen,
+    WaterConnector = 0x49,
+    AfctAnchor = 0x4A,
+    AfctCrown,
+    AfctBook,
+    AfctAmulet,
+    AfctSword,
+    AfctShield,
+    MobBlocker = 0x80,
+    CastleTileNoCollide0,
+    CastleTileNoCollide1,
+    CastleTileNoCollide2,
+    CastleTileNoCollide3,
+    CastleGate,
+    Town = 0x8A,
+    RandomEntity,
+    PeasantCave,
+    WizardCave = 0x8E,
+    Sign = 0x90,
+    MobTile,
+    FriendlyMob,
 };
 
 #endif // BTY_GAME_MAP_HPP_

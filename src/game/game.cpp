@@ -147,6 +147,15 @@ bool Game::loaded()
     return loaded_;
 }
 
+void Game::collide(Tile &tile) {
+    switch (tile.id) {
+        case WaterOpen:
+            break;
+        default:
+            break;
+    }
+}
+
 void Game::update(float dt)
 {
     if (move_flags_) {
@@ -157,7 +166,14 @@ void Game::update(float dt)
             hero_.set_flip(false);
         }
 
-        hero_.move(dt, move_flags_, map_);
+        auto manifold = hero_.move(dt, move_flags_, map_);
+
+        if (manifold.collided) {
+            for (auto &tile : manifold.collided_tiles) {
+                collide(tile);
+            }
+        }
+
         update_camera();
 
         if (in_boat_) {

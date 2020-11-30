@@ -10,6 +10,18 @@ void Transformable::set_position(const glm::vec2 &position)
     dirty_ = true;
 }
 
+void Transformable::move(float dx, float dy)
+{
+    position_.x += dx;
+    position_.y += dy;
+}
+
+void Transformable::move(glm::vec2 d)
+{
+    position_.x += d.x;
+    position_.x += d.y;
+}
+
 glm::vec2 Transformable::get_position() const
 {
     return position_;
