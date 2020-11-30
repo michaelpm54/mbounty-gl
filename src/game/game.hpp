@@ -34,6 +34,7 @@ public:
 private:
     void update_camera();
     void collide(Tile &tile);
+    void add_unit_to_army(int id, int count);
 
 private:
     enum class GameState {

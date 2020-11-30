@@ -63,15 +63,33 @@ void ViewArmy::view(const SharedState &state) {
         int unit_id = state.army[i];
         const auto &unit = kUnits[unit_id];
         if (unit_id != -1) {
+            int hp = state.army_counts[i] * unit.hp;
+            int min_dmg = state.army_counts[i] * unit.melee_damage_min;
+            int max_dmg = state.army_counts[i] * unit.melee_damage_max;
+            int g_cost = state.army_counts[i] * unit.weekly_cost;
+
+            std::string morale = [](int morale) {
+                switch (morale) {
+                    case 0:
+                        return "Morale: Low";
+                    case 1:
+                        return "Morale: Medium";
+                    case 2:
+                        return "Morale: High";
+                    default:
+                        break;
+                }
+                return "Out of control";
+            }(state.army_morales[i]);
+
             units_[i].set_texture(unit_textures_[unit_id]);
             info_[i][0].set_string(fmt::format("{} {}", state.army_counts[i], unit.name_plural));
-            info_[i][1].set_string(fmt::format("HitPts: {}", unit.hp));
+            info_[i][1].set_string(fmt::format("HitPts: {}", hp));
             info_[i][2].set_string(fmt::format("SL: {}", unit.skill_level));
             info_[i][3].set_string(fmt::format("MV: {}", unit.initial_moves));
-            info_[i][4].set_string(fmt::format("Damage: 0-0"));
-            info_[i][5].set_string(fmt::format("Out of control"));
-            info_[i][6].set_string(fmt::format("Morale: High"));
-            info_[i][7].set_string(fmt::format("G-Cost: 20"));
+            info_[i][4].set_string(fmt::format("Damage: {}-{}", min_dmg, max_dmg));
+            info_[i][5].set_string(fmt::format(morale));
+            info_[i][6].set_string(fmt::format("G-Cost: {}", g_cost));
         }
         else {
             spdlog::warn("ViewArmy::view: army[{}] is -1, size is wrong", i);

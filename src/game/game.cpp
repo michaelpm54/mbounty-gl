@@ -57,10 +57,10 @@ bool Game::load(bty::Assets &assets)
     pause_menu_.add_option(3, 11, "Game controls");
     pause_menu_.add_option(3, 13, "Get password");
 
-    scene_switcher_->state().army_size = 3;
-    scene_switcher_->state().army[0] = 12;
-    scene_switcher_->state().army[1] = 14;
-    scene_switcher_->state().army[2] = 0;
+    add_unit_to_army(12, 10);
+    add_unit_to_army(14, 5);
+    add_unit_to_army(0, 40);
+
     view_army_.load(assets, bty::get_box_color(difficulty), font_);
 
     map_.load(assets);
@@ -300,5 +300,91 @@ void Game::update(float dt)
     }
     if (state_ == GameState::ViewArmy) {
         view_army_.update(dt);
+    }
+}
+
+/*
+ *  bounty.c -- tables and static data needed in the game
+ *  Copyright (C) 2011 Vitaly Driedfruit
+ *
+ *  This file is part of openkb.
+ *
+ *  openkb is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  openkb is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with openkb.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#define MORALE_NORMAL 0
+#define MORALE_LOW 1
+#define MORALE_HIGH 2
+
+#define _N MORALE_NORMAL
+#define _L MORALE_LOW
+#define _H MORALE_HIGH
+
+static char kMoraleChart[5][5] = {
+    /*	 A	 B	 C	 D	 E	 */
+    /* A */ {_N, _N, _N, _N, _N},
+    /* B */ {_N, _N, _N, _N, _N},
+    /* C */ {_N, _N, _H, _N, _N},
+    /* D */ {_L, _N, _L, _H, _N},
+    /* E */ {_L, _L, _L, _N, _N},
+};
+
+#undef _N
+#undef _L
+#undef _H
+
+void Game::add_unit_to_army(int id, int count) {
+    if (id < 0 || id >= 25) {
+        spdlog::warn("Game::add_unit_to_army: id out of range: {}", id);
+        return;
+    }
+
+    if (scene_switcher_->state().army_size == 5) {
+        spdlog::warn("Game::add_unit_to_army: army already full");
+        return;
+    }
+
+    int index = scene_switcher_->state().army_size++;
+
+    int *army = scene_switcher_->state().army;
+    int *army_counts = scene_switcher_->state().army_counts;
+    int *army_morales = scene_switcher_->state().army_morales;
+
+    army[index] = id;
+    army_counts[index] = count;
+
+    for (int i = 0; i < 5; i++) {
+        const auto &unit = kUnits[id];
+
+        if (army_counts[count] * unit.hp > scene_switcher_->state().leadership) {
+            army_morales[i] = 3;
+            continue;
+        }
+
+        /* Morale regresses to how the other guy feels about me */
+        char morale_cnv[3] = {MORALE_LOW, MORALE_NORMAL, MORALE_HIGH};
+        char my_morale = MORALE_HIGH;
+        for (int j = 0; j < 5; j++)
+        {
+            if (army_counts[j] == 0)
+                break;
+            char other_group = kUnits[army[j]].morale_group;
+            char other_morale = kMoraleChart[other_group][unit.morale_group];
+            if (morale_cnv[other_morale] < morale_cnv[my_morale])
+                my_morale = other_morale;
+        }
+        
+        scene_switcher_->state().army_morales[i] = my_morale;
     }
 }
