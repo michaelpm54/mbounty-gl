@@ -30,6 +30,7 @@ set(MBOUNTYGL_SRC
 	src/game/map.cpp
 	src/game/entity.cpp
 	src/game/hero.cpp
+	src/game/view-army.cpp
 )
 
 add_executable(${PROJECT_NAME}

@@ -13,6 +13,7 @@
 #include "game/move-flags.hpp"
 #include "game/entity.hpp"
 #include "game/hero.hpp"
+#include "game/view-army.hpp"
 
 namespace bty {
 class Assets;
@@ -38,6 +39,7 @@ private:
     enum class GameState {
         Unpaused,
         Paused,
+        ViewArmy,
     };
     
     bty::SceneSwitcher *scene_switcher_;
@@ -48,6 +50,7 @@ private:
 
     Hud hud_;
     Map map_;
+    bty::Dialog pause_menu_;
 
     glm::vec3 camera_pos_{0};
     glm::mat4 game_camera_{1};
@@ -56,6 +59,8 @@ private:
     uint8_t move_flags_{MOVE_FLAGS_NONE};
 
     Hero hero_;
+
+    ViewArmy view_army_;
 };
 
 #endif    // BTY_GAME_GAME_HPP_

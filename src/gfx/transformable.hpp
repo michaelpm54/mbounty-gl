@@ -17,6 +17,7 @@ public:
     void move(glm::vec2 d);
     void move(float dx, float dy);
 
+    void set_position(float x, float y);
     void set_position(const glm::vec2 &position);
     glm::vec2 get_position() const;
     void set_size(float x, float y);

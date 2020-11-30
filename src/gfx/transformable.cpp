@@ -4,6 +4,12 @@
 
 namespace bty {
 
+void Transformable::set_position(float x, float y)
+{
+    position_ = {x, y, 0.0f};
+    dirty_ = true;
+}
+
 void Transformable::set_position(const glm::vec2 &position)
 {
     position_ = {position.x, position.y, 0.0f};
