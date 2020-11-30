@@ -124,6 +124,7 @@ void Game::key(int key, int scancode, int action, int mods)
                     {
                         case GLFW_KEY_SPACE:
                             state_ = GameState::Paused;
+                            move_flags_ = MOVE_FLAGS_NONE;
                             break;
                         case GLFW_KEY_B:
                             hero_.set_mount(hero_.get_mount() == Mount::Walk ? Mount::Boat : Mount::Walk);
