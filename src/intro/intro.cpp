@@ -37,24 +37,19 @@ bool Intro::load(bty::Assets &assets)
         border_textures[i] = assets.get_texture(filename);
     }
 
-    glm::vec4 accents[2] = {
-        {0.0f, 32.0f/255.0f, 99.0f/255.0f, 1.0f},
-        {33.0f/255.0f, 163.0f/255.0f, 232.0f/255.0f, 1.0f}
-    };
-
     bg_.set_texture(assets.get_texture("bg/intro.png"));
 
     font_.load_from_texture(assets.get_texture("fonts/genesis_custom.png"), {8.0f, 8.0f});
 
-    name_box_.create(7, 1, 27, 3, accents, border_textures, font_);
-    help_box_.create(1, 24, 38, 3, accents, border_textures, font_);
+    name_box_.create(7, 1, 27, 3, bty::BoxColor::Intro, border_textures, font_);
+    help_box_.create(1, 24, 38, 3, bty::BoxColor::Intro, border_textures, font_);
     help_box_.add_line(2, 1, "Select a character and press Enter");
 
     name_box_.add_line(2, 1, kNames[hero_]);
 
     auto *arrow = assets.get_texture("arrow.png", {2, 2});
 
-    diff_box_.create(7, 10, 27, 8, accents, border_textures, font_, arrow);
+    diff_box_.create(7, 10, 27, 8, bty::BoxColor::Intro, border_textures, font_, arrow);
     diff_box_.add_line(2, 1, "Difficulty");
     diff_box_.add_line(15, 1, "Days");
     diff_box_.add_line(21, 1, "Score");

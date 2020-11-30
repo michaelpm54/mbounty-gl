@@ -49,14 +49,14 @@ void Dialog::set_position(int x, int y)
 void Dialog::create(
 	int x, int y,
 	int w, int h,
-	const glm::vec4 * const accents,
+	bty::BoxColor color,
 	const std::array<const Texture*, 8> &border_textures,
 	const Font &font,
 	const Texture *arrow
 )
 /* clang-format on */
 {
-	TextBox::create(x, y, w, h, accents, border_textures, font);
+	TextBox::create(x, y, w, h, color, border_textures, font);
 	TextBox::set_size(w, h);
 
 	options_.clear();

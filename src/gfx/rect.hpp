@@ -4,6 +4,7 @@
 #include <glm/vec4.hpp>
 
 #include "assets.hpp"
+#include "bounty.hpp"
 #include "gfx/transformable.hpp"
 
 namespace bty {
@@ -11,6 +12,7 @@ namespace bty {
 class Rect : public Transformable {
 public:
     void set_color(const glm::vec4 &color);
+    void set_color(BoxColor color);
     const glm::vec4 &get_color() const;
 
 private:

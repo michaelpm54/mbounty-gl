@@ -20,6 +20,7 @@ public:
     void set_string(const std::string &string);
     GLuint get_vao() const;
     GLuint get_num_vertices() const;
+    void set_font(const Font &font);
     const Font *get_font() const;
 
 private:

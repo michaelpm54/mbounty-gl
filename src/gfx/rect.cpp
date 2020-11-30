@@ -11,4 +11,8 @@ const glm::vec4 &Rect::get_color() const{
     return color_;
 }
 
+void Rect::set_color(BoxColor color) {
+    set_color(bty::get_color(color));
+}
+
 }

@@ -6,58 +6,7 @@
 #include "gfx/gfx.hpp"
 #include "gfx/font.hpp"
 #include "shared-state.hpp"
-
-static constexpr unsigned char kBoxAccents[4][2][3] =
-{
-	// Easy, green
-	{ 
-		{ 0, 32, 0 },
-		{ 66, 130, 66 },
-	},
-	// Normal, blue
-	{
-		{ 0, 0, 33 },
-		{ 65, 65, 132 },
-	},
-	// Hard, red
-	{
-		{ 33, 0, 0 },
-		{ 132, 65, 65 },
-	},
-	// Impossible, grey
-	{
-		{ 33, 32, 33 },
-		{ 132, 130, 132 },
-	},
-};
-
-char const *const kNames[][4] =
-{
-	{
-		"Sir Crimsaun the Knight",
-		"Sir Crimsaun the General",
-		"Sir Crimsaun the Marshal",
-		"Sir Crimsaun the Lord",
-	},
-	{
-		"Lord Palmer the Paladin",
-		"Lord Palmer the Crusader",
-		"Lord Palmer the Avenger",
-		"Lord Palmer the Champion",
-	},
-	{
-		"Tynnestra the Sorceress",
-		"Tynnestra the Magician",
-		"Tynnestra the Mage",
-		"Tynnestra the Archmage",
-	},
-	{
-		"Mad Moham the Barbarian",
-		"Mad Moham the Chieftain",
-		"Mad Moham the Warlord",
-		"Mad Moham the Overlord",
-	},
-};
+#include "bounty.hpp"
 
 void Hud::load(bty::Assets &assets, bty::Font &font, SharedState &state) {
     state_ = &state;
@@ -66,11 +15,10 @@ void Hud::load(bty::Assets &assets, bty::Font &font, SharedState &state) {
     top_bar_.set_size(304, 9);
     top_bar_.set_position({8, 7});
 
-    const auto *accents = kBoxAccents[state.difficulty_level];
-    top_bar_.set_color({accents[1][0]/255.0f, accents[1][1]/255.0f, accents[1][2]/255.0f, 1.0f});
+    top_bar_.set_color(bty::get_box_color(state.difficulty_level));
 
     font_ = &font;
-    name_.create(1, 1, kNames[state.hero_id][state.hero_rank], font);
+    name_.create(1, 1, kHeroNames[state.hero_id][state.hero_rank], font);
     days_.create(26, 1, "", font);
 
     contract_textures_.resize(18);
@@ -112,7 +60,7 @@ void Hud::draw(bty::Gfx &gfx, glm::mat4 &camera) {
 
 void Hud::update_state() {
     contract_.set_texture(contract_textures_[state_->contract]);
-    name_.set_string(kNames[state_->hero_id][state_->hero_rank]);
+    name_.set_string(kHeroNames[state_->hero_id][state_->hero_rank]);
     days_.set_string(fmt::format("Days Left:{}", state_->days));
     siege_.set_texture(state_->siege ? siege_yes : siege_no);
     magic_.set_texture(state_->magic ? magic_yes : magic_no);

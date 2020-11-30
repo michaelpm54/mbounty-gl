@@ -120,4 +120,8 @@ GLuint Text::get_num_vertices() const {
     return num_vertices_;
 }
 
+void Text::set_font(const Font &font) {
+    font_ = &font;
+}
+
 }

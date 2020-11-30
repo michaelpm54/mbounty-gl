@@ -12,49 +12,10 @@
 
 #include "gfx/gfx.hpp"
 
-static constexpr const char *kNames[4][4] = 
-{
-    "Sir Crimsaun the Knight",
-    "Lord Palmer the Paladin",
-    "Mad Moham the Barbarian",
-    "Tynnestra the Sorceress",
-};
-
-static constexpr int kDays[4] = {
-    900,
-    600,
-    400,
-    200,
-};
-
 Game::Game(bty::SceneSwitcher &scene_switcher)
     : scene_switcher_(&scene_switcher)
 {
 }
-
-static constexpr unsigned char kBoxAccents[4][2][3] =
-{
-	// Easy, green
-	{ 
-		{ 0, 32, 0 },
-		{ 66, 130, 66 },
-	},
-	// Normal, blue
-	{
-		{ 0, 0, 33 },
-		{ 65, 65, 132 },
-	},
-	// Hard, red
-	{
-		{ 33, 0, 0 },
-		{ 132, 65, 65 },
-	},
-	// Impossible, grey
-	{
-		{ 33, 32, 33 },
-		{ 132, 130, 132 },
-	},
-};
 
 bool Game::load(bty::Assets &assets)
 {
@@ -69,22 +30,17 @@ bool Game::load(bty::Assets &assets)
         border_textures[i] = assets.get_texture(filename);
     }
 
-    scene_switcher_->state().days = kDays[scene_switcher_->state().difficulty_level];
+    int difficulty = scene_switcher_->state().difficulty_level;
+
+    scene_switcher_->state().days = kDays[difficulty];
 
     font_.load_from_texture(assets.get_texture("fonts/genesis_custom.png"), {8.0f, 8.0f});
     hud_.load(assets, font_, scene_switcher_->state());
 
-    const auto *accents = kBoxAccents[scene_switcher_->state().difficulty_level];
-
-    glm::vec4 box_accents[2] = {
-        { accents[0][0] / 255.0f, accents[0][1] / 255.0f, accents[0][2] / 255.0f, 1.0f },
-        { accents[1][0] / 255.0f, accents[1][1] / 255.0f, accents[1][2] / 255.0f, 1.0f },
-    };
-
     pause_menu_.create(
 		3, 7,
 		26, 16,
-		box_accents,
+		bty::get_box_color(difficulty),
 		border_textures,
 		font_,
 		assets.get_texture("arrow.png", {2, 2})
@@ -105,7 +61,7 @@ bool Game::load(bty::Assets &assets)
     scene_switcher_->state().army[0] = 12;
     scene_switcher_->state().army[1] = 14;
     scene_switcher_->state().army[2] = 0;
-    view_army_.load(assets, box_accents[1]);
+    view_army_.load(assets, bty::get_box_color(difficulty), font_);
 
     map_.load(assets);
     hero_.load(assets);

@@ -26,7 +26,7 @@ public:
 	void create(
 		int x, int y,
 		int w, int h,
-		const glm::vec4 * const accents,
+		bty::BoxColor color,
 		const std::array<const Texture*, 8> &border_textures,
 		const Font &font,
 		const Texture *arrow

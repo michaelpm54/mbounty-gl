@@ -13,7 +13,7 @@ namespace bty {
 void TextBox::create(
 	int x, int y,
 	int w, int h,
-	const glm::vec4 * const accents,
+	bty::BoxColor color,
 	const std::array<const Texture*, 8> &border_textures,
 	const Font &font)
 /* clang-format on */
@@ -25,7 +25,7 @@ void TextBox::create(
 		box_[i].set_texture(border_textures[i]);
 	}
 
-	set_colors(accents);
+	set_colors(color);
 
 	set_size(w, h);
 	set_position(x, y);
@@ -111,10 +111,10 @@ void TextBox::set_line(int i, std::string const &str)
 	}
 }
 
-void TextBox::set_colors(const glm::vec4 * const accents)
+void TextBox::set_colors(bty::BoxColor color)
 {
-	background_outline_.set_color(accents[0]);
-	background_.set_color(accents[1]);
+	background_outline_.set_color(bty::get_color(color, true));
+	background_.set_color(bty::get_color(color, false));
 }
 
 }

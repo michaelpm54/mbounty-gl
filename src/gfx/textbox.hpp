@@ -7,6 +7,7 @@
 
 #include <glm/vec4.hpp>
 
+#include "bounty.hpp"
 #include "gfx/rect.hpp"
 #include "gfx/sprite.hpp"
 #include "assets.hpp"
@@ -24,7 +25,7 @@ public:
 	void create(
 		int x, int y,
 		int w, int h,
-		const glm::vec4 * const accents,
+		bty::BoxColor color,
 		const std::array<const Texture*, 8> &border_textures,
 		const Font &font
 	);
@@ -37,7 +38,7 @@ public:
 protected:
 	void set_size(int w, int h);
 	void set_position(int x, int y);
-	void set_colors(const glm::vec4 * const accents);
+	void set_colors(bty::BoxColor color);
 
 private:
 	std::array<Sprite, 8> box_;
