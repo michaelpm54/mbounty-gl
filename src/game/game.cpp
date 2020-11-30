@@ -182,6 +182,7 @@ void Game::key(int key, int scancode, int action, int mods)
                 case GLFW_PRESS:
                     switch (key)
                     {
+                        case GLFW_KEY_BACKSPACE: [[fallthrough]];
                         case GLFW_KEY_SPACE:
                             state_ = GameState::Unpaused;
                             break;
