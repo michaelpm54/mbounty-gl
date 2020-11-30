@@ -61,8 +61,10 @@ bool Game::load(bty::Assets &assets)
     add_unit_to_army(14, 5);
     add_unit_to_army(0, 40);
 
-    view_army_.load(assets, bty::get_box_color(difficulty), font_);
-    view_character_.load(assets, bty::get_box_color(difficulty), font_, scene_switcher_->state().hero_id);
+    auto color = bty::get_box_color(difficulty);
+    view_army_.load(assets, color, font_);
+    view_character_.load(assets, color, font_, scene_switcher_->state().hero_id);
+    view_continent_.load(assets, color, font_, border_textures);
 
     map_.load(assets);
     hero_.load(assets);
@@ -104,6 +106,11 @@ void Game::draw(bty::Gfx &gfx)
         case GameState::ViewCharacter:
             hud_.draw(gfx, camera_);
             view_character_.draw(gfx, camera_);
+            break;
+        case GameState::ViewContinent:
+            map_.draw(game_camera_);
+            hud_.draw(gfx, camera_);
+            view_continent_.draw(gfx, camera_);
             break;
         default:
             break;
@@ -202,6 +209,10 @@ void Game::key(int key, int scancode, int action, int mods)
                                     state_ = GameState::ViewCharacter;
                                     view_character_.view(scene_switcher_->state());
                                     break;
+                                case 2:
+                                    state_ = GameState::ViewContinent;
+                                    view_continent_.view(scene_switcher_->state());
+                                    break;
                                 default:
                                     break;
                             }
@@ -215,7 +226,8 @@ void Game::key(int key, int scancode, int action, int mods)
             }
             break;
         case GameState::ViewArmy: [[fallthrough]];
-        case GameState::ViewCharacter:
+        case GameState::ViewCharacter: [[fallthrough]];
+        case GameState::ViewContinent:
             switch (action)
             {
                 case GLFW_PRESS:
@@ -306,12 +318,15 @@ void Game::update(float dt)
         map_.update(dt);
         hero_.animate(dt);
     }
-    if (state_ == GameState::Paused || state_ == GameState::Unpaused) {
+    if (state_ == GameState::Paused || state_ == GameState::Unpaused || state_ == GameState::ViewContinent) {
         hud_.update(dt);
         pause_menu_.animate(dt);
     }
-    if (state_ == GameState::ViewArmy) {
+    else if (state_ == GameState::ViewArmy) {
         view_army_.update(dt);
+    }
+    else if (state_ == GameState::ViewContinent) {
+        view_continent_.update(dt);
     }
 }
 
