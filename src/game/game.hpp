@@ -14,6 +14,7 @@
 #include "game/entity.hpp"
 #include "game/hero.hpp"
 #include "game/view-army.hpp"
+#include "game/view-character.hpp"
 
 namespace bty {
 class Assets;
@@ -41,6 +42,7 @@ private:
         Unpaused,
         Paused,
         ViewArmy,
+        ViewCharacter,
     };
     
     bty::SceneSwitcher *scene_switcher_;
@@ -62,6 +64,7 @@ private:
     Hero hero_;
 
     ViewArmy view_army_;
+    ViewCharacter view_character_;
 };
 
 #endif    // BTY_GAME_GAME_HPP_

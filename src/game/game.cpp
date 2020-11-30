@@ -62,6 +62,7 @@ bool Game::load(bty::Assets &assets)
     add_unit_to_army(0, 40);
 
     view_army_.load(assets, bty::get_box_color(difficulty), font_);
+    view_character_.load(assets, bty::get_box_color(difficulty), font_, scene_switcher_->state().hero_id);
 
     map_.load(assets);
     hero_.load(assets);
@@ -99,6 +100,10 @@ void Game::draw(bty::Gfx &gfx)
         case GameState::ViewArmy:
             hud_.draw(gfx, camera_);
             view_army_.draw(gfx, camera_);
+            break;
+        case GameState::ViewCharacter:
+            hud_.draw(gfx, camera_);
+            view_character_.draw(gfx, camera_);
             break;
         default:
             break;
@@ -191,6 +196,10 @@ void Game::key(int key, int scancode, int action, int mods)
                                     state_ = GameState::ViewArmy;
                                     view_army_.view(scene_switcher_->state());
                                     break;
+                                case 1:
+                                    state_ = GameState::ViewCharacter;
+                                    view_character_.view(scene_switcher_->state());
+                                    break;
                                 default:
                                     break;
                             }
@@ -203,7 +212,8 @@ void Game::key(int key, int scancode, int action, int mods)
                     break;
             }
             break;
-        case GameState::ViewArmy:
+        case GameState::ViewArmy: [[fallthrough]];
+        case GameState::ViewCharacter:
             switch (action)
             {
                 case GLFW_PRESS:
