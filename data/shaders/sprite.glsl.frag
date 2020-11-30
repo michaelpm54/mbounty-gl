@@ -2,7 +2,7 @@
 
 uniform sampler2DArray image;
 uniform int frame;
-uniform bool flip;
+uniform bool     flip;
 
 in vec2 texture_coord;
 

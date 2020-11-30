@@ -1,6 +1,6 @@
 #include "game/hud.hpp"
 
-#include <fmt/format.h>
+#include <spdlog/spdlog.h>
 
 #include "assets.hpp"
 #include "gfx/gfx.hpp"
@@ -29,13 +29,6 @@ static constexpr unsigned char kBoxAccents[4][2][3] =
 		{ 33, 32, 33 },
 		{ 132, 130, 132 },
 	},
-};
-
-static constexpr int kDays[4] = {
-    900,
-    600,
-    400,
-    200,
 };
 
 char const *const kNames[][4] =
@@ -120,7 +113,7 @@ void Hud::draw(bty::Gfx &gfx, glm::mat4 &camera) {
 void Hud::update_state() {
     contract_.set_texture(contract_textures_[state_->contract]);
     name_.set_string(kNames[state_->hero_id][state_->hero_rank]);
-    days_.set_string(fmt::format("Days Left:{}", kDays[state_->difficulty_level]));
+    days_.set_string(fmt::format("Days Left:{}", state_->days));
     siege_.set_texture(state_->siege ? siege_yes : siege_no);
     magic_.set_texture(state_->magic ? magic_yes : magic_no);
 }

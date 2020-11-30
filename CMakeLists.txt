@@ -29,7 +29,7 @@ set(MBOUNTYGL_SRC
 	src/game/hud.cpp
 	src/game/map.cpp
 	src/game/entity.cpp
-	src/game/entity-collider.cpp
+	src/game/hero.cpp
 )
 
 add_executable(${PROJECT_NAME}

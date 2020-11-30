@@ -5,6 +5,7 @@ struct SharedState {
     int hero_id{0};
     int hero_rank{0};
     int difficulty_level{2};
+    int days{0};
     int contract{17};
     bool siege{false};
     bool magic{false};

@@ -22,7 +22,7 @@ public:
     void load(bty::Assets &assets);
     void draw(glm::mat4 &camera);
     void update(float dt);
-    int get_tile(int tx, int ty) const;
+    Tile get_tile(int tx, int ty) const;
     Tile get_tile(float x, float y) const;
     Tile get_tile(glm::vec2 pos) const;
 
@@ -69,8 +69,8 @@ enum TileId
     WaterOutBottomRight,
     WaterRight,
     WaterLeft,
-    WaterTop,
     WaterBottom,
+    WaterTop,
     WaterOpen = 0x20,
     TreeOutBottomRight,
     TreeOutTopRight,
@@ -82,8 +82,8 @@ enum TileId
     TreeInBottomRight,
     TreeRight,
     TreeLeft,
-    TreeTop,
     TreeBottom,
+    TreeTop,
     TreeOpen = 0x31,
     SandUnk0,
     SandUnk1,

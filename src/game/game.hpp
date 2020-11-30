@@ -12,6 +12,7 @@
 #include "game/map.hpp"
 #include "game/move-flags.hpp"
 #include "game/entity.hpp"
+#include "game/hero.hpp"
 
 namespace bty {
 class Assets;
@@ -54,12 +55,7 @@ private:
 
     uint8_t move_flags_{MOVE_FLAGS_NONE};
 
-    Entity hero_;
-    bool in_boat_{false};
-    const bty::Texture *hero_walk_moving_texture_;
-    const bty::Texture *hero_walk_stationary_texture_;
-    const bty::Texture *hero_boat_moving_texture_;
-    const bty::Texture *hero_boat_stationary_texture_;
+    Hero hero_;
 };
 
 #endif    // BTY_GAME_GAME_HPP_

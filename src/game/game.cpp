@@ -20,6 +20,13 @@ static constexpr const char *kNames[4][4] =
     "Tynnestra the Sorceress",
 };
 
+static constexpr int kDays[4] = {
+    900,
+    600,
+    400,
+    200,
+};
+
 Game::Game(bty::SceneSwitcher &scene_switcher)
     : scene_switcher_(&scene_switcher)
 {
@@ -38,19 +45,15 @@ bool Game::load(bty::Assets &assets)
         border_textures[i] = assets.get_texture(filename);
     }
 
+    scene_switcher_->state().days = kDays[scene_switcher_->state().difficulty_level];
+
     font_.load_from_texture(assets.get_texture("fonts/genesis_custom.png"), {8.0f, 8.0f});
     hud_.load(assets, font_, scene_switcher_->state());
 
     map_.load(assets);
+    hero_.load(assets);
 
-    hero_walk_moving_texture_ = assets.get_texture("hero/walk-moving.png", {4, 1});
-    hero_walk_stationary_texture_ = assets.get_texture("hero/walk-stationary.png", {4, 1});
-    hero_boat_moving_texture_ = assets.get_texture("hero/boat-moving.png", {4, 1});
-    hero_boat_stationary_texture_ = assets.get_texture("hero/boat-stationary.png", {2, 1});
-
-    hero_.set_texture(hero_walk_stationary_texture_);
-
-    hero_.set_tile(11, 57);
+    hero_.move_to_tile(map_.get_tile(11, 57));
     update_camera();
 
     loaded_ = true;
@@ -92,7 +95,7 @@ void Game::key(int key, int scancode, int action, int mods)
                     }
                     break;
                 case GLFW_KEY_B:
-                    in_boat_ = !in_boat_;
+                    hero_.set_mount(hero_.get_mount() == Mount::Walk ? Mount::Boat : Mount::Walk);
                     break;
                 case GLFW_KEY_M:
                     scene_switcher_->state().siege = !scene_switcher_->state().siege;
@@ -149,8 +152,6 @@ bool Game::loaded()
 
 void Game::collide(Tile &tile) {
     switch (tile.id) {
-        case WaterOpen:
-            break;
         default:
             break;
     }
@@ -159,6 +160,8 @@ void Game::collide(Tile &tile) {
 void Game::update(float dt)
 {
     if (move_flags_) {
+        hero_.set_moving(true);
+
         if ((move_flags_ & MOVE_FLAGS_LEFT) && !(move_flags_ & MOVE_FLAGS_RIGHT)) {
             hero_.set_flip(true);
         }
@@ -166,30 +169,44 @@ void Game::update(float dt)
             hero_.set_flip(false);
         }
 
-        auto manifold = hero_.move(dt, move_flags_, map_);
+        glm::vec2 dir{0.0f};
+
+        if (move_flags_ & MOVE_FLAGS_UP)
+            dir.y -= 1.0f;
+        if (move_flags_ & MOVE_FLAGS_DOWN)
+            dir.y += 1.0f;
+        if (move_flags_ & MOVE_FLAGS_LEFT)
+            dir.x -= 1.0f;
+        if (move_flags_ & MOVE_FLAGS_RIGHT)
+            dir.x += 1.0f;
+
+        static constexpr float speed = 100.0f;
+        float vel = speed * dt;
+        float dx = dir.x * vel;
+        float dy = dir.y * vel;
+
+        auto manifold = hero_.move(dx, dy, map_);
+
+        hero_.set_position(manifold.new_position);
 
         if (manifold.collided) {
             for (auto &tile : manifold.collided_tiles) {
                 collide(tile);
             }
         }
+        else {
+            if (manifold.changed_tile) {
+                hero_.set_tile_info(manifold.new_tile);
+                if (hero_.get_mount() == Mount::Boat && manifold.new_tile.id == Grass) {
+                    hero_.set_mount(Mount::Walk);
+                }
+            }
+        }
 
         update_camera();
-
-        if (in_boat_) {
-            hero_.set_texture(hero_boat_moving_texture_);
-        }
-        else {
-            hero_.set_texture(hero_walk_moving_texture_);
-        }
     }
     else {
-        if (in_boat_) {
-            hero_.set_texture(hero_boat_stationary_texture_);
-        }
-        else {
-            hero_.set_texture(hero_walk_stationary_texture_);
-        }
+        hero_.set_moving(false);
     }
 
     hud_.update(dt);

@@ -9,6 +9,7 @@ namespace bty {
 
 class Transformable {
 public:
+    virtual ~Transformable() = default;
     Transformable() = default;
     Transformable(Transformable &&other) = default;
     Transformable(const Transformable &other) = default;
