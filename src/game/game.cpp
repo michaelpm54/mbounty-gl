@@ -23,13 +23,6 @@ bool Game::load(bty::Assets &assets)
 
     camera_ = glm::ortho(0.0f, 320.0f, 224.0f, 0.0f, -1.0f, 1.0f);
 
-    std::array<const bty::Texture *, 8> border_textures;
-
-    for (int i = 0; i < 8; i++) {
-        std::string filename = fmt::format("border-normal/box{}.png", i);
-        border_textures[i] = assets.get_texture(filename);
-    }
-
     auto &state = scene_switcher_->state();
 
     for (int i = 0; i < 14; i++) {
@@ -47,9 +40,7 @@ bool Game::load(bty::Assets &assets)
 		3, 7,
 		26, 16,
 		bty::get_box_color(difficulty),
-		border_textures,
-		font_,
-		assets.get_texture("arrow.png", {2, 2})
+        assets
 	);
     pause_menu_.add_option(3, 2, "View your army");
     pause_menu_.add_option(3, 3, "View your character");
@@ -67,9 +58,7 @@ bool Game::load(bty::Assets &assets)
 		6, 4,
 		20, 22,
 		bty::get_box_color(difficulty),
-		border_textures,
-		font_,
-		assets.get_texture("arrow.png", {2, 2})
+        assets
 	);
     use_magic_.add_line(1, 1, "Adventuring Spells");
     magic_spells_[0] = use_magic_.add_option(4, 3, "");
@@ -93,9 +82,10 @@ bool Game::load(bty::Assets &assets)
     add_unit_to_army(0, 40);
 
     auto color = bty::get_box_color(difficulty);
-    view_army_.load(assets, color, font_);
-    view_character_.load(assets, color, font_, state.hero_id);
-    view_continent_.load(assets, color, font_, border_textures);
+    view_army_.load(assets, color);
+    view_character_.load(assets, color, state.hero_id);
+    view_continent_.load(assets, color);
+    view_contract_.load(assets, color);
 
     map_.load(assets);
     hero_.load(assets);
@@ -151,6 +141,10 @@ void Game::draw(bty::Gfx &gfx)
             map_.draw(game_camera_);
             hud_.draw(gfx, camera_);
             use_magic_.draw(gfx, camera_);
+            break;
+        case GameState::ViewContract:
+            hud_.draw(gfx, camera_);
+            view_contract_.draw(gfx, camera_);
             break;
         default:
             break;
@@ -262,6 +256,10 @@ void Game::key(int key, int scancode, int action, int mods)
                                     state_ = GameState::UseMagic;
                                     update_spells();
                                     break;
+                                case 4:
+                                    state_ = GameState::ViewContract;
+                                    view_contract_.view(scene_switcher_->state().contract, false);
+                                    break;
                                 default:
                                     break;
                             }
@@ -276,7 +274,8 @@ void Game::key(int key, int scancode, int action, int mods)
             break;
         case GameState::ViewArmy: [[fallthrough]];
         case GameState::ViewCharacter: [[fallthrough]];
-        case GameState::ViewContinent:
+        case GameState::ViewContinent: [[fallthrough]];
+        case GameState::ViewContract:
             switch (action)
             {
                 case GLFW_PRESS:
@@ -414,6 +413,9 @@ void Game::update(float dt)
     }
     else if (state_ == GameState::UseMagic) {
         use_magic_.animate(dt);
+    }
+    else if (state_ == GameState::ViewContract) {
+        view_contract_.update(dt);
     }
 }
 

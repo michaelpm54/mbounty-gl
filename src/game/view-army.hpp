@@ -16,7 +16,7 @@ struct SharedState;
 
 class ViewArmy {
 public:
-    void load(bty::Assets &assets, bty::BoxColor color, const bty::Font &font);
+    void load(bty::Assets &assets, bty::BoxColor color);
     void draw(bty::Gfx &gfx, glm::mat4 &camera);
     void view(const SharedState &state);
     void update(float dt);

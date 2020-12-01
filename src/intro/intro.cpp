@@ -30,26 +30,17 @@ bool Intro::load(bty::Assets &assets)
 
     camera_ = glm::ortho(0.0f, 320.0f, 224.0f, 0.0f, -1.0f, 1.0f);
 
-    std::array<const bty::Texture *, 8> border_textures;
-
-    for (int i = 0; i < 8; i++) {
-        std::string filename = fmt::format("border-normal/box{}.png", i);
-        border_textures[i] = assets.get_texture(filename);
-    }
-
     bg_.set_texture(assets.get_texture("bg/intro.png"));
 
     font_.load_from_texture(assets.get_texture("fonts/genesis_custom.png"), {8.0f, 8.0f});
 
-    name_box_.create(7, 1, 27, 3, bty::BoxColor::Intro, border_textures, font_);
-    help_box_.create(1, 24, 38, 3, bty::BoxColor::Intro, border_textures, font_);
+    name_box_.create(7, 1, 27, 3, bty::BoxColor::Intro, assets);
+    help_box_.create(1, 24, 38, 3, bty::BoxColor::Intro, assets);
     help_box_.add_line(2, 1, "Select a character and press Enter");
 
     name_box_.add_line(2, 1, kNames[hero_]);
 
-    auto *arrow = assets.get_texture("arrow.png", {2, 2});
-
-    diff_box_.create(7, 10, 27, 8, bty::BoxColor::Intro, border_textures, font_, arrow);
+    diff_box_.create(7, 10, 27, 8, bty::BoxColor::Intro, assets);
     diff_box_.add_line(2, 1, "Difficulty");
     diff_box_.add_line(15, 1, "Days");
     diff_box_.add_line(21, 1, "Score");

@@ -20,8 +20,8 @@ ViewContinent::~ViewContinent() {
     glDeleteTextures(1, &map_texture_.handle);
 }
 
-void ViewContinent::load(bty::Assets &assets, bty::BoxColor color, const bty::Font &font, const std::array<const bty::Texture *, 8> &border_textures) {
-    box_.create(6, 4, 20, 22, color, border_textures, font);
+void ViewContinent::load(bty::Assets &assets, bty::BoxColor color) {
+    box_.create(6, 4, 20, 22, color, assets);
     continent_ = box_.add_line(5, 1, "");
     coordinates_ = box_.add_line(1, 20, "");
 
@@ -54,15 +54,13 @@ void ViewContinent::view(int x, int y, int continent, const unsigned char * cons
     unsigned char *p = pixels.data();
 
     /* ARGB */
-    uint32_t cyan = 0xFF00AAAA;
-    uint32_t red = 0xFFF0000;
-    uint32_t green = 0xFF00BB00;
-    uint32_t blue = 0xFF0000FF;
-    uint32_t dark_green = 0xFF00AA00;
-    uint32_t yellow = 0xFFCCCC00;
-    uint32_t brown = 0xFF786316;
-    uint32_t grey = 0xFFAAAAAA;
-    uint32_t black = 0xFF000000;
+    static constexpr uint32_t cyan = 0xFF00AAAA;
+    static constexpr uint32_t green = 0xFF00BB00;
+    static constexpr uint32_t dark_green = 0xFF00AA00;
+    static constexpr uint32_t yellow = 0xFFCCCC00;
+    static constexpr uint32_t brown = 0xFF786316;
+    static constexpr uint32_t grey = 0xFFAAAAAA;
+    static constexpr uint32_t black = 0xFF000000;
 
     for (int i = 0; i < 4096; i++) {
         int id = map[i];

@@ -7,11 +7,27 @@
 
 namespace bty {
 
+Assets::Assets() {
+    border_.resize(8);
+    for (int i = 0; i < 8; i++) {
+        border_[i] = get_texture(fmt::format("border-normal/box{}.png", i));
+    }
+    font_.load_from_texture(get_texture("fonts/genesis_custom.png"), {8.0f, 8.0f});
+}
+
 Assets::~Assets()
 {
     for (auto &[path, texture] : textures_) {
         glDeleteTextures(1, &texture.handle);
     }
+}
+
+const std::vector<const Texture *> &Assets::get_border() const {
+    return border_;
+}
+
+const Font &Assets::get_font() const {
+    return font_;
 }
 
 Texture *Assets::get_texture(const std::string &path, glm::ivec2 num_frames)
@@ -57,12 +73,8 @@ Texture *Assets::get_texture_array(const std::string &path, glm::ivec2 num_frame
 
     glPixelStorei(GL_UNPACK_ROW_LENGTH, w);
 
-    int z = 0;
     for (int i = 0; i < num_frames.x; i++) {
         for (int j = 0; j < num_frames.y; j++) {
-            int x = frame_width * i;
-            int y = frame_height * j;
-            x = y = 0;
             glTextureSubImage3D(
                 tex,
                 0, 0, 0,

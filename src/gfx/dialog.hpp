@@ -27,9 +27,7 @@ public:
 		int x, int y,
 		int w, int h,
 		bty::BoxColor color,
-		const std::array<const Texture*, 8> &border_textures,
-		const Font &font,
-		const Texture *arrow
+		bty::Assets &assets
 	);
 	/* clang-format on */
 	void set_position(int x, int y);

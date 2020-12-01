@@ -14,15 +14,17 @@ void TextBox::create(
 	int x, int y,
 	int w, int h,
 	bty::BoxColor color,
-	const std::array<const Texture*, 8> &border_textures,
-	const Font &font)
+	bty::Assets &assets
+)
 /* clang-format on */
 {
-	font_ = &font;
+	font_ = &assets.get_font();
 	lines_.clear();
 
+	auto &border = assets.get_border();
+
 	for (int i = 0; i < 8; i++) {
-		box_[i].set_texture(border_textures[i]);
+		box_[i].set_texture(border[i]);
 	}
 
 	set_colors(color);

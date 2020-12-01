@@ -8,7 +8,7 @@
 #include "shared-state.hpp"
 #include "bounty.hpp"
 
-void ViewCharacter::load(bty::Assets &assets, bty::BoxColor color, const bty::Font &font, int hero_id) {
+void ViewCharacter::load(bty::Assets &assets, bty::BoxColor color, int hero_id) {
     frame_.set_texture(assets.get_texture("frame/character.png"));
     frame_.set_position(0, 16);
 
@@ -35,6 +35,7 @@ void ViewCharacter::load(bty::Assets &assets, bty::BoxColor color, const bty::Fo
     rect_.set_size(208, 104);
     rect_.set_position(104, 24);
 
+    const auto &font = assets.get_font();
     for (int i = 0; i < 11; i++) {
         info_[i].set_font(font);
         info_[i].set_position(112, 40 + i * 8);

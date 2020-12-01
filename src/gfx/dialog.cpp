@@ -50,18 +50,16 @@ void Dialog::create(
 	int x, int y,
 	int w, int h,
 	bty::BoxColor color,
-	const std::array<const Texture*, 8> &border_textures,
-	const Font &font,
-	const Texture *arrow
+	bty::Assets &assets
 )
 /* clang-format on */
 {
-	TextBox::create(x, y, w, h, color, border_textures, font);
+	TextBox::create(x, y, w, h, color, assets);
 	TextBox::set_size(w, h);
 
 	options_.clear();
 	selection_ = 0;
-	arrow_.set_texture(arrow);
+	arrow_.set_texture(assets.get_texture("arrow.png", {2, 2}));
 
 	set_position(x, y);
 }

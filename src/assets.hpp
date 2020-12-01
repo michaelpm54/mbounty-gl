@@ -8,13 +8,17 @@
 
 #include "gfx/gl.hpp"
 #include "gfx/texture.hpp"
+#include "gfx/font.hpp"
 
 namespace bty {
 
 class Assets {
 public:
+    Assets();
     ~Assets();
 
+    const std::vector<const Texture *> &get_border() const;
+    const Font &get_font() const;
     Texture *get_texture(const std::string &path, glm::ivec2 num_frames = {1, 1});
 
 private:
@@ -23,6 +27,8 @@ private:
 
 private:
     std::unordered_map<std::string, Texture> textures_;
+    std::vector<const Texture *> border_;
+    Font font_;
 };
 
 }    // namespace bty

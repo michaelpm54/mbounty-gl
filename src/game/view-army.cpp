@@ -10,7 +10,7 @@
 #include "shared-state.hpp"
 #include "bounty.hpp"
 
-void ViewArmy::load(bty::Assets &assets, bty::BoxColor color, const bty::Font &font) {
+void ViewArmy::load(bty::Assets &assets, bty::BoxColor color) {
     for (int i = 0; i < 25; i++) {
         auto name = kUnits[i].name_plural;
         std::transform(name.begin(), name.end(), name.begin(),
@@ -21,6 +21,8 @@ void ViewArmy::load(bty::Assets &assets, bty::BoxColor color, const bty::Font &f
 
     frame_.set_texture(assets.get_texture("frame/army.png"));
     frame_.set_position(0, 16);
+
+    const auto &font = assets.get_font();
 
     for (int i = 0; i < 5; i++) {
         rects_[i].set_color(color);

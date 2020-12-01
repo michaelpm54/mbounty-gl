@@ -19,7 +19,7 @@ class ViewContinent {
 public:
     ViewContinent();
     ~ViewContinent();
-    void load(bty::Assets &assets, bty::BoxColor color, const bty::Font &font, const std::array<const bty::Texture *, 8> &border_textures);
+    void load(bty::Assets &assets, bty::BoxColor color);
     void draw(bty::Gfx &gfx, glm::mat4 &camera);
     void view(int x, int y, int continent, const unsigned char * const map);
     void update(float dt);

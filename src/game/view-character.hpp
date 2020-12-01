@@ -16,7 +16,7 @@ struct SharedState;
 
 class ViewCharacter {
 public:
-    void load(bty::Assets &assets, bty::BoxColor color, const bty::Font &font, int hero_id);
+    void load(bty::Assets &assets, bty::BoxColor color, int hero_id);
     void draw(bty::Gfx &gfx, glm::mat4 &camera);
     void view(const SharedState &state);
 

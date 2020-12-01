@@ -16,6 +16,7 @@
 #include "game/view-army.hpp"
 #include "game/view-character.hpp"
 #include "game/view-continent.hpp"
+#include "game/view-contract.hpp"
 
 namespace bty {
 class Assets;
@@ -48,6 +49,7 @@ private:
         ViewCharacter,
         ViewContinent,
         UseMagic,
+        ViewContract,
     };
     
     bty::SceneSwitcher *scene_switcher_;
@@ -72,6 +74,7 @@ private:
     ViewCharacter view_character_;
     ViewContinent view_continent_;
     bty::Dialog use_magic_;
+    ViewContract view_contract_;
 
     bty::Text *magic_spells_[14]{nullptr};
 
