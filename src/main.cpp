@@ -17,6 +17,8 @@ void APIENTRY glDebugOutput(GLenum source,
 
 int main(int argc, char *argv[])
 {
+    srand(time(nullptr));
+
     (void)argc;
     (void)argv;
 

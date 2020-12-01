@@ -97,6 +97,25 @@ bool Game::load(bty::Assets &assets)
     std::fill(state.visited_tiles.begin(), state.visited_tiles.end(), -1);
     update_visited_tiles();
 
+    astrology_.create(1, 18, 30, 9, color, assets);
+    budget_.create(1, 18, 30, 9, color, assets);
+
+    astrology_.add_line(1, 1, "");
+    astrology_.add_line(1, 3, "");
+
+    budget_.add_line(1, 1, "");
+    budget_.add_line(23, 1, "Budget");
+    budget_.add_line(1, 3, "");
+    budget_.add_line(1, 4, "");
+    budget_.add_line(1, 5, "");
+    budget_.add_line(1, 6, "");
+    budget_.add_line(1, 7, "");
+    budget_.add_line(15, 3, "");
+    budget_.add_line(15, 4, "");
+    budget_.add_line(15, 5, "");
+    budget_.add_line(15, 6, "");
+    budget_.add_line(15, 7, "");
+
     loaded_ = true;
     return success;
 }
@@ -145,6 +164,20 @@ void Game::draw(bty::Gfx &gfx)
         case GameState::ViewContract:
             hud_.draw(gfx, camera_);
             view_contract_.draw(gfx, camera_);
+            break;
+        case GameState::WeekPassed:
+            map_.draw(game_camera_);
+            gfx.draw_sprite(hero_, game_camera_);
+            hud_.draw(gfx, camera_);
+            if (week_passed_card_ == WeekPassedCard::Astrology) {
+                astrology_.draw(gfx, camera_);
+            }
+            else {
+                budget_.draw(gfx, camera_);
+            }
+            break;
+        case GameState::LoseGame:
+            hud_.draw(gfx, camera_);
             break;
         default:
             break;
@@ -260,6 +293,36 @@ void Game::key(int key, int scancode, int action, int mods)
                                     state_ = GameState::ViewContract;
                                     view_contract_.view(scene_switcher_->state().contract, false, hud_.get_contract());
                                     break;
+                                case 5:
+                                    /*
+                                        9 becomes 5
+                                        8 becomes 5
+                                        7 becomes 5
+                                        etc
+                                     */
+                                    if ((scene_switcher_->state().days % 5) != 0) {
+                                        scene_switcher_->state().days = (scene_switcher_->state().days / 5) * 5;
+                                    }
+                                    /*
+                                        100 becomes 95
+                                        65 becomes 60
+                                        10 becomes 5
+                                        etc
+                                    */
+                                    else {
+                                        scene_switcher_->state().days = ((scene_switcher_->state().days / 5) - 1) * 5;
+                                    }
+                                    if (scene_switcher_->state().days == 0) {
+                                        state_ = GameState::LoseGame;
+                                    }
+                                    else {
+                                        state_ = GameState::WeekPassed;
+                                        weeks_passed_++;
+                                        update_week_passed_cards();
+                                    }
+                                    clock_ = 0;
+                                    hud_.update_state();
+                                    break;
                                 default:
                                     break;
                             }
@@ -309,6 +372,45 @@ void Game::key(int key, int scancode, int action, int mods)
                             break;
                         case GLFW_KEY_DOWN:
                             use_magic_.next();
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case GameState::LoseGame:
+            switch (action)
+            {
+                case GLFW_PRESS:
+                    switch (key)
+                    {
+                        case GLFW_KEY_BACKSPACE:
+                            state_ = GameState::Unpaused;
+                            hud_.update_state();
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case GameState::WeekPassed:
+            switch (action)
+            {
+                case GLFW_PRESS:
+                    switch (key)
+                    {
+                        case GLFW_KEY_ENTER:
+                            if (week_passed_card_ == WeekPassedCard::Budget) {
+                                week_passed_card_ = WeekPassedCard::Astrology;
+                                state_ = GameState::Unpaused;
+                            }
+                            else {
+                                week_passed_card_ = WeekPassedCard::Budget;
+                            }
                             break;
                         default:
                             break;
@@ -400,6 +502,27 @@ void Game::update(float dt)
         }
         map_.update(dt);
         hero_.animate(dt);
+
+        if (clock_ >= 14) {
+            clock_ = 0;
+            int &days = scene_switcher_->state().days;
+            days--;
+            if (days == 0) {
+                state_ = GameState::LoseGame;
+            }
+            else {
+                days_passed_this_week++;
+                if (days_passed_this_week == 5) {
+                    days_passed_this_week = 0;
+                    state_ = GameState::WeekPassed;
+                    weeks_passed_++;
+                    update_week_passed_cards();
+                }
+                hud_.update_state();
+            }
+        }
+
+        clock_ += dt;
     }
     if (state_ == GameState::Paused
     || state_ == GameState::Unpaused
@@ -420,6 +543,9 @@ void Game::update(float dt)
     }
     else if (state_ == GameState::ViewContract) {
         view_contract_.update(dt);
+    }
+    else if (state_ == GameState::LoseGame) {
+        hud_.set_title("Technically you should have lost here.");
     }
 }
 
@@ -587,4 +713,72 @@ void Game::update_spells()
     magic_spells_[n]->set_string(fmt::format("{} Resurrect", spells[n]));
     n++;
     magic_spells_[n]->set_string(fmt::format("{} Turn Undead", spells[n]));
+}
+
+void Game::update_week_passed_cards()
+{
+    std::string week = fmt::format("Week #{}", weeks_passed_);
+
+    int unit = rand() % 25;
+
+    const auto &name = kUnits[unit].name_singular;
+
+    astrology_.set_line(0, week);
+    astrology_.set_line(1, fmt::format("Astrologers proclaim:\nWeek of the {}\n\nAll {} dwellings are\nrepopulated.", name, name));
+
+    auto &state = scene_switcher_->state();
+
+    std::string on_hand;
+    int gold = state.gold;
+    if (gold >= 1'000'000) {
+        on_hand = fmt::format("{}KK", gold / 1'000'000);
+    }
+    else if (gold >= 1'000) {
+        on_hand = fmt::format("{}K", gold / 1'000);
+    }
+    else {
+        on_hand = fmt::format("{}", gold);
+    }
+
+    int army_total = 0;
+
+    for (int i = 0; i < state.army_size; i++) {
+        if (state.army[i] == -1) {
+            budget_.set_line(7+i, "");
+        }
+        else {
+            const auto &unit = kUnits[state.army[i]];
+            int weekly_cost = unit.weekly_cost * state.army_counts[i];
+            army_total += weekly_cost;
+            // 14 slots
+            std::string cost = std::to_string(weekly_cost);
+            std::string spaces(14-(cost.size()+unit.name_plural.size()), ' ');
+            budget_.set_line(7+i, fmt::format("{}{}{}", unit.name_plural, spaces, cost));
+        }
+    }
+
+    int boat_cost = boat_rented_ ? 500 : 0;
+    gold -= army_total;
+    gold -= boat_cost;
+    gold += state.commission;
+
+    std::string balance;
+    if (gold >= 1'000'000) {
+        balance = fmt::format("{}KK", gold / 1'000'000);
+    }
+    else if (gold >= 1'000) {
+        balance = fmt::format("{}K", gold / 1'000);
+    }
+    else {
+        balance = fmt::format("{}", gold);
+    }
+
+    state.gold = gold;
+
+    budget_.set_line(0, week);
+    budget_.set_line(2, fmt::format("On Hand: {:>4}", on_hand));
+    budget_.set_line(3, fmt::format("Payment: {:>4}", state.commission));
+    budget_.set_line(4, fmt::format("Boat: {:>7}", boat_cost));
+    budget_.set_line(5, fmt::format("Army: {:>7}", army_total));
+    budget_.set_line(6, fmt::format("Balance: {:>4}", balance));
 }

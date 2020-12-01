@@ -40,6 +40,7 @@ private:
     void add_unit_to_army(int id, int count);
     void update_visited_tiles();
     void update_spells();
+    void update_week_passed_cards();
 
 private:
     enum class GameState {
@@ -50,6 +51,13 @@ private:
         ViewContinent,
         UseMagic,
         ViewContract,
+        LoseGame,
+        WeekPassed,
+    };
+
+    enum WeekPassedCard {
+        Astrology,
+        Budget,
     };
     
     bty::SceneSwitcher *scene_switcher_;
@@ -79,6 +87,16 @@ private:
     bty::Text *magic_spells_[14]{nullptr};
 
     bool view_continent_fog_{true};
+
+    float clock_{0};
+    int days_passed_this_week{0};
+    int weeks_passed_{0};
+
+    WeekPassedCard week_passed_card_{WeekPassedCard::Astrology};
+    bty::TextBox astrology_;
+    bty::TextBox budget_;
+
+    bool boat_rented_{false};
 };
 
 #endif    // BTY_GAME_GAME_HPP_

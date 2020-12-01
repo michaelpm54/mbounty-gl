@@ -21,6 +21,8 @@ struct SharedState {
     int y{0};
     std::vector<uint8_t> visited_tiles;
     int spells[14];
+    int gold{0};
+    int commission{0};
 };
 
 #endif // BTY_SHARED_STATE_HPP_
