@@ -33,7 +33,7 @@ public:
 	);
 	/* clang-format on */
 	void set_position(int x, int y);
-	void add_option(int x, int y, const std::string &str);
+	Text *add_option(int x, int y, const std::string &str);
 	void set_option(int index, std::string const &str);
 	void next();
 	void prev();
@@ -47,7 +47,7 @@ private:
 	void update_arrow();
 
 private:
-	std::vector<Text> options_;
+	std::deque<Text> options_;
 	std::unordered_set<int> disabled_options_;
 	Sprite arrow_;
 	int selection_{0};

@@ -66,7 +66,7 @@ void Dialog::create(
 	set_position(x, y);
 }
 
-void Dialog::add_option(int x, int y, const std::string &str)
+Text *Dialog::add_option(int x, int y, const std::string &str)
 {
 	Text text;
 	text.create(x_ + x, y_ + y, str, *font_);
@@ -74,6 +74,8 @@ void Dialog::add_option(int x, int y, const std::string &str)
 	options_.push_back(std::move(text));
 
 	set_selection(0);
+
+	return &options_.back();
 }
 
 void Dialog::set_option(int index, std::string const &str)

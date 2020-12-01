@@ -38,6 +38,7 @@ private:
     void collide(Tile &tile);
     void add_unit_to_army(int id, int count);
     void update_visited_tiles();
+    void update_spells();
 
 private:
     enum class GameState {
@@ -46,6 +47,7 @@ private:
         ViewArmy,
         ViewCharacter,
         ViewContinent,
+        UseMagic,
     };
     
     bty::SceneSwitcher *scene_switcher_;
@@ -69,6 +71,9 @@ private:
     ViewArmy view_army_;
     ViewCharacter view_character_;
     ViewContinent view_continent_;
+    bty::Dialog use_magic_;
+
+    bty::Text *magic_spells_[14]{nullptr};
 
     bool view_continent_fog_{true};
 };

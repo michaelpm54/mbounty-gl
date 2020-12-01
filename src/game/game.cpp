@@ -57,6 +57,31 @@ bool Game::load(bty::Assets &assets)
     pause_menu_.add_option(3, 11, "Game controls");
     pause_menu_.add_option(3, 13, "Get password");
 
+    use_magic_.create(
+		6, 4,
+		20, 22,
+		bty::get_box_color(difficulty),
+		border_textures,
+		font_,
+		assets.get_texture("arrow.png", {2, 2})
+	);
+    use_magic_.add_line(1, 1, "Adventuring Spells");
+    magic_spells_[0] = use_magic_.add_option(4, 3, "");
+    magic_spells_[1] = use_magic_.add_option(4, 4, "");
+    magic_spells_[2] = use_magic_.add_option(4, 5, "");
+    magic_spells_[3] = use_magic_.add_option(4, 6, "");
+    magic_spells_[4] = use_magic_.add_option(4, 7, "");
+    magic_spells_[5] = use_magic_.add_option(4, 8, "");
+    magic_spells_[6] = use_magic_.add_option(4, 9, "");
+    use_magic_.add_line(3, 12, "Combat Spells");
+    magic_spells_[7] = use_magic_.add_option(4, 14, "");
+    magic_spells_[8] = use_magic_.add_option(4, 15, "");
+    magic_spells_[9] = use_magic_.add_option(4, 16, "");
+    magic_spells_[10] = use_magic_.add_option(4, 17, "");
+    magic_spells_[11] = use_magic_.add_option(4, 18, "");
+    magic_spells_[12] = use_magic_.add_option(4, 19, "");
+    magic_spells_[13] = use_magic_.add_option(4, 20, "");
+
     add_unit_to_army(12, 10);
     add_unit_to_army(14, 5);
     add_unit_to_army(0, 40);
@@ -83,7 +108,7 @@ bool Game::load(bty::Assets &assets)
 void Game::update_camera()
 {
     glm::vec2 cam_centre = hero_.get_center();
-    camera_pos_ = {cam_centre.x - 140, cam_centre.y - 120, 0.0f};
+    camera_pos_ = {cam_centre.x - 120, cam_centre.y - 120, 0.0f};
     game_camera_ = camera_ * glm::translate(-camera_pos_);
     // game_camera_ = zoom_;
     // game_camera_ = camera_;
@@ -115,6 +140,11 @@ void Game::draw(bty::Gfx &gfx)
             map_.draw(game_camera_);
             hud_.draw(gfx, camera_);
             view_continent_.draw(gfx, camera_);
+            break;
+        case GameState::UseMagic:
+            map_.draw(game_camera_);
+            hud_.draw(gfx, camera_);
+            use_magic_.draw(gfx, camera_);
             break;
         default:
             break;
@@ -222,6 +252,10 @@ void Game::key(int key, int scancode, int action, int mods)
                                         view_continent_fog_ ? scene_switcher_->state().visited_tiles.data() : map_.get_data()
                                     );
                                     break;
+                                case 3:
+                                    state_ = GameState::UseMagic;
+                                    update_spells();
+                                    break;
                                 default:
                                     break;
                             }
@@ -246,6 +280,29 @@ void Game::key(int key, int scancode, int action, int mods)
                         case GLFW_KEY_BACKSPACE: [[fallthrough]];
                         case GLFW_KEY_ENTER:
                             state_ = GameState::Unpaused;
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case GameState::UseMagic:
+            switch (action)
+            {
+                case GLFW_PRESS:
+                    switch (key)
+                    {
+                        case GLFW_KEY_BACKSPACE:
+                            state_ = GameState::Unpaused;
+                            break;
+                        case GLFW_KEY_UP:
+                            use_magic_.prev();
+                            break;
+                        case GLFW_KEY_DOWN:
+                            use_magic_.next();
                             break;
                         default:
                             break;
@@ -338,15 +395,18 @@ void Game::update(float dt)
         map_.update(dt);
         hero_.animate(dt);
     }
-    if (state_ == GameState::Paused || state_ == GameState::Unpaused || state_ == GameState::ViewContinent) {
+    if (state_ == GameState::Paused || state_ == GameState::Unpaused || state_ == GameState::ViewContinent || state_ == GameState::UseMagic) {
         hud_.update(dt);
         pause_menu_.animate(dt);
     }
-    else if (state_ == GameState::ViewArmy) {
+    if (state_ == GameState::ViewArmy) {
         view_army_.update(dt);
     }
-    if (state_ == GameState::ViewContinent) {
+    else if (state_ == GameState::ViewContinent) {
         view_continent_.update(dt);
+    }
+    else if (state_ == GameState::UseMagic) {
+        use_magic_.animate(dt);
     }
 }
 
@@ -466,4 +526,22 @@ void Game::update_visited_tiles() {
             visited[i] = tiles[i];
         }
     }
+}
+
+void Game::update_spells()
+{
+    magic_spells_[0]->set_string(fmt::format("{} Bridge", 0));
+    magic_spells_[1]->set_string(fmt::format("{} Time Stop", 0));
+    magic_spells_[2]->set_string(fmt::format("{} Find Villain", 0));
+    magic_spells_[3]->set_string(fmt::format("{} Castle Gate", 0));
+    magic_spells_[4]->set_string(fmt::format("{} Town Gate", 0));
+    magic_spells_[5]->set_string(fmt::format("{} Instant Army", 0));
+    magic_spells_[6]->set_string(fmt::format("{} Raise Control", 0));
+    magic_spells_[7]->set_string(fmt::format("{} Clone", 0));
+    magic_spells_[8]->set_string(fmt::format("{} Teleport", 0));
+    magic_spells_[9]->set_string(fmt::format("{} Fireball", 0));
+    magic_spells_[10]->set_string(fmt::format("{} Lightning", 0));
+    magic_spells_[11]->set_string(fmt::format("{} Freeze", 0));
+    magic_spells_[12]->set_string(fmt::format("{} Resurrect", 0));
+    magic_spells_[13]->set_string(fmt::format("{} Turn Undead", 0));
 }

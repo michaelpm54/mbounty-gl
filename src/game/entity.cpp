@@ -111,7 +111,7 @@ bool Entity::can_move(int id)
 
 void Entity::move_to_tile(const Tile &tile) {
     tile_ = tile;
-    set_position({tile.tx * 48.0f, tile.ty * 40.0f});
+    set_position({tile.tx * 48.0f + 0.0f, tile.ty * 40.0f - 8.0f});
 }
 
 void Entity::set_tile_info(const Tile &tile) {
