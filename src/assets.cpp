@@ -57,7 +57,7 @@ Texture *Assets::get_texture_array(const std::string &path, glm::ivec2 num_frame
         return nullptr;
     }
     else {
-        spdlog::debug("Texture {} dimensions {}x{} components {}. Frames: {}x{}", path, w, h, c, num_frames.x, num_frames.y);
+        // spdlog::debug("Texture {} dimensions {}x{} components {}. Frames: {}x{}", path, w, h, c, num_frames.x, num_frames.y);
     }
 
     GLenum iformat = c == 3 ? GL_RGB8 : GL_RGBA8;
@@ -116,7 +116,7 @@ Texture *Assets::get_single_texture(const std::string &path) {
         return nullptr;
     }
     else {
-        spdlog::debug("Texture {} dimensions {}x{} components {}", path, w, h, c);
+        // spdlog::debug("Texture {} dimensions {}x{} components {}", path, w, h, c);
     }
 
     GLenum iformat = c == 3 ? GL_RGB8 : GL_RGBA8;

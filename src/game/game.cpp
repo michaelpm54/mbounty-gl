@@ -258,7 +258,7 @@ void Game::key(int key, int scancode, int action, int mods)
                                     break;
                                 case 4:
                                     state_ = GameState::ViewContract;
-                                    view_contract_.view(scene_switcher_->state().contract, false);
+                                    view_contract_.view(scene_switcher_->state().contract, false, hud_.get_contract());
                                     break;
                                 default:
                                     break;
@@ -401,7 +401,11 @@ void Game::update(float dt)
         map_.update(dt);
         hero_.animate(dt);
     }
-    if (state_ == GameState::Paused || state_ == GameState::Unpaused || state_ == GameState::ViewContinent || state_ == GameState::UseMagic) {
+    if (state_ == GameState::Paused
+    || state_ == GameState::Unpaused
+    || state_ == GameState::ViewContinent
+    || state_ == GameState::UseMagic
+    || state_ == GameState::ViewContract) {
         hud_.update(dt);
         pause_menu_.animate(dt);
     }

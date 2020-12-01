@@ -76,3 +76,7 @@ void Hud::set_title(const std::string &msg) {
     name_.set_string(msg);
     days_.set_string("");
 }
+
+bty::Sprite *Hud::get_contract() {
+    return &contract_;
+}

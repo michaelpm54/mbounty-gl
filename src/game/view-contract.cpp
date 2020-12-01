@@ -18,10 +18,17 @@ void ViewContract::draw(bty::Gfx &gfx, glm::mat4 &camera) {
     if (no_contract_) {
         gfx.draw_text(no_contract_text_, camera);
     }
+    else if (contract_sprite_) {
+        auto pos = contract_sprite_->get_position();
+        contract_sprite_->set_position(104, 32);
+        gfx.draw_sprite(*contract_sprite_, camera);
+        contract_sprite_->set_position(pos);
+    }
 }
 
-void ViewContract::view(int contract, bool known_location) {
+void ViewContract::view(int contract, bool known_location, bty::Sprite *contract_sprite) {
     no_contract_ = contract == 17;
+    contract_sprite_ = contract_sprite;
 }
 
 void ViewContract::update(float dt) {

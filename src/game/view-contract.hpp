@@ -19,13 +19,14 @@ class ViewContract {
 public:
     void load(bty::Assets &assets, bty::BoxColor color);
     void draw(bty::Gfx &gfx, glm::mat4 &camera);
-    void view(int contract, bool known_location);
+    void view(int contract, bool known_location, bty::Sprite *contract_sprite);
     void update(float dt);
 
 private:
     bty::TextBox box_;
     bty::Text no_contract_text_;
     bool no_contract_{false};
+    bty::Sprite *contract_sprite_{nullptr};
 };
 
 #endif // BTY_GAME_VIEW_CONTRACT_HPP_

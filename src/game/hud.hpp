@@ -24,6 +24,7 @@ public:
     void draw(bty::Gfx &gfx, glm::mat4 &camera);
     void update(float dt);
     void update_state();
+    bty::Sprite *get_contract();
 
     /* Temporarily set the text in the box. Intended to be cleared ASAP. */
     /* Useful for an alert or message. */
