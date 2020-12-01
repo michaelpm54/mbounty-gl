@@ -3,7 +3,7 @@
 
 #include <array>
 #include <string>
-#include <vector>
+#include <deque>
 
 #include <glm/vec4.hpp>
 
@@ -32,7 +32,7 @@ public:
 	/* clang-format on */
 
 	void draw(Gfx &gfx, glm::mat4 &camera);
-	void add_line(int x, int y, std::string const &str);
+	Text *add_line(int x, int y, std::string const &str);
 	void set_line(int i, std::string const &str);
 
 protected:
@@ -42,7 +42,7 @@ protected:
 
 private:
 	std::array<Sprite, 8> box_;
-	std::vector<Text> lines_;
+	std::deque<Text> lines_;
 	Rect background_;
 	Rect background_outline_;
 	float width_;

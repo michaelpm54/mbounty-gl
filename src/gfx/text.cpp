@@ -12,6 +12,9 @@ Text::~Text()
     if (vao_ != GL_NONE) {
         glDeleteVertexArrays(1, &vao_);
     }
+    if (vbo_ != GL_NONE) {
+        glDeleteBuffers(1, &vbo_);
+    }
 }
 
 Text::Text(Text &&other)
@@ -22,9 +25,11 @@ Text::Text(Text &&other)
     font_ = other.font_;
 
     /* Move constructor to prevent automatic destruction
-        of the VAO. */
+        of the OpenGL resources. */
     vao_ = other.vao_;
+    vbo_ = other.vbo_;
     other.vao_ = GL_NONE;
+    other.vbo_ = GL_NONE;
 }
 
 void Text::create(int x, int y, const std::string &string, const Font &font)
@@ -89,22 +94,19 @@ void Text::set_string(const std::string &string)
 
     glCreateVertexArrays(1, &vao_);
 
-    GLuint vbo;
-    glGenBuffers(1, &vbo);
+    glGenBuffers(1, &vbo_);
 
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo_);
     glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(vertices[0]), vertices.data(), GL_STATIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, GL_NONE);
 
     glBindVertexArray(vao_);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo_);
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 4, nullptr);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 4, (const void*)(sizeof(GLfloat) * 2));
     glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(1);
     glBindVertexArray(GL_NONE);
-
-    glDeleteBuffers(1, &vbo);
 }
 
 const Font *Text::get_font() const

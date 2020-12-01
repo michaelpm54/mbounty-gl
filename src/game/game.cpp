@@ -69,8 +69,12 @@ bool Game::load(bty::Assets &assets)
     map_.load(assets);
     hero_.load(assets);
 
-    hero_.move_to_tile(map_.get_tile(11, 57));
+    hero_.move_to_tile(map_.get_tile(11, 58));
     update_camera();
+
+    scene_switcher_->state().visited_tiles.resize(4096);
+    std::fill(scene_switcher_->state().visited_tiles.begin(), scene_switcher_->state().visited_tiles.end(), -1);
+    update_visited_tiles();
 
     loaded_ = true;
     return success;
@@ -211,7 +215,12 @@ void Game::key(int key, int scancode, int action, int mods)
                                     break;
                                 case 2:
                                     state_ = GameState::ViewContinent;
-                                    view_continent_.view(scene_switcher_->state());
+                                    view_continent_.view(
+                                        hero_.get_tile().tx,
+                                        hero_.get_tile().ty,
+                                        scene_switcher_->state().continent,
+                                        view_continent_fog_ ? scene_switcher_->state().visited_tiles.data() : map_.get_data()
+                                    );
                                     break;
                                 default:
                                     break;
@@ -248,6 +257,16 @@ void Game::key(int key, int scancode, int action, int mods)
             break;
         default:
             break;
+    }
+
+    if (state_ == GameState::ViewContinent && action == GLFW_PRESS && key == GLFW_KEY_F) {
+        view_continent_fog_ = !view_continent_fog_;
+        view_continent_.view(
+            hero_.get_tile().tx,
+            hero_.get_tile().ty,
+            scene_switcher_->state().continent,
+            view_continent_fog_ ? scene_switcher_->state().visited_tiles.data() : map_.get_data()
+        );
     }
 }
 
@@ -307,6 +326,7 @@ void Game::update(float dt)
                     if (hero_.get_mount() == Mount::Boat && manifold.new_tile.id == Grass) {
                         hero_.set_mount(Mount::Walk);
                     }
+                    update_visited_tiles();
                 }
             }
 
@@ -325,7 +345,7 @@ void Game::update(float dt)
     else if (state_ == GameState::ViewArmy) {
         view_army_.update(dt);
     }
-    else if (state_ == GameState::ViewContinent) {
+    if (state_ == GameState::ViewContinent) {
         view_continent_.update(dt);
     }
 }
@@ -413,5 +433,37 @@ void Game::add_unit_to_army(int id, int count) {
         }
         
         scene_switcher_->state().army_morales[i] = my_morale;
+    }
+}
+
+void Game::update_visited_tiles() {
+    auto tile = hero_.get_tile();
+    auto tile_index = tile.tx + tile.ty * 64;
+    auto *visited = scene_switcher_->state().visited_tiles.data();
+    auto *tiles = map_.get_data();
+
+    visited[tile_index] = tile.id;
+    
+    int initial_x = tile.tx;
+    int initial_y = tile.ty;
+
+    int start_x = initial_x - 2;
+    int start_y = initial_y - 2;
+    
+    int end_x = initial_x + 2;
+    int end_y = initial_y + 2;
+
+    for (int x = start_x; x <= end_x; x++) {
+        for (int y = start_y; y <= end_y; y++) {
+            int i = x + y * 64;
+            if (i < 0 || i > 4095) {
+                continue;
+            }
+            int new_y = i / 64;
+            if (new_y != y) {
+                continue;
+            }
+            visited[i] = tiles[i];
+        }
     }
 }

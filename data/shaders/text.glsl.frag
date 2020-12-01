@@ -1,6 +1,6 @@
 #version 460
 
-uniform sampler2DArray image;
+uniform sampler2D image;
 
 in vec2 texture_coord;
 
@@ -8,5 +8,5 @@ out vec4 colour;
 
 void main()
 {
-    colour = texture(image, vec3(texture_coord, 0));
+    colour = texture(image, texture_coord);
 }

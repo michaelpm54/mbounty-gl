@@ -23,6 +23,7 @@ Gfx::Gfx()
 Gfx::~Gfx()
 {
     glDeleteProgram(sprite_shader_);
+    glDeleteProgram(sprite_single_texture_shader_);
     glDeleteProgram(rect_shader_);
     glDeleteProgram(text_shader_);
     glDeleteVertexArrays(1, &quad_vao_);
@@ -35,16 +36,32 @@ void Gfx::clear()
 
 void Gfx::draw_sprite(Sprite &sprite, glm::mat4 &camera)
 {
-    glProgramUniformMatrix4fv(sprite_shader_, locations_[Locations::SpriteTransform], 1, GL_FALSE, glm::value_ptr(sprite.get_transform()));
-    glProgramUniformMatrix4fv(sprite_shader_, locations_[Locations::SpriteCamera], 1, GL_FALSE, glm::value_ptr(camera));
-    glProgramUniform1i(sprite_shader_, locations_[Locations::SpriteTexture], 0);
-    glProgramUniform1i(sprite_shader_, locations_[Locations::SpriteFrame], sprite.get_frame());
-    glProgramUniform1i(sprite_shader_, locations_[Locations::SpriteFlip], static_cast<int>(sprite.get_flip()));
+    const Texture *texture = sprite.get_texture();
+    
+    if (texture) {
+        if (texture->num_frames_x > 1 || texture->num_frames_y > 1) {
+            glProgramUniformMatrix4fv(sprite_shader_, locations_[Locations::SpriteTransform], 1, GL_FALSE, glm::value_ptr(sprite.get_transform()));
+            glProgramUniformMatrix4fv(sprite_shader_, locations_[Locations::SpriteCamera], 1, GL_FALSE, glm::value_ptr(camera));
+            glProgramUniform1i(sprite_shader_, locations_[Locations::SpriteTexture], 0);
+            glProgramUniform1i(sprite_shader_, locations_[Locations::SpriteFrame], sprite.get_frame());
+            glProgramUniform1i(sprite_shader_, locations_[Locations::SpriteFlip], static_cast<int>(sprite.get_flip()));
+            glUseProgram(sprite_shader_);
+            glBindTextureUnit(0, texture->handle);
+        }
+        else {
+            glProgramUniformMatrix4fv(sprite_single_texture_shader_, locations_[Locations::SpriteSingleTextureTransform], 1, GL_FALSE, glm::value_ptr(sprite.get_transform()));
+            glProgramUniformMatrix4fv(sprite_single_texture_shader_, locations_[Locations::SpriteSingleTextureCamera], 1, GL_FALSE, glm::value_ptr(camera));
+            glProgramUniform1i(sprite_single_texture_shader_, locations_[Locations::SpriteSingleTextureTexture], 0);
+            glProgramUniform1i(sprite_single_texture_shader_, locations_[Locations::SpriteSingleTextureFlip], static_cast<int>(sprite.get_flip()));
+            glUseProgram(sprite_single_texture_shader_);
+            glBindTextureUnit(0, texture->handle);
+        }
+    }
+    else {
+        glBindTextureUnit(0, GL_NONE);
+    }
 
-    glUseProgram(sprite_shader_);
     glBindVertexArray(quad_vao_);
-    if (sprite.get_texture())
-        glBindTextureUnit(0, sprite.get_texture()->handle);
     glDrawArrays(GL_TRIANGLES, 0, 6);
     glBindVertexArray(GL_NONE);
     glUseProgram(GL_NONE);
@@ -85,6 +102,10 @@ void Gfx::get_uniform_locations()
     locations_[Locations::SpriteTexture] = glGetUniformLocation(sprite_shader_, "image");
     locations_[Locations::SpriteFrame] = glGetUniformLocation(sprite_shader_, "frame");
     locations_[Locations::SpriteFlip] = glGetUniformLocation(sprite_shader_, "flip");
+    locations_[Locations::SpriteSingleTextureTransform] = glGetUniformLocation(sprite_single_texture_shader_, "transform");
+    locations_[Locations::SpriteSingleTextureCamera] = glGetUniformLocation(sprite_single_texture_shader_, "camera");
+    locations_[Locations::SpriteSingleTextureTexture] = glGetUniformLocation(sprite_single_texture_shader_, "image");
+    locations_[Locations::SpriteSingleTextureFlip] = glGetUniformLocation(sprite_single_texture_shader_, "flip");
     locations_[Locations::RectTransform] = glGetUniformLocation(rect_shader_, "transform");
     locations_[Locations::RectCamera] = glGetUniformLocation(rect_shader_, "camera");
     locations_[Locations::RectColor] = glGetUniformLocation(rect_shader_, "fill_color");
@@ -103,6 +124,11 @@ void Gfx::load_shaders() {
     sprite_shader_ = load_shader("data/shaders/sprite.glsl.vert", "data/shaders/sprite.glsl.frag");
     if (sprite_shader_ == GL_NONE) {
         spdlog::warn("Gfx::load_shaders: Failed to load sprite shader");
+    }
+
+    sprite_single_texture_shader_ = load_shader("data/shaders/sprite_single_texture.glsl.vert", "data/shaders/sprite_single_texture.glsl.frag");
+    if (sprite_single_texture_shader_ == GL_NONE) {
+        spdlog::warn("Gfx::load_shaders: Failed to load sprite_single_texture_shader_");
     }
 
     rect_shader_ = load_shader("data/shaders/rect.glsl.vert", "data/shaders/rect.glsl.frag");

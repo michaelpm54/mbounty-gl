@@ -25,9 +25,11 @@ public:
     Tile get_tile(int tx, int ty) const;
     Tile get_tile(float x, float y) const;
     Tile get_tile(glm::vec2 pos) const;
+    const unsigned char *get_data() const;
 
 private:
     int num_vertices_{0};
+    GLuint vbo_{GL_NONE};
     GLuint vao_{GL_NONE};
     GLuint program_{GL_NONE};
     GLint camera_loc_{-1};

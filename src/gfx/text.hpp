@@ -25,6 +25,7 @@ public:
 
 private:
     const Font *font_{nullptr};
+    GLuint vbo_{GL_NONE};
     GLuint vao_{GL_NONE};
     GLuint num_vertices_{0};
     std::string string_;

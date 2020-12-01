@@ -13,6 +13,7 @@ Map::~Map()
     delete[] data_;
     glDeleteVertexArrays(1, &vao_);
     glDeleteProgram(program_);
+    glDeleteBuffers(1, &vbo_);
 }
 
 void Map::load(bty::Assets &assets) {
@@ -72,20 +73,17 @@ void Map::load(bty::Assets &assets) {
         }
     }
 
-    GLuint map_vbo;
-    glCreateBuffers(1, &map_vbo);
-    glNamedBufferStorage(map_vbo, 4096 * 6 * sizeof(Vertex), vertices.data(), 0);
+    glCreateBuffers(1, &vbo_);
+    glNamedBufferStorage(vbo_, 4096 * 6 * sizeof(Vertex), vertices.data(), 0);
 
     glCreateVertexArrays(1, &vao_);
     glBindVertexArray(vao_);
-    glBindBuffer(GL_ARRAY_BUFFER, map_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo_);
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 4, nullptr);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 4, (const void *)(2 * sizeof(GLfloat)));
     glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(1);
     glBindVertexArray(GL_NONE);
-
-    glDeleteBuffers(1, &map_vbo);
 
     program_ = bty::load_shader("data/shaders/map.glsl.vert", "data/shaders/map.glsl.frag");
     if (program_ == GL_NONE) {
@@ -138,4 +136,8 @@ Tile Map::get_tile(float x, float y) const
 Tile Map::get_tile(glm::vec2 pos) const
 {
     return get_tile(pos.x, pos.y);
+}
+
+const unsigned char *Map::get_data() const {
+    return data_;
 }

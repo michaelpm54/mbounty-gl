@@ -80,6 +80,13 @@ static constexpr glm::vec4 kBoxAccentVecs[5][2] = {
     },
 };
 
+char const *const kContinents[4] = {
+	"Continentia",
+	"Forestria",
+	"Archipelia",
+	"Saharia",
+};
+
 namespace bty {
 
 glm::vec4 get_color(BoxColor color, bool outline) {

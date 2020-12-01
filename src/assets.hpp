@@ -18,7 +18,7 @@ public:
     Texture *get_texture(const std::string &path, glm::ivec2 num_frames = {1, 1});
 
 private:
-    // Texture *get_single_texture(const std::string &path);
+    Texture *get_single_texture(const std::string &path);
     Texture *get_texture_array(const std::string &path, glm::ivec2 num_frames);
 
 private:

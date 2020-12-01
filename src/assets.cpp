@@ -21,7 +21,11 @@ Texture *Assets::get_texture(const std::string &path, glm::ivec2 num_frames)
         return &textures_[texture_path];
     }
 
-    return get_texture_array(texture_path, num_frames);
+    if (num_frames.x > 1 || num_frames.y > 1) {
+        return get_texture_array(texture_path, num_frames);
+    }
+
+    return get_single_texture(texture_path);
 }
 
 Texture *Assets::get_texture_array(const std::string &path, glm::ivec2 num_frames) {
@@ -76,8 +80,6 @@ Texture *Assets::get_texture_array(const std::string &path, glm::ivec2 num_frame
 
     glTextureParameterf(tex, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
     glTextureParameterf(tex, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTextureParameterf(tex, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTextureParameterf(tex, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTextureParameterf(tex, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTextureParameterf(tex, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTextureParameterf(tex, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
@@ -89,11 +91,7 @@ Texture *Assets::get_texture_array(const std::string &path, glm::ivec2 num_frame
     return &textures_[path];
 }
 
-/*
 Texture *Assets::get_single_texture(const std::string &path) {
-    GLuint tex;
-    glCreateTextures(GL_TEXTURE_2D, 1, &tex);
-
     int c;
     int w;
     int h;
@@ -112,6 +110,11 @@ Texture *Assets::get_single_texture(const std::string &path) {
     GLenum iformat = c == 3 ? GL_RGB8 : GL_RGBA8;
     GLenum format = c == 3 ? GL_RGB : GL_RGBA;
 
+    GLuint tex;
+    glCreateTextures(GL_TEXTURE_2D, 1, &tex);
+
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, w);
+
     glTextureParameteri(tex, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTextureParameteri(tex, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTextureParameteri(tex, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -120,14 +123,11 @@ Texture *Assets::get_single_texture(const std::string &path) {
     glTextureStorage2D(tex, 1, iformat, w, h);
     glTextureSubImage2D(tex, 0, 0, 0, w, h, format, GL_UNSIGNED_BYTE, data);
 
-    glGenerateTextureMipmap(tex);
-
     stbi_image_free(data);
 
-    textures_[path] = {w, h, tex, 1, 1};
+    textures_[path] = {w, h, tex, 1, 1, w, h};
 
     return &textures_[path];
 }
-*/
 
 }    // namespace bty

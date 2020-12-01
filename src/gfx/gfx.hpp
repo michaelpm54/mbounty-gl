@@ -13,6 +13,10 @@ enum Locations {
     SpriteTexture,
     SpriteFrame,
     SpriteFlip,
+    SpriteSingleTextureTransform,
+    SpriteSingleTextureCamera,
+    SpriteSingleTextureTexture,
+    SpriteSingleTextureFlip,
     RectTransform,
     RectCamera,
     RectColor,
@@ -43,6 +47,7 @@ private:
 
 private:
     GLuint sprite_shader_;
+    GLuint sprite_single_texture_shader_;
     GLuint rect_shader_;
     GLuint text_shader_;
     GLuint quad_vao_;

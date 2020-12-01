@@ -83,16 +83,18 @@ void TextBox::draw(Gfx &gfx, glm::mat4 &camera)
 	}
 }
 
-void TextBox::add_line(int x, int y, std::string const &str)
+Text *TextBox::add_line(int x, int y, std::string const &str)
 {
 	if (!font_) {
 		spdlog::warn("TextBox::add_line: no font");
-		return;
+		return nullptr;
 	}
 
 	Text text;
 	text.create(x_ + x, y_ + y, str, *font_);
 	lines_.push_back(std::move(text));
+
+	return &lines_.back();
 }
 
 void TextBox::set_line(int i, std::string const &str)

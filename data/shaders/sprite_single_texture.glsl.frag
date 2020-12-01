@@ -1,7 +1,6 @@
 #version 460
 
-uniform sampler2DArray image;
-uniform int frame;
+uniform sampler2D image;
 uniform bool flip;
 
 in vec2 texture_coord;
@@ -14,5 +13,5 @@ void main()
     if (flip) {
         uv.x = 1 - uv.x;
     }
-    colour = texture(image, vec3(uv, frame));
+    colour = texture(image, uv);
 }
