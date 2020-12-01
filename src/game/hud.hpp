@@ -25,6 +25,10 @@ public:
     void update(float dt);
     void update_state();
 
+    /* Temporarily set the text in the box. Intended to be cleared ASAP. */
+    /* Useful for an alert or message. */
+    void set_title(const std::string &msg);
+
 private:
     SharedState *state_{nullptr};
     const bty::Font *font_{nullptr};

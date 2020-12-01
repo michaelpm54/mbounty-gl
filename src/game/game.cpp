@@ -30,12 +30,18 @@ bool Game::load(bty::Assets &assets)
         border_textures[i] = assets.get_texture(filename);
     }
 
-    int difficulty = scene_switcher_->state().difficulty_level;
+    auto &state = scene_switcher_->state();
 
-    scene_switcher_->state().days = kDays[difficulty];
+    for (int i = 0; i < 14; i++) {
+        state.spells[i] = 0;
+    }
+
+    int difficulty = state.difficulty_level;
+
+    state.days = kDays[difficulty];
 
     font_.load_from_texture(assets.get_texture("fonts/genesis_custom.png"), {8.0f, 8.0f});
-    hud_.load(assets, font_, scene_switcher_->state());
+    hud_.load(assets, font_, state);
 
     pause_menu_.create(
 		3, 7,
@@ -88,7 +94,7 @@ bool Game::load(bty::Assets &assets)
 
     auto color = bty::get_box_color(difficulty);
     view_army_.load(assets, color, font_);
-    view_character_.load(assets, color, font_, scene_switcher_->state().hero_id);
+    view_character_.load(assets, color, font_, state.hero_id);
     view_continent_.load(assets, color, font_, border_textures);
 
     map_.load(assets);
@@ -97,8 +103,8 @@ bool Game::load(bty::Assets &assets)
     hero_.move_to_tile(map_.get_tile(11, 58));
     update_camera();
 
-    scene_switcher_->state().visited_tiles.resize(4096);
-    std::fill(scene_switcher_->state().visited_tiles.begin(), scene_switcher_->state().visited_tiles.end(), -1);
+    state.visited_tiles.resize(4096);
+    std::fill(state.visited_tiles.begin(), state.visited_tiles.end(), -1);
     update_visited_tiles();
 
     loaded_ = true;
@@ -297,6 +303,7 @@ void Game::key(int key, int scancode, int action, int mods)
                     {
                         case GLFW_KEY_BACKSPACE:
                             state_ = GameState::Unpaused;
+                            hud_.update_state();
                             break;
                         case GLFW_KEY_UP:
                             use_magic_.prev();
@@ -530,18 +537,48 @@ void Game::update_visited_tiles() {
 
 void Game::update_spells()
 {
-    magic_spells_[0]->set_string(fmt::format("{} Bridge", 0));
-    magic_spells_[1]->set_string(fmt::format("{} Time Stop", 0));
-    magic_spells_[2]->set_string(fmt::format("{} Find Villain", 0));
-    magic_spells_[3]->set_string(fmt::format("{} Castle Gate", 0));
-    magic_spells_[4]->set_string(fmt::format("{} Town Gate", 0));
-    magic_spells_[5]->set_string(fmt::format("{} Instant Army", 0));
-    magic_spells_[6]->set_string(fmt::format("{} Raise Control", 0));
-    magic_spells_[7]->set_string(fmt::format("{} Clone", 0));
-    magic_spells_[8]->set_string(fmt::format("{} Teleport", 0));
-    magic_spells_[9]->set_string(fmt::format("{} Fireball", 0));
-    magic_spells_[10]->set_string(fmt::format("{} Lightning", 0));
-    magic_spells_[11]->set_string(fmt::format("{} Freeze", 0));
-    magic_spells_[12]->set_string(fmt::format("{} Resurrect", 0));
-    magic_spells_[13]->set_string(fmt::format("{} Turn Undead", 0));
+    bool no_spells = true;
+    int *spells = scene_switcher_->state().spells;
+    for (int i = 0; i < 14; i++) {
+        if (spells[i] == 0) {
+            use_magic_.disable_option(i);
+        }
+        else {
+            no_spells = false;
+        }
+    }
+
+    if (no_spells) {
+        hud_.set_title("You have no Adventuring spell to cast!");
+    }
+
+    int n = 0;
+
+    magic_spells_[n]->set_string(fmt::format("{} Bridge", spells[n]));
+    n++;
+    magic_spells_[n]->set_string(fmt::format("{} Time Stop", spells[n]));
+    n++;
+    magic_spells_[n]->set_string(fmt::format("{} Find Villain", spells[n]));
+    n++;
+    magic_spells_[n]->set_string(fmt::format("{} Castle Gate", spells[n]));
+    n++;
+    magic_spells_[n]->set_string(fmt::format("{} Town Gate", spells[n]));
+    n++;
+    magic_spells_[n]->set_string(fmt::format("{} Instant Army", spells[n]));
+    n++;
+    magic_spells_[n]->set_string(fmt::format("{} Raise Control", spells[n]));
+    n++;
+    magic_spells_[n]->set_string(fmt::format("{} Clone", spells[n]));
+    n++;
+    magic_spells_[n]->set_string(fmt::format("{} Teleport", spells[n]));
+    n++;
+    magic_spells_[n]->set_string(fmt::format("{} Fireball", spells[n]));
+    n++;
+    magic_spells_[n]->set_string(fmt::format("{} Lightning", spells[n]));
+    n++;
+    magic_spells_[n]->set_string(fmt::format("{} Freeze", spells[n]));
+    n++;
+    magic_spells_[n]->set_string(fmt::format("{} Resurrect", spells[n]));
+    n++;
+    magic_spells_[n]->set_string(fmt::format("{} Turn Undead", spells[n]));
 }

@@ -103,7 +103,9 @@ void Dialog::draw(Gfx &gfx, glm::mat4 &camera)
 	if (options_.empty())
 		return;
 
-	gfx.draw_sprite(arrow_, camera);
+	/* Don't draw the arrow if there are no usable options. */
+	if (disabled_options_.size() != options_.size())
+		gfx.draw_sprite(arrow_, camera);
 	
 	for (auto &option : options_) {
 		gfx.draw_text(option, camera);

@@ -71,3 +71,8 @@ void Hud::update(float dt) {
     siege_.animate(dt);
     magic_.animate(dt);
 }
+
+void Hud::set_title(const std::string &msg) {
+    name_.set_string(msg);
+    days_.set_string("");
+}
