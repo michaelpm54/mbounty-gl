@@ -53,7 +53,7 @@ Crimes: {}
             kVillains[contract][0],
             kVillains[contract][1],
             reward,
-            "Continentia",
+            kContinents[kVillainContinents[contract]],
             "Unknown",
             kVillains[contract][2],
             kVillains[contract][3])

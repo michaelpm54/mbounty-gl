@@ -160,159 +160,189 @@ char const *const kVillains[17][4] = {
 	Royal Dungeons.)raw"
 	},
 	{
-		"Murray the Miser",
-		"None",
+		"Caneghor the Mystic",
+		"The Majestic Sage",
 		R"raw(
-	Threadbare clothes, bald
-	patch with hair combed to
-	cover it. incessant cough.)raw",
-		R"raw(Murray is wanted for
-	various petty crimes as
-	well as for treason. He
-	allowed a group of pirates
-	to enter the castle and
-	free criminals.)raw"
+	Voluminous robes, bald
+	head, magic symbols
+	engraved on body,
+	levitating ability.)raw",
+		R"raw(Caneghor is wanted
+	for grave-robbing,
+	conspiracy against the
+	Crown and for plundering
+	the Royal Library.)raw"
 	},
 	{
-		"Murray the Miser",
+		"Sir Moradon the Cruel",
 		"None",
 		R"raw(
-	Threadbare clothes, bald
-	patch with hair combed to
-	cover it. incessant cough.)raw",
-		R"raw(Murray is wanted for
-	various petty crimes as
-	well as for treason. He
-	allowed a group of pirates
-	to enter the castle and
-	free criminals.)raw"
+	Always wearing armor and
+	concealed weapons, has two
+	prominent front teeth and
+	an unkept beard.)raw",
+		R"raw(Sir Moradon, from
+	another land is wanted for
+	his part in a conspiracy
+	to topple the kingdom.)raw"
 	},
 	{
-		"Murray the Miser",
-		"None",
+		"Prince Barrowpine",
+		"The Elf Lord",
 		R"raw(
-	Threadbare clothes, bald
-	patch with hair combed to
-	cover it. incessant cough.)raw",
-		R"raw(Murray is wanted for
-	various petty crimes as
-	well as for treason. He
-	allowed a group of pirates
-	to enter the castle and
-	free criminals.)raw"
+	Pointed ears, sharp elfin
+	features, pale blue eyes
+	with no whites, glimmering
+	enchanted coin.)raw",
+		R"raw(The prince is one of
+	the leaders of the
+	conspiracy against the
+	Crown. He also traffics
+	stolen artifacts.)raw"
 	},
 	{
-		"Murray the Miser",
-		"None",
+		"Bargash Eyesore",
+		"Old One Eye",
 		R"raw(
-	Threadbare clothes, bald
-	patch with hair combed to
-	cover it. incessant cough.)raw",
-		R"raw(Murray is wanted for
-	various petty crimes as
-	well as for treason. He
-	allowed a group of pirates
-	to enter the castle and
-	free criminals.)raw"
+	Single eye in the center
+	of head, over ten feet
+	tall, only hair on body
+	is beard.)raw",
+		R"raw(Bargash is wanted
+	for conspiracy against
+	the Crown and for leading
+	an outright attack
+	against the king.)raw"
 	},
 	{
-		"Murray the Miser",
-		"None",
+		"Rinaldus Drybone",
+		"The Death Lord",
 		R"raw(
-	Threadbare clothes, bald
-	patch with hair combed to
-	cover it. incessant cough.)raw",
-		R"raw(Murray is wanted for
-	various petty crimes as
-	well as for treason. He
-	allowed a group of pirates
-	to enter the castle and
-	free criminals.)raw"
+	Rinaldus is a magically
+	animated skeleton, an
+	undead, he is easily
+	identified by the crown
+	he wears.)raw",
+		R"raw(Rinaldus is wanted
+	for leading a conspiracy
+	against the Crown and
+	leading a rebellion on
+	the continent of Saharia.)raw"
 	},
 	{
-		"Murray the Miser",
+		"Ragface",
 		"None",
 		R"raw(
-	Threadbare clothes, bald
-	patch with hair combed to
-	cover it. incessant cough.)raw",
-		R"raw(Murray is wanted for
-	various petty crimes as
-	well as for treason. He
-	allowed a group of pirates
-	to enter the castle and
-	free criminals.)raw"
+	Ragface is an undead,
+	he is covered from head
+	to toe in moldering green
+	strips of cloth, a rotting
+	smell follows him.)raw",
+		R"raw(Conspiracy against
+	the Crown and leading an
+	insurrection in Saharia.)raw"
 	},
 	{
-		"Murray the Miser",
-		"None",
+		"Mahk Bellowspeak",
+		"Bruiser",
 		R"raw(
-	Threadbare clothes, bald
-	patch with hair combed to
-	cover it. incessant cough.)raw",
-		R"raw(Murray is wanted for
-	various petty crimes as
-	well as for treason. He
-	allowed a group of pirates
-	to enter the castle and
-	free criminals.)raw"
+	Bright orange body hair
+	on a fluorescent green
+	body. A tendency to shout
+	for no apparent reason.)raw",
+		R"raw(Mahk is wanted
+	for the conspiracy against
+	the Crown, leading a jail
+	break and for piracy on
+	the open seas.)raw"
 	},
 	{
-		"Murray the Miser",
-		"None",
+		"Auric Whiteskin",
+		"The Barbarian",
 		R"raw(
-	Threadbare clothes, bald
-	patch with hair combed to
-	cover it. incessant cough.)raw",
-		R"raw(Murray is wanted for
-	various petty crimes as
-	well as for treason. He
-	allowed a group of pirates
-	to enter the castle and
-	free criminals.)raw"
+	Auric is heavily muscled
+	and wears a protective
+	skin made from the hides
+	of baby lambs.)raw",
+		R"raw(Auric is wanted
+	for conspiracy and for
+	leading the rebellion of
+	the continent of Saharia.)raw"
 	},
 	{
-		"Murray the Miser",
-		"None",
+		"Czar Nikolai the Mad",
+		"The Mad Czar",
 		R"raw(
-	Threadbare clothes, bald
-	patch with hair combed to
-	cover it. incessant cough.)raw",
-		R"raw(Murray is wanted for
-	various petty crimes as
-	well as for treason. He
-	allowed a group of pirates
-	to enter the castle and
-	free criminals.)raw"
+	The czar has eyes which
+	change colour constantly,
+	he also has a sulphur
+	smell emmanating from his
+	body.)raw",
+		R"raw(The czar is wanted
+	for leading a conspiracy
+	against the Crown for
+	violating diplomatic
+	immunity and for murder.)raw"
 	},
 	{
-		"Murray the Miser",
+		"Magus Deathspell",
 		"None",
 		R"raw(
-	Threadbare clothes, bald
-	patch with hair combed to
-	cover it. incessant cough.)raw",
-		R"raw(Murray is wanted for
-	various petty crimes as
-	well as for treason. He
-	allowed a group of pirates
-	to enter the castle and
-	free criminals.)raw"
+	Pupil-less eyes, white
+	beard, always wears
+	crimson robes and a
+	matching Skull cap.)raw",
+		R"raw(Magus is wanted for
+	conspiracy against the
+	Crown and for practising
+	forbidden magics.)raw"
 	},
 	{
-		"Murray the Miser",
-		"None",
+		"Urthrax Killspite",
+		"The Demon King",
 		R"raw(
-	Threadbare clothes, bald
-	patch with hair combed to
-	cover it, incessant cough.)raw",
-		R"raw(Murray is wanted for
-	various petty crimes as
-	well as for treason. He
-	allowed a group of pirates
-	to enter the castle and
-	free criminals.)raw"
+	Green, scaly skin, over
+	7 feet tall, horns
+	protruding.)raw",
+		R"raw(Urthrax is wanted
+	for conspiracy against
+	the Crown.)raw"
 	},
+	{
+		"Arech Dragonbreath",
+		"Mastermind",
+		R"raw(
+	Arech is an immense
+	dragon with a green
+	body and blue wings,
+	he breathes fire.)raw",
+		R"raw(Arech is wanted for
+	the conspiracy against
+	the Crown, arranging
+	jailbreaks, formenting
+	rebellion, stealing the
+	sceptre of order.)raw"
+	},
+};
+
+const int kVillainContinents[17] = {
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	1,
+	1,
+	1,
+	1,
+	2,
+	2,
+	2,
+	2,
+	3,
+	3,
+	3,
 };
 
 int const kVillainRewards[17] = {
@@ -322,17 +352,17 @@ int const kVillainRewards[17] = {
 	8000,
 	9000,
 	10'000,
-	10'000,
-	10'000,
-	10'000,
-	10'000,
-	10'000,
-	10'000,
-	10'000,
-	10'000,
-	10'000,
-	10'000,
-	10'000,
+	12'000,
+	14'000,
+	16'000,
+	18'000,
+	20'000,
+	25'000,
+	30'000,
+	35'000,
+	40'000,
+	45'000,
+	50'000,
 };
 
 namespace bty {
