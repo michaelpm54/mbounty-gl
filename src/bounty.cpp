@@ -87,6 +87,254 @@ char const *const kContinents[4] = {
 	"Saharia",
 };
 
+char const *const kVillains[17][4] = {
+	{
+		"Murray the Miser",
+		"None",
+		R"raw(
+	Threadbare clothes, bald
+	patch with hair combed to
+	cover it. incessant cough.)raw",
+		R"raw(Murray is wanted for
+	various petty crimes as
+	well as for treason. He
+	allowed a group of pirates
+	to enter the castle and
+	free criminals.)raw"
+	},
+	{
+		"Hack the Rogue",
+		"The Spitter",
+		R"raw(
+	Bushy ebon beard stained
+	with tobacco juice,
+	numerous battle scars,
+	brash, arrogant behavior.)raw",
+		R"raw(Along with many
+	minor infractions, Hack is
+	wanted for conspiracy
+	against the Crown and
+	grave-robbing.)raw"
+	},
+	{
+		"Princess Almola",
+		"Lady Deceit",
+		R"raw(
+	Excessive use of make-up
+	to hide aging features,
+	ever-present lace
+	handkerchief.)raw",
+		R"raw(The Princess
+	violated her status as a
+	visiting dignitary by
+	encouraging a murder and
+	joining the conspiracy
+	against the Crown.)raw"
+	},
+	{
+		"Baron Johnno Makahl",
+		"Johnno",
+		R"raw(
+	Expensive and gaudy
+	clothes, overweight, and
+	a scruffy beard.)raw",
+		R"raw(Johnno is wanted for
+	various crimes against the
+	Kingdom, including leading
+	a direct assault against
+	the Crown and conspiracy.)raw"
+	},
+	{
+		"Dread Pirate Rob",
+		"Terror of the Sea",
+		R"raw(
+	Pencil thin mustasche
+	and elegant trimmed
+	beard never without a
+	rapier.)raw",
+		R"raw(Rob is wanted for
+	piracy as well as
+	conspiracy and for
+	breaking out five traitors
+	sentenced to death in the
+	Royal Dungeons.)raw"
+	},
+	{
+		"Murray the Miser",
+		"None",
+		R"raw(
+	Threadbare clothes, bald
+	patch with hair combed to
+	cover it. incessant cough.)raw",
+		R"raw(Murray is wanted for
+	various petty crimes as
+	well as for treason. He
+	allowed a group of pirates
+	to enter the castle and
+	free criminals.)raw"
+	},
+	{
+		"Murray the Miser",
+		"None",
+		R"raw(
+	Threadbare clothes, bald
+	patch with hair combed to
+	cover it. incessant cough.)raw",
+		R"raw(Murray is wanted for
+	various petty crimes as
+	well as for treason. He
+	allowed a group of pirates
+	to enter the castle and
+	free criminals.)raw"
+	},
+	{
+		"Murray the Miser",
+		"None",
+		R"raw(
+	Threadbare clothes, bald
+	patch with hair combed to
+	cover it. incessant cough.)raw",
+		R"raw(Murray is wanted for
+	various petty crimes as
+	well as for treason. He
+	allowed a group of pirates
+	to enter the castle and
+	free criminals.)raw"
+	},
+	{
+		"Murray the Miser",
+		"None",
+		R"raw(
+	Threadbare clothes, bald
+	patch with hair combed to
+	cover it. incessant cough.)raw",
+		R"raw(Murray is wanted for
+	various petty crimes as
+	well as for treason. He
+	allowed a group of pirates
+	to enter the castle and
+	free criminals.)raw"
+	},
+	{
+		"Murray the Miser",
+		"None",
+		R"raw(
+	Threadbare clothes, bald
+	patch with hair combed to
+	cover it. incessant cough.)raw",
+		R"raw(Murray is wanted for
+	various petty crimes as
+	well as for treason. He
+	allowed a group of pirates
+	to enter the castle and
+	free criminals.)raw"
+	},
+	{
+		"Murray the Miser",
+		"None",
+		R"raw(
+	Threadbare clothes, bald
+	patch with hair combed to
+	cover it. incessant cough.)raw",
+		R"raw(Murray is wanted for
+	various petty crimes as
+	well as for treason. He
+	allowed a group of pirates
+	to enter the castle and
+	free criminals.)raw"
+	},
+	{
+		"Murray the Miser",
+		"None",
+		R"raw(
+	Threadbare clothes, bald
+	patch with hair combed to
+	cover it. incessant cough.)raw",
+		R"raw(Murray is wanted for
+	various petty crimes as
+	well as for treason. He
+	allowed a group of pirates
+	to enter the castle and
+	free criminals.)raw"
+	},
+	{
+		"Murray the Miser",
+		"None",
+		R"raw(
+	Threadbare clothes, bald
+	patch with hair combed to
+	cover it. incessant cough.)raw",
+		R"raw(Murray is wanted for
+	various petty crimes as
+	well as for treason. He
+	allowed a group of pirates
+	to enter the castle and
+	free criminals.)raw"
+	},
+	{
+		"Murray the Miser",
+		"None",
+		R"raw(
+	Threadbare clothes, bald
+	patch with hair combed to
+	cover it. incessant cough.)raw",
+		R"raw(Murray is wanted for
+	various petty crimes as
+	well as for treason. He
+	allowed a group of pirates
+	to enter the castle and
+	free criminals.)raw"
+	},
+	{
+		"Murray the Miser",
+		"None",
+		R"raw(
+	Threadbare clothes, bald
+	patch with hair combed to
+	cover it. incessant cough.)raw",
+		R"raw(Murray is wanted for
+	various petty crimes as
+	well as for treason. He
+	allowed a group of pirates
+	to enter the castle and
+	free criminals.)raw"
+	},
+	{
+		"Murray the Miser",
+		"None",
+		R"raw(
+	Threadbare clothes, bald
+	patch with hair combed to
+	cover it, incessant cough.)raw",
+		R"raw(Murray is wanted for
+	various petty crimes as
+	well as for treason. He
+	allowed a group of pirates
+	to enter the castle and
+	free criminals.)raw"
+	},
+};
+
+int const kVillainRewards[17] = {
+	5000,
+	6000,
+	7000,
+	8000,
+	9000,
+	10'000,
+	10'000,
+	10'000,
+	10'000,
+	10'000,
+	10'000,
+	10'000,
+	10'000,
+	10'000,
+	10'000,
+	10'000,
+	10'000,
+};
+
 namespace bty {
 
 glm::vec4 get_color(BoxColor color, bool outline) {

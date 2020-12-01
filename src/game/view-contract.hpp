@@ -27,6 +27,7 @@ private:
     bty::Text no_contract_text_;
     bool no_contract_{false};
     bty::Sprite *contract_sprite_{nullptr};
+    bty::Text info_;
 };
 
 #endif // BTY_GAME_VIEW_CONTRACT_HPP_

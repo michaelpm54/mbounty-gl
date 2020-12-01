@@ -10,6 +10,8 @@ extern char const* const kHeroNames[][4];
 extern int const kDays[4];
 extern char const* const kLoseMessage;
 extern char const *const kContinents[4];
+extern char const *const kVillains[17][4];
+extern int const kVillainRewards[17];
 
 namespace bty {
 
