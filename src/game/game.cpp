@@ -528,8 +528,12 @@ void Game::key(int key, int scancode, int action, int mods)
                     switch (key)
                     {
                         case GLFW_KEY_BACKSPACE:
-                            sail_to(scene_switcher_->state().continent);
                             set_state(GameState::Unpaused);
+                            sail_to(scene_switcher_->state().continent);
+                            break;
+                        case GLFW_KEY_ENTER:
+                            set_state(GameState::Unpaused);
+                            sail_to(sail_dialog_.get_selection());
                             break;
                         case GLFW_KEY_UP:
                             sail_dialog_.prev();
@@ -676,7 +680,7 @@ void Game::update(float dt)
 
             update_camera();
         }
-        else {
+        else if (!controls_locked_) {
             hero_.set_moving(false);
         }
         map_.update(dt);
@@ -730,6 +734,9 @@ void Game::update(float dt)
     || state_ == GameState::DismissError) {
         hero_.animate(dt);
         dismiss_.animate(dt);
+    }
+    else if (state_ == GameState::SailNext) {
+        sail_dialog_.animate(dt);
     }
 }
 
@@ -1343,7 +1350,7 @@ void Game::sail_next() {
 
     for (int i = 0; i < 4; i++) {
         if (state.maps_found[i]) {
-            sail_dialog_.add_option(10, 3, kContinents[i]);
+            sail_dialog_.add_option(10, 3+i, kContinents[i]);
         }
     }
 }
@@ -1352,21 +1359,27 @@ void Game::sail_to(int continent) {
     if (continent == scene_switcher_->state().continent) {
         auto pos = hero_.get_position();
 
-        if (pos.x < 0) {
+        auto_move_dir_ = {0,0};
+
+        if (pos.x <= 0) {
             auto_move_dir_.x = 1;
+            hero_.set_flip(false);
         }
-        else {
+        else if (pos.x >= 48 * 63) {
             auto_move_dir_.x = -1;
+            hero_.set_flip(true);
         }
 
-        if (pos.y < 0) {
+        if (pos.y <= 0) {
             auto_move_dir_.y = 1;
         }
-        else {
+        else if (pos.y >= 40 * 63) {
             auto_move_dir_.y = -1;
         }
 
-        control_lock_timer_ = 3;
+        control_lock_timer_ = 1;
         controls_locked_ = true;
+
+        hero_.set_moving(true);
     }
 }
