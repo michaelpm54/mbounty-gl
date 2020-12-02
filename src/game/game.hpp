@@ -34,6 +34,8 @@ public:
     bool loaded() override;
     void update(float dt) override;
 
+    void setup_game();
+
 private:
     void update_camera();
     void collide(Tile &tile);
@@ -64,7 +66,6 @@ private:
     bty::SceneSwitcher *scene_switcher_;
     GameState state_{GameState::Unpaused};
     bool loaded_ {false};
-    bty::Font font_;
     glm::mat4 camera_ {1.0f};
 
     Hud hud_;

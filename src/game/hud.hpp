@@ -20,7 +20,7 @@ struct SharedState;
 
 class Hud {
 public:
-    void load(bty::Assets &assets, bty::Font &font, SharedState &state);
+    void load(bty::Assets &assets, SharedState &state);
     void draw(bty::Gfx &gfx, glm::mat4 &camera);
     void update(float dt);
     void update_state();

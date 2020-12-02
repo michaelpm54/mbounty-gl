@@ -23,6 +23,7 @@ public:
     void draw(bty::Gfx &gfx, glm::mat4 &camera);
     void view(int x, int y, int continent, const unsigned char * const map);
     void update(float dt);
+    void set_color(bty::BoxColor color);
 
 private:
     bty::TextBox box_;

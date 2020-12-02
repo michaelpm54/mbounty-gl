@@ -9,7 +9,6 @@ struct SharedState {
     int difficulty_level{2};
     int days{0};
     int continent{0};
-    int army_size{0};
     int army[5]{-1};
     int army_counts[5]{0};
     int army_morales[5]{0};

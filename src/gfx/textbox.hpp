@@ -33,11 +33,11 @@ public:
 	void draw(Gfx &gfx, glm::mat4 &camera);
 	Text *add_line(int x, int y, std::string const &str);
 	void set_line(int i, std::string const &str);
+	void set_color(bty::BoxColor color);
 
 protected:
 	void set_size(int w, int h);
 	void set_position(int x, int y);
-	void set_colors(bty::BoxColor color);
 
 private:
 	std::array<Sprite, 8> box_;

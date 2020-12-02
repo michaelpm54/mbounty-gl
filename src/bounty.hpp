@@ -13,6 +13,12 @@ extern char const *const kContinents[4];
 extern char const *const kVillains[17][4];
 extern const int kVillainContinents[17];
 extern int const kVillainRewards[17];
+extern int const kStartingGold[4];
+extern int const kRankCommission[4][4];
+extern int const kRankSpells[4][4];
+extern int const kRankSpellPower[4][4];
+extern int const kRankLeadership[4][4];
+extern int const kRankVillainsCaptured[4][4];
 
 namespace bty {
 

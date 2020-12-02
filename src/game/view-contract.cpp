@@ -61,6 +61,6 @@ Crimes: {}
     }
 }
 
-void ViewContract::update(float dt) {
-
+void ViewContract::set_color(bty::BoxColor color) {
+    box_.set_color(color);
 }

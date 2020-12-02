@@ -56,8 +56,8 @@ void ViewCharacter::draw(bty::Gfx &gfx, glm::mat4 &camera) {
 void ViewCharacter::view(const SharedState &state) {
     info_[0].set_string(kHeroNames[state.hero_id][state.hero_rank]);
     info_[1].set_string(fmt::format("Leadership {:>13}", state.leadership));
-    info_[2].set_string(fmt::format("Commission/Week {:>8}", 0));
-    info_[3].set_string(fmt::format("Gold {:>19}", 0));
+    info_[2].set_string(fmt::format("Commission/Week {:>8}", state.commission));
+    info_[3].set_string(fmt::format("Gold {:>19}", state.gold));
     info_[4].set_string(fmt::format("Spell Power {:>12}", 0));
     info_[5].set_string(fmt::format("Max # of Spells {:>8}", 0));
     info_[6].set_string(fmt::format("Villains caught {:>8}", 0));
@@ -65,4 +65,8 @@ void ViewCharacter::view(const SharedState &state) {
     info_[8].set_string(fmt::format("Castles garrisoned {:>5}", 0));
     info_[9].set_string(fmt::format("Followers killed {:>7}", 0));
     info_[10].set_string(fmt::format("Current score {:>10}", 0));
+}
+
+void ViewCharacter::set_color(bty::BoxColor color) {
+    rect_.set_color(color);
 }

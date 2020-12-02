@@ -117,3 +117,7 @@ void ViewContinent::update(float dt) {
         &pixel
     );
 }
+
+void ViewContinent::set_color(bty::BoxColor color) {
+    box_.set_color(color);
+}

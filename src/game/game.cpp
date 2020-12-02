@@ -24,24 +24,18 @@ bool Game::load(bty::Assets &assets)
     camera_ = glm::ortho(0.0f, 320.0f, 224.0f, 0.0f, -1.0f, 1.0f);
 
     auto &state = scene_switcher_->state();
+    auto color = bty::get_box_color(state.difficulty_level);
 
-    for (int i = 0; i < 14; i++) {
-        state.spells[i] = 0;
-    }
+    hud_.load(assets, state);
 
-    int difficulty = state.difficulty_level;
-
-    state.days = kDays[difficulty];
-
-    font_.load_from_texture(assets.get_texture("fonts/genesis_custom.png"), {8.0f, 8.0f});
-    hud_.load(assets, font_, state);
-
+    /* Create pause menu */
     pause_menu_.create(
 		3, 7,
 		26, 16,
-		bty::get_box_color(difficulty),
+		color,
         assets
 	);
+
     pause_menu_.add_option(3, 2, "View your army");
     pause_menu_.add_option(3, 3, "View your character");
     pause_menu_.add_option(3, 4, "Look at continent map");
@@ -54,12 +48,14 @@ bool Game::load(bty::Assets &assets)
     pause_menu_.add_option(3, 11, "Game controls");
     pause_menu_.add_option(3, 13, "Get password");
 
+    /* Create "Use magic" menu */
     use_magic_.create(
 		6, 4,
 		20, 22,
-		bty::get_box_color(difficulty),
+		color,
         assets
 	);
+    
     use_magic_.add_line(1, 1, "Adventuring Spells");
     magic_spells_[0] = use_magic_.add_option(4, 3, "");
     magic_spells_[1] = use_magic_.add_option(4, 4, "");
@@ -77,26 +73,19 @@ bool Game::load(bty::Assets &assets)
     magic_spells_[12] = use_magic_.add_option(4, 19, "");
     magic_spells_[13] = use_magic_.add_option(4, 20, "");
 
-    add_unit_to_army(12, 10);
-    add_unit_to_army(14, 5);
-    add_unit_to_army(0, 40);
-
-    auto color = bty::get_box_color(difficulty);
+    /* Create various pause-menu menu's */
     view_army_.load(assets, color);
     view_character_.load(assets, color, state.hero_id);
     view_continent_.load(assets, color);
     view_contract_.load(assets, color);
 
+    /* Load map */
     map_.load(assets);
+
+    /* Load hero sprites */
     hero_.load(assets);
-
-    hero_.move_to_tile(map_.get_tile(11, 58));
-    update_camera();
-
-    state.visited_tiles.resize(4096);
-    std::fill(state.visited_tiles.begin(), state.visited_tiles.end(), -1);
-    update_visited_tiles();
-
+    
+    /* Create end-of-week messages */
     astrology_.create(1, 18, 30, 9, color, assets);
     budget_.create(1, 18, 30, 9, color, assets);
 
@@ -115,6 +104,8 @@ bool Game::load(bty::Assets &assets)
     budget_.add_line(15, 5, "");
     budget_.add_line(15, 6, "");
     budget_.add_line(15, 7, "");
+
+    setup_game();
 
     loaded_ = true;
     return success;
@@ -541,9 +532,6 @@ void Game::update(float dt)
     else if (state_ == GameState::UseMagic) {
         use_magic_.animate(dt);
     }
-    else if (state_ == GameState::ViewContract) {
-        view_contract_.update(dt);
-    }
     else if (state_ == GameState::LoseGame) {
         hud_.set_title("Technically you should have lost here.");
     }
@@ -596,12 +584,20 @@ void Game::add_unit_to_army(int id, int count) {
         return;
     }
 
-    if (scene_switcher_->state().army_size == 5) {
+    int army_size = 0;
+
+    for (int i = 0; i < 5; i++) {
+        if (scene_switcher_->state().army[i] != -1) {
+            army_size++;
+        }
+    }
+
+    if (army_size == 5) {
         spdlog::warn("Game::add_unit_to_army: army already full");
         return;
     }
 
-    int index = scene_switcher_->state().army_size++;
+    int index = army_size++;
 
     int *army = scene_switcher_->state().army;
     int *army_counts = scene_switcher_->state().army_counts;
@@ -749,28 +745,27 @@ void Game::update_week_passed_cards()
     int boat = boat_rented_ ? 500 : 0;
     int balance = (commission + gold) - boat;
 
-    for (int i = 0; i < state.army_size; i++) {
+    for (int i = 0; i < 5; i++) {
         if (state.army[i] == -1) {
             budget_.set_line(7+i, "");
+            continue;
+        }
+
+        const auto &unit = kUnits[state.army[i]];
+        int weekly_cost = unit.weekly_cost * state.army_counts[i];
+        if (balance > weekly_cost || balance - weekly_cost == 0) {
+            balance -= weekly_cost;
+            army_total += weekly_cost;
+            std::string cost = number_with_ks(weekly_cost);
+            std::string spaces(14-(cost.size()+unit.name_plural.size()), ' ');
+            budget_.set_line(7+i, fmt::format("{}{}{}", unit.name_plural, spaces, cost));
         }
         else {
-            const auto &unit = kUnits[state.army[i]];
-            int weekly_cost = unit.weekly_cost * state.army_counts[i];
-            if (balance > weekly_cost || balance - weekly_cost == 0) {
-		        balance -= weekly_cost;
-		        army_total += weekly_cost;
-                std::string cost = number_with_ks(weekly_cost);
-                std::string spaces(14-(cost.size()+unit.name_plural.size()), ' ');
-                budget_.set_line(7+i, fmt::format("{}{}{}", unit.name_plural, spaces, cost));
-	        }
-            else {
-                std::string leave = "Leave";
-                std::string spaces(14-(leave.size()+unit.name_plural.size()), ' ');
-                budget_.set_line(7+i, fmt::format("{}{}{}", unit.name_plural, spaces, leave));
-                state.army[i] = -1;
-                state.army_counts[i] = -1;
-                state.army_size--;
-            }
+            std::string leave = "Leave";
+            std::string spaces(14-(leave.size()+unit.name_plural.size()), ' ');
+            budget_.set_line(7+i, fmt::format("{}{}{}", unit.name_plural, spaces, leave));
+            state.army[i] = -1;
+            state.army_counts[i] = -1;
         }
     }
 
@@ -804,4 +799,77 @@ void Game::sort_army()
             last_free = i;
         }
     }
+}
+
+void Game::setup_game()
+{
+    auto &state = scene_switcher_->state();
+
+    /* Clear spells */
+    for (int i = 0; i < 14; i++) {
+        state.spells[i] = 0;
+    }
+
+    /* Set days */
+    state.days = kDays[state.difficulty_level];
+
+    /* Set hero to starting position */
+    hero_.move_to_tile(map_.get_tile(11, 58));
+    update_camera();
+
+    /* Clear visited tiles */
+    state.visited_tiles.resize(4096);
+    std::fill(state.visited_tiles.begin(), state.visited_tiles.end(), -1);
+    update_visited_tiles();
+
+    /* Update box colours */
+    auto color = bty::get_box_color(state.difficulty_level);
+    pause_menu_.set_color(color);
+    use_magic_.set_color(color);
+    view_army_.set_color(color);
+    view_character_.set_color(color);
+    view_continent_.set_color(color);
+    view_contract_.set_color(color);
+    astrology_.set_color(color);
+    budget_.set_color(color);
+
+    /* Add starting army */
+    for (int i = 0; i < 5; i++) {
+        state.army[i] = -1;
+        state.army_counts[i] = 0;
+    }
+
+    switch (state.hero_id) {
+        case 0:
+            state.army[0] = Militias;
+            state.army_counts[0] = 20;
+            state.army[1] = Archers;
+            state.army_counts[1] = 2;
+            break;
+        case 1:
+            state.army[0] = Peasants;
+            state.army_counts[0] = 20;
+            state.army[1] = Militias;
+            state.army_counts[1] = 20;
+            break;
+        case 2:
+            state.army[0] = Peasants;
+            state.army_counts[0] = 30;
+            state.army[1] = Sprites;
+            state.army_counts[1] = 10;
+            break;
+        case 3:
+            state.army[0] = Wolves;
+            state.army_counts[0] = 20;
+            break;
+        default:
+            break;
+    }
+    
+    /* Set starting stats */
+    state.gold = kStartingGold[state.hero_id];
+    state.commission = kRankCommission[state.hero_id][0];
+    state.leadership = kRankLeadership[state.hero_id][0];
+
+    hud_.update_state();
 }

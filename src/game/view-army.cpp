@@ -60,8 +60,15 @@ void ViewArmy::draw(bty::Gfx &gfx, glm::mat4 &camera) {
 }
 
 void ViewArmy::view(const SharedState &state) {
-    num_units_ = state.army_size;
-    for (int i = 0; i < state.army_size; i++) {
+    num_units_ = 0;
+
+    for (int i = 0; i < 5; i++) {
+        if (state.army[i] != -1) {
+            num_units_++;
+        }
+    }
+    
+    for (int i = 0; i < num_units_; i++) {
         int unit_id = state.army[i];
         const auto &unit = kUnits[unit_id];
         if (unit_id != -1) {
@@ -93,14 +100,17 @@ void ViewArmy::view(const SharedState &state) {
             info_[i][5].set_string(fmt::format(morale));
             info_[i][6].set_string(fmt::format("G-Cost: {}", g_cost));
         }
-        else {
-            spdlog::warn("ViewArmy::view: army[{}] is -1, size is wrong", i);
-        }
     }
 }
 
 void ViewArmy::update(float dt) {
     for (int i = 0; i < num_units_; i++) {
         units_[i].animate(dt);
+    }
+}
+
+void ViewArmy::set_color(bty::BoxColor color) {
+    for (int i = 0; i < 5; i++) {
+        rects_[i].set_color(color);
     }
 }

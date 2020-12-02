@@ -19,6 +19,7 @@ public:
     void load(bty::Assets &assets, bty::BoxColor color, int hero_id);
     void draw(bty::Gfx &gfx, glm::mat4 &camera);
     void view(const SharedState &state);
+    void set_color(bty::BoxColor color);
 
 private:
     bty::Sprite frame_;

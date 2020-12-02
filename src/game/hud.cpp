@@ -8,7 +8,7 @@
 #include "shared-state.hpp"
 #include "bounty.hpp"
 
-void Hud::load(bty::Assets &assets, bty::Font &font, SharedState &state) {
+void Hud::load(bty::Assets &assets, SharedState &state) {
     state_ = &state;
     frame_.set_texture(assets.get_texture("frame/game-hud.png"));
 
@@ -17,9 +17,9 @@ void Hud::load(bty::Assets &assets, bty::Font &font, SharedState &state) {
 
     top_bar_.set_color(bty::get_box_color(state.difficulty_level));
 
-    font_ = &font;
-    name_.create(1, 1, kHeroNames[state.hero_id][state.hero_rank], font);
-    days_.create(26, 1, "", font);
+    font_ = &assets.get_font();
+    name_.create(1, 1, kHeroNames[state.hero_id][state.hero_rank], *font_);
+    days_.create(26, 1, "", *font_);
 
     contract_textures_.resize(18);
     for (int i = 0, max = static_cast<int>(contract_textures_.size()-1); i < max; i++) {

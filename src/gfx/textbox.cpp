@@ -27,7 +27,7 @@ void TextBox::create(
 		box_[i].set_texture(border[i]);
 	}
 
-	set_colors(color);
+	set_color(color);
 
 	set_size(w, h);
 	set_position(x, y);
@@ -115,7 +115,7 @@ void TextBox::set_line(int i, std::string const &str)
 	}
 }
 
-void TextBox::set_colors(bty::BoxColor color)
+void TextBox::set_color(bty::BoxColor color)
 {
 	background_outline_.set_color(bty::get_color(color, true));
 	background_.set_color(bty::get_color(color, false));

@@ -20,6 +20,7 @@ public:
     void draw(bty::Gfx &gfx, glm::mat4 &camera);
     void view(const SharedState &state);
     void update(float dt);
+    void set_color(bty::BoxColor color);
 
 private:
     const bty::Texture *unit_textures_[25]{nullptr};
