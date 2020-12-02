@@ -24,7 +24,7 @@ public:
         bool out_of_bounds{false};
     };
 
-    Entity::CollisionManifold move(float dx, float dy, Map &map);
+    Entity::CollisionManifold move(float dx, float dy, Map &map, int continent);
     void set_tile_info(const Tile &tile);
     void move_to_tile(const Tile &tile);
     const Tile &get_tile() const;
@@ -41,7 +41,7 @@ protected:
 
 private:
     bty::Rect collision_rect_;
-    bool collision_rect_visible_{true};
+    bool collision_rect_visible_{false};
     std::array<bty::Rect, 20> collided_rects_;
     int num_collided_rects_{0};
 };

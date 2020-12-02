@@ -1,6 +1,7 @@
 #ifndef BTY_SHARED_STATE_HPP_
 #define BTY_SHARED_STATE_HPP_
 
+#include <array>
 #include <vector>
 
 struct SharedState {
@@ -18,7 +19,7 @@ struct SharedState {
     bool magic{false};
     int x{0};
     int y{0};
-    std::vector<uint8_t> visited_tiles;
+    std::array<std::vector<uint8_t>, 4> visited_tiles;
     int spells[14];
     int gold{0};
     int commission{0};

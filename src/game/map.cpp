@@ -15,11 +15,13 @@ struct Vertex {
 
 Map::~Map()
 {
-    delete[] tiles_;
-    delete[] read_only_tiles_;
-    glDeleteVertexArrays(1, &vao_);
+    for (int i = 0; i > 4; i++) {
+        delete[] tiles_[i];
+        delete[] read_only_tiles_[i];
+    }
+    glDeleteVertexArrays(4, vaos_);
+    glDeleteBuffers(4, vbos_);
     glDeleteProgram(program_);
-    glDeleteBuffers(1, &vbo_);
 }
 
 void Map::load(bty::Assets &assets) {
@@ -29,30 +31,40 @@ void Map::load(bty::Assets &assets) {
 
     num_vertices_ = 4096 * 6;
 
-    FILE *map_stream = fopen("data/maps/genesis/continentia.bin", "rb");
-    if (!map_stream) {
-        spdlog::error("Failed to load map");
-        num_vertices_ = 0;
-        return;
+    static constexpr const char *const kContinentNames[4] = {
+        "data/maps/genesis/continentia.bin",
+        "data/maps/genesis/forestria.bin",
+        "data/maps/genesis/archipelia.bin",
+        "data/maps/genesis/saharia.bin",
+    };
+
+    glCreateBuffers(4, vbos_);
+    glCreateVertexArrays(4, vaos_);
+
+    for (int i = 0; i < 4; i++) {
+        FILE *map_stream = fopen(kContinentNames[i], "rb");
+        if (!map_stream) {
+            spdlog::error("Failed to load map: {}", kContinentNames[i]);
+            num_vertices_ = 0;
+            return;
+        }
+        tiles_[i] = new unsigned char[4096];
+        fread(tiles_[i], 1, 4096, map_stream);
+        fclose(map_stream);
+
+        read_only_tiles_[i] = new unsigned char[4096];
+        std::memcpy(read_only_tiles_[i], tiles_[i], 4096);   
+
+        glNamedBufferStorage(vbos_[i], 4096 * 6 * sizeof(GLfloat) * 4, nullptr, GL_DYNAMIC_STORAGE_BIT);
+
+        glBindVertexArray(vaos_[i]);
+        glBindBuffer(GL_ARRAY_BUFFER, vbos_[i]);
+        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 4, nullptr);
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 4, (const void *)(2 * sizeof(GLfloat)));
+        glEnableVertexAttribArray(0);
+        glEnableVertexAttribArray(1);
+        glBindVertexArray(GL_NONE);
     }
-    tiles_ = new unsigned char[4096];
-    fread(tiles_, 1, 4096, map_stream);
-    fclose(map_stream);
-
-    read_only_tiles_ = new unsigned char[4096];
-    std::memcpy(read_only_tiles_, tiles_, 4096);
-
-    glCreateBuffers(1, &vbo_);
-    glNamedBufferStorage(vbo_, 4096 * 6 * sizeof(GLfloat) * 4, nullptr, GL_DYNAMIC_STORAGE_BIT);
-
-    glCreateVertexArrays(1, &vao_);
-    glBindVertexArray(vao_);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo_);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 4, nullptr);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 4, (const void *)(2 * sizeof(GLfloat)));
-    glEnableVertexAttribArray(0);
-    glEnableVertexAttribArray(1);
-    glBindVertexArray(GL_NONE);
 
     program_ = bty::load_shader("data/shaders/map.glsl.vert", "data/shaders/map.glsl.frag");
     if (program_ == GL_NONE) {
@@ -64,12 +76,12 @@ void Map::load(bty::Assets &assets) {
     }
 }
 
-void Map::draw(glm::mat4 &camera) {
+void Map::draw(glm::mat4 &camera, int continent) {
     glProgramUniformMatrix4fv(program_, camera_loc_, 1, GL_FALSE, glm::value_ptr(camera));
     glProgramUniform1i(program_, texture_loc_, 0);
 
     glUseProgram(program_);
-    glBindVertexArray(vao_);
+    glBindVertexArray(vaos_[continent]);
     glBindTextureUnit(0, tilesets_[tileset_index_]->handle);
     glDrawArrays(GL_TRIANGLES, 0, num_vertices_);
     glBindVertexArray(GL_NONE);
@@ -84,7 +96,7 @@ void Map::update(float dt) {
     }
 }
 
-Tile Map::get_tile(int tx, int ty) const
+Tile Map::get_tile(int tx, int ty, int continent) const
 {
     if (tx < 0 || tx > 63 || ty < 0 || ty > 63) {
         return {-1,-1,-1};
@@ -92,78 +104,80 @@ Tile Map::get_tile(int tx, int ty) const
 
     // spdlog::debug("Get tile {} {}", tx, ty);
 
-    return {tx, ty, tiles_[ty * 64 + tx]};
+    return {tx, ty, tiles_[continent][ty * 64 + tx]};
 }
 
-Tile Map::get_tile(float x, float y) const
+Tile Map::get_tile(float x, float y, int continent) const
 {
     int tx = x / 48.0f;
     int ty = y / 40.0f;
 
-    return get_tile(tx, ty);
+    return get_tile(tx, ty, continent);
 }
 
-Tile Map::get_tile(glm::vec2 pos) const
+Tile Map::get_tile(glm::vec2 pos, int continent) const
 {
-    return get_tile(pos.x, pos.y);
+    return get_tile(pos.x, pos.y, continent);
 }
 
-Tile Map::get_tile(glm::ivec2 coord) const
+Tile Map::get_tile(glm::ivec2 coord, int continent) const
 {
-    return get_tile(coord.x, coord.y);
+    return get_tile(coord.x, coord.y, continent);
 }
 
-unsigned char *Map::get_data() {
-    return tiles_;
+unsigned char *Map::get_data(int continent) {
+    return tiles_[continent];
 }
-
-
 
 void Map::create_geometry() {
-    float tex_adv_x = 1.0f / (tilesets_[0]->width / 50.0f);
-    float tex_adv_y = 1.0f / (tilesets_[0]->height / 42.0f);
+    for (int continent = 0; continent < 4; continent++) {
+        float tex_adv_x = 1.0f / (tilesets_[0]->width / 50.0f);
+        float tex_adv_y = 1.0f / (tilesets_[0]->height / 42.0f);
 
-    float px_offset_x = 1.0f / tilesets_[0]->width;
-    float px_offset_y = 1.0f / tilesets_[0]->height;
-    
-    std::vector<Vertex> vertices(4096 * 6);
+        float px_offset_x = 1.0f / tilesets_[0]->width;
+        float px_offset_y = 1.0f / tilesets_[0]->height;
+        
+        std::vector<Vertex> vertices(4096 * 6);
 
-    auto *vtx = &vertices[0];
+        auto *vtx = &vertices[0];
 
-    for (int i = 0; i < 64; i++) {
-        for (int j = 0; j < 64; j++) {
-            float l = i * 48.0f;
-            float t = j * 40.0f;
-            float r = (i + 1) * 48.0f;
-            float b = (j + 1) * 40.0f;
+        for (int i = 0; i < 64; i++) {
+            for (int j = 0; j < 64; j++) {
+                float l = i * 48.0f;
+                float t = j * 40.0f;
+                float r = (i + 1) * 48.0f;
+                float b = (j + 1) * 40.0f;
 
-            int tile_id = tiles_[j * 64 + i];
-            int tile_x = tile_id % 16;
-            int tile_y = tile_id / 16;
+                int tile_id = tiles_[continent][j * 64 + i];
+                int tile_x = tile_id % 16;
+                int tile_y = tile_id / 16;
 
-            float ua = tile_x * tex_adv_x + px_offset_x;
-            float ub = (tile_x + 1) * tex_adv_x - px_offset_x;
-            float va = tile_y * tex_adv_y + px_offset_y;
-            float vb = (tile_y + 1) * tex_adv_y - px_offset_y;
+                float ua = tile_x * tex_adv_x + px_offset_x;
+                float ub = (tile_x + 1) * tex_adv_x - px_offset_x;
+                float va = tile_y * tex_adv_y + px_offset_y;
+                float vb = (tile_y + 1) * tex_adv_y - px_offset_y;
 
-            *vtx++ = { { l, t }, { ua, va } };
-            *vtx++ = { { r, t }, { ub, va } };
-            *vtx++ = { { l, b }, { ua, vb } };
-            *vtx++ = { { r, t }, { ub, va } };
-            *vtx++ = { { r, b }, { ub, vb } };
-            *vtx++ = { { l, b }, { ua, vb } };
+                *vtx++ = { { l, t }, { ua, va } };
+                *vtx++ = { { r, t }, { ub, va } };
+                *vtx++ = { { l, b }, { ua, vb } };
+                *vtx++ = { { r, t }, { ub, va } };
+                *vtx++ = { { r, b }, { ub, vb } };
+                *vtx++ = { { l, b }, { ua, vb } };
+            }
         }
-    }
 
-    glNamedBufferSubData(vbo_, 0, 4096 * 6 * sizeof(GLfloat) * 4, vertices.data());
+        glNamedBufferSubData(vbos_[continent], 0, 4096 * 6 * sizeof(GLfloat) * 4, vertices.data());
+    }
 }
 
 void Map::reset() {
-    std::memcpy(tiles_, read_only_tiles_, 4096);
+    for (int i = 0; i < 4; i++) {
+        std::memcpy(tiles_[i], read_only_tiles_[i], 4096);
+    }
 }
 
-void Map::erase_tile(const Tile &tile) {    
-    tiles_[tile.tx + tile.ty * 64] = Grass;
+void Map::erase_tile(const Tile &tile, int continent) {    
+    tiles_[continent][tile.tx + tile.ty * 64] = Grass;
 
     float tex_adv_x = 1.0f / (tilesets_[0]->width / 50.0f);
     float tex_adv_y = 1.0f / (tilesets_[0]->height / 42.0f);
@@ -195,5 +209,5 @@ void Map::erase_tile(const Tile &tile) {
     auto size = 6 * sizeof(Vertex);
     auto offset = (tile.ty + tile.tx * 64) * size;
 
-    glNamedBufferSubData(vbo_, offset, size, vertices);
+    glNamedBufferSubData(vbos_[continent], offset, size, vertices);
 }

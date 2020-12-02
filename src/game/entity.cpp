@@ -11,7 +11,7 @@
 #define CUTE_C2_IMPLEMENTATION
 #include "cute_c2.hpp"
 
-Entity::CollisionManifold Entity::move(float dx, float dy, Map &map) {
+Entity::CollisionManifold Entity::move(float dx, float dy, Map &map, int continent) {
     CollisionManifold manifold;
     manifold.new_position = {position_.x, position_.y};
     manifold.collided = false;
@@ -55,7 +55,7 @@ Entity::CollisionManifold Entity::move(float dx, float dy, Map &map) {
         collided_rects_[num_collided_rects_].set_position({coord.x*48.0f,coord.y*40.0f});
         num_collided_rects_++;
 
-        auto tile = map.get_tile(coord);
+        auto tile = map.get_tile(coord, continent);
 
         if (can_move(tile.id)) {
             continue;
@@ -100,7 +100,7 @@ Entity::CollisionManifold Entity::move(float dx, float dy, Map &map) {
         collided_rects_[num_collided_rects_].set_position({coord.x*48.0f,coord.y*40.0f});
         num_collided_rects_++;
 
-        auto tile = map.get_tile(coord);
+        auto tile = map.get_tile(coord, continent);
 
         if (can_move(tile.id)) {
             continue;
@@ -141,7 +141,7 @@ Entity::CollisionManifold Entity::move(float dx, float dy, Map &map) {
     collision_rect_.set_color({0.2f, 0.4f, 0.9f, 0.7f});
     collision_rect_.set_size({42.0f, 32.0f});
 
-    auto tile = map.get_tile(manifold.new_position + glm::vec2{21, 16});
+    auto tile = map.get_tile(manifold.new_position + glm::vec2{21, 16}, continent);
 
     if (tile.id == -1) {
         manifold.out_of_bounds = true;
@@ -175,7 +175,7 @@ bool Entity::can_move(int id)
 
 void Entity::move_to_tile(const Tile &tile) {
     tile_ = tile;
-    set_position({tile.tx * 48.0f + 0.0f, tile.ty * 40.0f - 8.0f});
+    set_position({tile.tx * 48.0f + 2.0f, tile.ty * 40.0f - 8.0f});
 }
 
 void Entity::set_tile_info(const Tile &tile) {

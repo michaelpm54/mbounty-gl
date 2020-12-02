@@ -20,29 +20,29 @@ class Map {
 public:
     ~Map();
     void load(bty::Assets &assets);
-    void draw(glm::mat4 &camera);
+    void draw(glm::mat4 &camera, int continent);
     void update(float dt);
-    Tile get_tile(int tx, int ty) const;
-    Tile get_tile(float x, float y) const;
-    Tile get_tile(glm::vec2 pos) const;
-    Tile get_tile(glm::ivec2 coord) const;
-    unsigned char *get_data();
+    Tile get_tile(int tx, int ty, int continent) const;
+    Tile get_tile(float x, float y, int continent) const;
+    Tile get_tile(glm::vec2 pos, int continent) const;
+    Tile get_tile(glm::ivec2 coord, int continent) const;
+    unsigned char *get_data(int continent);
     void create_geometry();
     void reset();
-    void erase_tile(const Tile &tile);
+    void erase_tile(const Tile &tile, int continent);
 
 private:
     int num_vertices_{0};
-    GLuint vbo_{GL_NONE};
-    GLuint vao_{GL_NONE};
+    GLuint vbos_[4]{GL_NONE};
+    GLuint vaos_[4]{GL_NONE};
     GLuint program_{GL_NONE};
     GLint camera_loc_{-1};
     GLint texture_loc_{-1};
     const bty::Texture *tilesets_[10]{nullptr};
     float tileset_anim_timer_{0};
     int tileset_index_{0};
-    unsigned char *tiles_{nullptr};
-    unsigned char *read_only_tiles_{nullptr};
+    unsigned char *tiles_[4]{nullptr};
+    unsigned char *read_only_tiles_[4]{nullptr};
 };
 
 enum TileId

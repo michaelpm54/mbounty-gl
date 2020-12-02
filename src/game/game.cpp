@@ -166,20 +166,21 @@ void Game::update_camera()
 
 void Game::draw(bty::Gfx &gfx)
 {
+    int continent = scene_switcher_->state().continent;
     switch (state_) {
         case GameState::Unpaused:
-            map_.draw(game_camera_);
+            map_.draw(game_camera_, continent);
             hero_.draw(gfx, game_camera_);
             hud_.draw(gfx, camera_);
             break;
         case GameState::Paused:
-            map_.draw(game_camera_);
+            map_.draw(game_camera_, continent);
             hero_.draw(gfx, game_camera_);
             hud_.draw(gfx, camera_);
             pause_menu_.draw(gfx, camera_);
             break;
         case GameState::ViewArmy:
-            hud_.draw(gfx, camera_);
+            map_.draw(game_camera_, continent);
             view_army_.draw(gfx, camera_);
             break;
         case GameState::ViewCharacter:
@@ -187,12 +188,12 @@ void Game::draw(bty::Gfx &gfx)
             view_character_.draw(gfx, camera_);
             break;
         case GameState::ViewContinent:
-            map_.draw(game_camera_);
+            map_.draw(game_camera_, continent);
             hud_.draw(gfx, camera_);
             view_continent_.draw(gfx, camera_);
             break;
         case GameState::UseMagic:
-            map_.draw(game_camera_);
+            map_.draw(game_camera_, continent);
             hud_.draw(gfx, camera_);
             use_magic_.draw(gfx, camera_);
             break;
@@ -201,7 +202,7 @@ void Game::draw(bty::Gfx &gfx)
             view_contract_.draw(gfx, camera_);
             break;
         case GameState::WeekPassed:
-            map_.draw(game_camera_);
+            map_.draw(game_camera_, continent);
             hero_.draw(gfx, game_camera_);
             hud_.draw(gfx, camera_);
             if (week_passed_card_ == WeekPassedCard::Astrology) {
@@ -222,19 +223,19 @@ void Game::draw(bty::Gfx &gfx)
             break;
         case GameState::DismissError: [[fallthrough]];
         case GameState::Dismiss:
-            map_.draw(game_camera_);
+            map_.draw(game_camera_, continent);
             hero_.draw(gfx, game_camera_);
             hud_.draw(gfx, camera_);
             dismiss_.draw(gfx, camera_);
             break;
         case GameState::ChestMap:
-            map_.draw(game_camera_);
+            map_.draw(game_camera_, continent);
             hero_.draw(gfx, game_camera_);
             hud_.draw(gfx, camera_);
             found_map_.draw(gfx, camera_);
             break;
         case GameState::SailNext:
-            map_.draw(game_camera_);
+            map_.draw(game_camera_, continent);
             hero_.draw(gfx, game_camera_);
             hud_.draw(gfx, camera_);
             sail_dialog_.draw(gfx, camera_);
@@ -559,7 +560,7 @@ void Game::key(int key, int scancode, int action, int mods)
             hero_.get_tile().tx,
             hero_.get_tile().ty,
             scene_switcher_->state().continent,
-            view_continent_fog_ ? scene_switcher_->state().visited_tiles.data() : map_.get_data()
+            view_continent_fog_ ? scene_switcher_->state().visited_tiles[scene_switcher_->state().continent].data() : map_.get_data(scene_switcher_->state().continent)
         );
     }
 }
@@ -573,9 +574,9 @@ void Game::find_map(const Tile &tile) {
     if (map_tiles_[0] == glm::ivec2{tile.tx, tile.ty}) {
         hud_.set_title("You found a map!");
 
-        map_.erase_tile(tile);
-
         auto &state = scene_switcher_->state();
+
+        map_.erase_tile(tile, state.continent);
 
         state.maps_found[state.continent+1] = true;
 
@@ -609,7 +610,7 @@ void Game::update(float dt)
             float dx = auto_move_dir_.x * vel;
             float dy = auto_move_dir_.y * vel;
 
-            auto manifold = hero_.move(dx, dy, map_);
+            auto manifold = hero_.move(dx, dy, map_, scene_switcher_->state().continent);
             hero_.set_position(manifold.new_position);
             update_visited_tiles();
             update_camera();
@@ -656,7 +657,7 @@ void Game::update(float dt)
             float dx = dir.x * vel;
             float dy = dir.y * vel;
 
-            auto manifold = hero_.move(dx, dy, map_);
+            auto manifold = hero_.move(dx, dy, map_, scene_switcher_->state().continent);
 
             hero_.set_position(manifold.new_position);
 
@@ -837,8 +838,8 @@ void Game::add_unit_to_army(int id, int count) {
 void Game::update_visited_tiles() {
     auto tile = hero_.get_tile();
     auto index = tile.tx + tile.ty * 64;
-    auto *visited = scene_switcher_->state().visited_tiles.data();
-    auto *tiles = map_.get_data();
+    auto *visited = scene_switcher_->state().visited_tiles[scene_switcher_->state().continent].data();
+    auto *tiles = map_.get_data(scene_switcher_->state().continent);
 
     visited[index] = tile.id;
     
@@ -1032,12 +1033,14 @@ void Game::setup_game()
     state.days = kDays[state.difficulty_level];
 
     /* Set hero to starting position */
-    hero_.move_to_tile(map_.get_tile(11, 58));
+    hero_.move_to_tile(map_.get_tile(11, 58, scene_switcher_->state().continent));
     update_camera();
 
     /* Clear visited tiles */
-    state.visited_tiles.resize(4096);
-    std::fill(state.visited_tiles.begin(), state.visited_tiles.end(), -1);
+    for (int i = 0; i < 4; i++) {
+        state.visited_tiles[i].resize(4096);
+        std::fill(state.visited_tiles[i].begin(), state.visited_tiles[i].end(), -1);
+    }
     update_visited_tiles();
 
     /* Update box colours */
@@ -1115,7 +1118,7 @@ void Game::setup_game()
 void Game::gen_tiles() {
     map_.reset();
 
-    auto *tiles = map_.get_data();
+    auto *tiles = map_.get_data(scene_switcher_->state().continent);
 
     static constexpr int kNumShopsPerContinent[4] = {
 		6, 6, 4, 5
@@ -1301,7 +1304,7 @@ void Game::set_state(GameState state) {
                 hero_.get_tile().tx,
                 hero_.get_tile().ty,
                 scene_switcher_->state().continent,
-                view_continent_fog_ ? scene_switcher_->state().visited_tiles.data() : map_.get_data()
+                view_continent_fog_ ? scene_switcher_->state().visited_tiles[scene_switcher_->state().continent].data() : map_.get_data(scene_switcher_->state().continent)
             );
             break;
         case GameState::UseMagic:
@@ -1381,5 +1384,25 @@ void Game::sail_to(int continent) {
         controls_locked_ = true;
 
         hero_.set_moving(true);
+    }
+    else {
+        control_lock_timer_ = 1;
+        controls_locked_ = true;
+        hero_.set_moving(true);
+
+        switch (continent) {
+            case 1:
+                auto_move_dir_.x = -1;
+                auto_move_dir_.y = 1;
+                hero_.set_flip(true);
+                break;
+            default:
+                break;
+        }
+
+        hero_.move_to_tile(map_.get_tile(63, 1, continent));
+        hero_.set_mount(Mount::Boat);
+        update_camera();
+        scene_switcher_->state().continent = continent;
     }
 }
