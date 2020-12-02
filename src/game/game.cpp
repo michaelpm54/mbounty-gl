@@ -105,10 +105,38 @@ bool Game::load(bty::Assets &assets)
     budget_.add_line(15, 6, "");
     budget_.add_line(15, 7, "");
 
-    setup_game();
+    /* Days run out/lose game */
+    lose_msg_.create(1, 3, 20, 24, color, assets);
+    lose_msg_name_ = lose_msg_.add_line(1, 2, "");
+    lose_msg_.add_line(1, 4,
+R"raw(you have failed to
+recover the
+Sceptre of Order
+in time to save
+the land! Beloved
+King Maximus has
+died and the Demon
+King Urthrax
+Killspite rules in
+his place.  The
+Four Continents
+lay in ruin about
+you, its people
+doomed to a life
+of misery and
+oppression because
+you could not find
+the Sceptre.)raw");
+    lose_pic_.set_texture(assets.get_texture("bg/king-dead.png"));
+    lose_pic_.set_position(168, 24);
 
     loaded_ = true;
     return success;
+}
+
+void Game::enter()
+{
+    setup_game();
 }
 
 void Game::update_camera()
@@ -116,8 +144,6 @@ void Game::update_camera()
     glm::vec2 cam_centre = hero_.get_center();
     camera_pos_ = {cam_centre.x - 120, cam_centre.y - 120, 0.0f};
     game_camera_ = camera_ * glm::translate(-camera_pos_);
-    // game_camera_ = zoom_;
-    // game_camera_ = camera_;
 }
 
 void Game::draw(bty::Gfx &gfx)
@@ -169,6 +195,8 @@ void Game::draw(bty::Gfx &gfx)
             break;
         case GameState::LoseGame:
             hud_.draw(gfx, camera_);
+            lose_msg_.draw(gfx, camera_);
+            gfx.draw_sprite(lose_pic_, camera_);
             break;
         default:
             break;
@@ -187,6 +215,10 @@ void Game::key(int key, int scancode, int action, int mods)
                 case GLFW_PRESS:
                     switch (key)
                     {
+                        case GLFW_KEY_L:
+                            state_ = GameState::LoseGame;
+                            lose_game();
+                            break;
                         case GLFW_KEY_SPACE:
                             state_ = GameState::Paused;
                             move_flags_ = MOVE_FLAGS_NONE;
@@ -309,7 +341,7 @@ void Game::key(int key, int scancode, int action, int mods)
                                     else {
                                         state_ = GameState::WeekPassed;
                                         weeks_passed_++;
-                                        update_week_passed_cards();
+                                        end_of_week(false);
                                     }
                                     clock_ = 0;
                                     hud_.update_state();
@@ -378,8 +410,18 @@ void Game::key(int key, int scancode, int action, int mods)
                 case GLFW_PRESS:
                     switch (key)
                     {
+                        case GLFW_KEY_ENTER:
+                            if (lose_state_ == 0) {
+                                hud_.set_title("      Press Enter to play again.");
+                                lose_state_++;
+                            }
+                            else {
+                                scene_switcher_->fade_to(SceneId::Intro);
+                            }
+                            break;
                         case GLFW_KEY_BACKSPACE:
                             state_ = GameState::Unpaused;
+                            hud_.set_hud_frame();
                             hud_.update_state();
                             break;
                     }
@@ -507,7 +549,7 @@ void Game::update(float dt)
                     days_passed_this_week = 0;
                     state_ = GameState::WeekPassed;
                     weeks_passed_++;
-                    update_week_passed_cards();
+                    end_of_week(false);
                 }
                 hud_.update_state();
             }
@@ -531,9 +573,6 @@ void Game::update(float dt)
     }
     else if (state_ == GameState::UseMagic) {
         use_magic_.animate(dt);
-    }
-    else if (state_ == GameState::LoseGame) {
-        hud_.set_title("Technically you should have lost here.");
     }
 }
 
@@ -724,7 +763,7 @@ std::string number_with_ks(int num)
     }
 }
 
-void Game::update_week_passed_cards()
+void Game::end_of_week(bool search)
 {
     std::string week = fmt::format("Week #{}", weeks_passed_);
 
@@ -771,6 +810,11 @@ void Game::update_week_passed_cards()
 
     sort_army();
 
+    bool out_of_money = (boat + army_total) > (gold + commission);
+    if (!out_of_money) {
+        balance = (commission + gold) - (boat - army_total);
+    }
+
     state.gold = balance;
 
     budget_.set_line(0, week);
@@ -779,6 +823,11 @@ void Game::update_week_passed_cards()
     budget_.set_line(4, fmt::format("Boat: {:>7}", boat));
     budget_.set_line(5, fmt::format("Army: {:>7}", army_total));
     budget_.set_line(6, fmt::format("Balance: {:>4}", number_with_ks(balance)));
+
+    if ((state.army[0] == -1 || out_of_money) && search) {
+        state_ = GameState::Disgrace;
+        disgrace();
+    }
 }
 
 void Game::sort_army()
@@ -803,6 +852,9 @@ void Game::sort_army()
 
 void Game::setup_game()
 {
+    state_ = GameState::Unpaused;
+    hud_.set_hud_frame();
+
     auto &state = scene_switcher_->state();
 
     /* Clear spells */
@@ -824,6 +876,7 @@ void Game::setup_game()
 
     /* Update box colours */
     auto color = bty::get_box_color(state.difficulty_level);
+    hud_.set_color(color);
     pause_menu_.set_color(color);
     use_magic_.set_color(color);
     view_army_.set_color(color);
@@ -871,5 +924,34 @@ void Game::setup_game()
     state.commission = kRankCommission[state.hero_id][0];
     state.leadership = kRankLeadership[state.hero_id][0];
 
+    /* Reset dialogs */
+    pause_menu_.set_selection(0);
+    use_magic_.set_selection(0);
+
     hud_.update_state();
+}
+
+void Game::disgrace() {
+    state_ = GameState::LoseGame;
+}
+
+void Game::lose_game() {
+    switch (scene_switcher_->state().hero_id) {
+        case 0:
+            lose_msg_name_->set_string("Oh, Sir Crimsaun");
+            break;
+        case 1:
+            lose_msg_name_->set_string("Oh, Lord Palmer");
+            break;
+        case 2:
+            lose_msg_name_->set_string("Oh, Moham");
+            break;
+        case 3:
+            lose_msg_name_->set_string("Oh, Tynnestra");
+            break;
+        default:
+            break;
+    }
+    hud_.set_blank_frame();
+    lose_state_ = 0;
 }

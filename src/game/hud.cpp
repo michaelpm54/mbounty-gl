@@ -10,7 +10,11 @@
 
 void Hud::load(bty::Assets &assets, SharedState &state) {
     state_ = &state;
-    frame_.set_texture(assets.get_texture("frame/game-hud.png"));
+
+    blank_frame_ = assets.get_texture("frame/game-empty.png");
+    hud_frame_ = assets.get_texture("frame/game-hud.png");
+
+    frame_.set_texture(hud_frame_);
 
     top_bar_.set_size(304, 9);
     top_bar_.set_position({8, 7});
@@ -79,4 +83,16 @@ void Hud::set_title(const std::string &msg) {
 
 bty::Sprite *Hud::get_contract() {
     return &contract_;
+}
+
+void Hud::set_blank_frame() {
+    frame_.set_texture(blank_frame_);
+}
+
+void Hud::set_hud_frame() {
+    frame_.set_texture(hud_frame_);
+}
+
+void Hud::set_color(bty::BoxColor color) {
+    top_bar_.set_color(color);
 }

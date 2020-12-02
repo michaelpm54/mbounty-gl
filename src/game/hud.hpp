@@ -3,11 +3,13 @@
 
 #include <vector>
 
+#include <glm/mat4x4.hpp>
+
 #include "gfx/rect.hpp"
 #include "gfx/sprite.hpp"
 #include "gfx/text.hpp"
 
-#include <glm/mat4x4.hpp>
+#include "bounty.hpp"
 
 namespace bty {
     class Assets;
@@ -29,10 +31,17 @@ public:
     /* Temporarily set the text in the box. Intended to be cleared ASAP. */
     /* Useful for an alert or message. */
     void set_title(const std::string &msg);
+    void set_blank_frame();
+    void set_hud_frame();
+    void set_color(bty::BoxColor color);
 
 private:
     SharedState *state_{nullptr};
     const bty::Font *font_{nullptr};
+
+    const bty::Texture *blank_frame_;
+    const bty::Texture *hud_frame_;
+
     bty::Sprite frame_;
     bty::Rect top_bar_;
     bty::Text name_;

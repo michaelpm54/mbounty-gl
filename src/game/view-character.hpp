@@ -26,6 +26,7 @@ private:
     bty::Sprite portrait_;
     bty::Rect rect_;
     bty::Text info_[11];
+    const bty::Texture *portraits_[4];
 };
 
 #endif // BTY_GAME_VIEW_CHARACTER_HPP_

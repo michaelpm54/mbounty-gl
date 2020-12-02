@@ -26,10 +26,9 @@ void SceneSwitcher::fade_to(SceneId id)
             if (!scene_map_[id]->load(*assets_)) {
                 spdlog::warn("SceneSwitcher::set_scene: Loading scene ID {} failed", id);
             }
-            else {
-                next_scene_ = scene_map_[id];
-            }
         }
+        next_scene_ = scene_map_[id];
+        next_scene_->enter();
     }
 
     fade_alpha_ = 0;
@@ -131,6 +130,7 @@ bool SceneSwitcher::set_scene(SceneId id)
     }
 
     scene_ = scene_map_[id];
+    scene_->enter();
 
     return true;
 }

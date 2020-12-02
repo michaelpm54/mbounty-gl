@@ -23,6 +23,7 @@ public:
     void key(int key, int scancode, int action, int mods) override;
     bool loaded() override;
     void update(float dt) override;
+    void enter() override;
 
 private:
     enum class IntroState {

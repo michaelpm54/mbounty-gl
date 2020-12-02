@@ -12,23 +12,18 @@ void ViewCharacter::load(bty::Assets &assets, bty::BoxColor color, int hero_id) 
     frame_.set_texture(assets.get_texture("frame/character.png"));
     frame_.set_position(0, 16);
 
-    std::string portrait = [](int hero_id) {
-        switch (hero_id) {
-            case 0:
-                return "crimsaun";
-            case 1:
-                return "palmer";
-            case 2:
-                return "tynnestra";
-            case 3:
-                return "moham";
-            default:
-                break;
-        }
-        return "Unknown";
-    }(hero_id);
+    static const std::string kPortraitFilenames[4] = {
+        "crimsaun",
+        "palmer",
+        "tynnestra",
+        "moham",
+    };
 
-    portrait_.set_texture(assets.get_texture(fmt::format("char-page/{}.png", portrait)));
+    for (int i = 0; i < 4; i++) {
+        portraits_[i] = assets.get_texture(fmt::format("char-page/{}.png", kPortraitFilenames[i]));
+    }
+
+    portrait_.set_texture(portraits_[hero_id]);
     portrait_.set_position(8, 24);
 
     rect_.set_color(color);
@@ -65,6 +60,7 @@ void ViewCharacter::view(const SharedState &state) {
     info_[8].set_string(fmt::format("Castles garrisoned {:>5}", 0));
     info_[9].set_string(fmt::format("Followers killed {:>7}", 0));
     info_[10].set_string(fmt::format("Current score {:>10}", 0));
+    portrait_.set_texture(portraits_[state.hero_id]);
 }
 
 void ViewCharacter::set_color(bty::BoxColor color) {

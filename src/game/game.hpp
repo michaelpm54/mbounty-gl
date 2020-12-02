@@ -33,8 +33,7 @@ public:
     void key(int key, int scancode, int action, int mods) override;
     bool loaded() override;
     void update(float dt) override;
-
-    void setup_game();
+    void enter() override;
 
 private:
     void update_camera();
@@ -42,8 +41,11 @@ private:
     void add_unit_to_army(int id, int count);
     void update_visited_tiles();
     void update_spells();
-    void update_week_passed_cards();
+    void end_of_week(bool search);
     void sort_army();
+    void disgrace();
+    void lose_game();
+    void setup_game();
 
 private:
     enum class GameState {
@@ -56,6 +58,7 @@ private:
         ViewContract,
         LoseGame,
         WeekPassed,
+        Disgrace,
     };
 
     enum WeekPassedCard {
@@ -99,6 +102,11 @@ private:
     bty::TextBox budget_;
 
     bool boat_rented_{false};
+
+    bty::TextBox lose_msg_;
+    bty::Sprite lose_pic_;
+    bty::Text *lose_msg_name_;
+    int lose_state_{0};
 };
 
 #endif    // BTY_GAME_GAME_HPP_

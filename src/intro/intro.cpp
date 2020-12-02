@@ -6,18 +6,11 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "assets.hpp"
+#include "bounty.hpp"
 #include "scene-switcher.hpp"
 #include "shared-state.hpp"
 
 #include "gfx/gfx.hpp"
-
-static constexpr const char *kNames[] = 
-{
-    "Sir Crimsaun the Knight",
-    "Lord Palmer the Paladin",
-    "Mad Moham the Barbarian",
-    "Tynnestra the Sorceress",
-};
 
 Intro::Intro(bty::SceneSwitcher &scene_switcher)
     : scene_switcher_(&scene_switcher)
@@ -38,7 +31,7 @@ bool Intro::load(bty::Assets &assets)
     help_box_.create(1, 24, 38, 3, bty::BoxColor::Intro, assets);
     help_box_.add_line(2, 1, "Select a character and press Enter");
 
-    name_box_.add_line(2, 1, kNames[hero_]);
+    name_box_.add_line(2, 1, kHeroNames[0][0]);
 
     diff_box_.create(7, 10, 27, 8, bty::BoxColor::Intro, assets);
     diff_box_.add_line(2, 1, "Difficulty");
@@ -97,13 +90,13 @@ void Intro::key(int key, int scancode, int action, int mods)
                         if (hero_ == -1) {
                             hero_ = 3;
                         }
-                        name_box_.set_line(0, kNames[hero_]);
+                        name_box_.set_line(0, kHeroNames[hero_][0]);
                     }
                     break;
                 case GLFW_KEY_RIGHT:
                     if (state_ == IntroState::ChoosingHero) {
                         hero_ = (hero_ + 1) % 4;
-                        name_box_.set_line(0, kNames[hero_]);
+                        name_box_.set_line(0, kHeroNames[hero_][0]);
                     }
                     break;
                 case GLFW_KEY_ENTER:
@@ -140,4 +133,12 @@ bool Intro::loaded()
 void Intro::update(float dt)
 {
     diff_box_.animate(dt);
+}
+
+void Intro::enter()
+{
+    state_ = IntroState::ChoosingHero;
+    diff_box_.set_selection(1);
+    hero_ = 0;
+    name_box_.set_line(0, kHeroNames[0][0]);
 }
