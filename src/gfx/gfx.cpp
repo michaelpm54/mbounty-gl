@@ -53,6 +53,12 @@ void Gfx::draw_sprite(Sprite &sprite, glm::mat4 &camera)
             glProgramUniformMatrix4fv(sprite_single_texture_shader_, locations_[Locations::SpriteSingleTextureCamera], 1, GL_FALSE, glm::value_ptr(camera));
             glProgramUniform1i(sprite_single_texture_shader_, locations_[Locations::SpriteSingleTextureTexture], 0);
             glProgramUniform1i(sprite_single_texture_shader_, locations_[Locations::SpriteSingleTextureFlip], static_cast<int>(sprite.get_flip()));
+            glProgramUniform1i(sprite_single_texture_shader_, locations_[Locations::SpriteSingleTextureRepeat], static_cast<int>(sprite.get_repeat()));
+            if (sprite.get_repeat()) {
+                const auto size { sprite.get_size() };
+                glm::vec2 scale = { size.x / texture->width, size.y / texture->height };
+                glProgramUniform2fv(sprite_single_texture_shader_, locations_[Locations::SpriteSingleTextureSize], 1, glm::value_ptr(scale));
+            }
             glUseProgram(sprite_single_texture_shader_);
             glBindTextureUnit(0, texture->handle);
         }
@@ -106,6 +112,8 @@ void Gfx::get_uniform_locations()
     locations_[Locations::SpriteSingleTextureCamera] = glGetUniformLocation(sprite_single_texture_shader_, "camera");
     locations_[Locations::SpriteSingleTextureTexture] = glGetUniformLocation(sprite_single_texture_shader_, "image");
     locations_[Locations::SpriteSingleTextureFlip] = glGetUniformLocation(sprite_single_texture_shader_, "flip");
+    locations_[Locations::SpriteSingleTextureRepeat] = glGetUniformLocation(sprite_single_texture_shader_, "repeat");
+    locations_[Locations::SpriteSingleTextureSize] = glGetUniformLocation(sprite_single_texture_shader_, "size");
     locations_[Locations::RectTransform] = glGetUniformLocation(rect_shader_, "transform");
     locations_[Locations::RectCamera] = glGetUniformLocation(rect_shader_, "camera");
     locations_[Locations::RectColor] = glGetUniformLocation(rect_shader_, "fill_color");

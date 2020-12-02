@@ -17,6 +17,8 @@ enum Locations {
     SpriteSingleTextureCamera,
     SpriteSingleTextureTexture,
     SpriteSingleTextureFlip,
+    SpriteSingleTextureRepeat,
+    SpriteSingleTextureSize,
     RectTransform,
     RectCamera,
     RectColor,

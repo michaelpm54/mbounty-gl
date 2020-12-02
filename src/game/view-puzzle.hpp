@@ -24,6 +24,7 @@ public:
 private:
     const bty::Texture *textures_[25]{nullptr};
     bty::Sprite sprites_[25];
+    bty::Sprite border_[8];
 };
 
 #endif // BTY_GAME_VIEW_PUZZLE_HPP_

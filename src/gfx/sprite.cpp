@@ -61,4 +61,15 @@ bool Sprite::get_flip() const {
     return flip_;
 }
 
+void Sprite::set_repeat(bool val) {
+    if (texture_ && (texture_->num_frames_x > 1 || texture_->num_frames_y > 1)) {
+        spdlog::warn("Repeat is set for a sprite with multiple frames. This is not implemented.");
+    }
+    repeat_ = val;
+}
+
+bool Sprite::get_repeat() const {
+    return repeat_;
+}
+
 }    // namespace bty

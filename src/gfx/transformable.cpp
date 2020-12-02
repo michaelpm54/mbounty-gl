@@ -49,4 +49,9 @@ void Transformable::set_size(float x, float y)
     dirty_ = true;
 }
 
+glm::vec2 Transformable::get_size() const
+{
+    return scale_;
+}
+
 }    // namespace bty

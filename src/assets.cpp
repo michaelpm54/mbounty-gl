@@ -13,6 +13,7 @@ Assets::Assets() {
         border_[i] = get_texture(fmt::format("border-normal/box{}.png", i));
     }
     font_.load_from_texture(get_texture("fonts/genesis_custom.png"), {8.0f, 8.0f});
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 }
 
 Assets::~Assets()
@@ -129,8 +130,8 @@ Texture *Assets::get_single_texture(const std::string &path) {
 
     glTextureParameteri(tex, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTextureParameteri(tex, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTextureParameteri(tex, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTextureParameteri(tex, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTextureParameteri(tex, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTextureParameteri(tex, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
     glTextureStorage2D(tex, 1, iformat, w, h);
     glTextureSubImage2D(tex, 0, 0, 0, w, h, format, GL_UNSIGNED_BYTE, data);

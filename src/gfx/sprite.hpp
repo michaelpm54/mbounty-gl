@@ -26,6 +26,8 @@ public:
     int get_frame() const;
     void set_flip(bool val);
     bool get_flip() const;
+    void set_repeat(bool val);
+    bool get_repeat() const;
 
 private:
     void load_animation();
@@ -35,6 +37,7 @@ protected:
 
 private:
     bool flip_{false};
+    bool repeat_{false};
     Animation animation_;
 };
 

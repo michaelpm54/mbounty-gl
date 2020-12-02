@@ -15,10 +15,10 @@ GLuint load_shader(const std::string &vs_path, const std::string &fs_path)
     GLuint vs = glCreateShader(GL_VERTEX_SHADER);
     GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
     std::string shader_sources[2] =
-        {
-            read_text(vs_path),
-            read_text(fs_path),
-        };
+    {
+        read_text(vs_path),
+        read_text(fs_path),
+    };
     const char *vs_src = shader_sources[0].c_str();
     const char *fs_src = shader_sources[1].c_str();
     glShaderSource(vs, 1, &vs_src, nullptr);

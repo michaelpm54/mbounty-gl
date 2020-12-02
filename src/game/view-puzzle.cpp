@@ -23,16 +23,50 @@ void ViewPuzzle::load(bty::Assets &assets) {
     for (int i = 0; i < 8; i++) {
         textures_[artifact_positions[i]] = assets.get_texture(fmt::format("artifacts/44x32/{}.png", i));
     }
-    int i = 0;
+    int n = 0;
     for (int y = 0; y < 5; y++) {
         for (int x = 0; x < 5; x++) {
-            sprites_[i].set_texture(textures_[i]);
-            sprites_[i++].set_position(16 + x * 44, 32 + y * 32);
+            sprites_[n].set_texture(textures_[n]);
+            sprites_[n++].set_position(18 + x * 44, 40 + y * 32);
         }
     }
+    
+    float x = 8;
+    float y = 24;
+    float width = 5 * 44;
+    float height = 5 * 32;
+
+    for (int i = 0; i < 8; i++) {
+        border_[i].set_texture(assets.get_texture(fmt::format("border-puzzle/{}.png", i)));
+    }
+    border_[5].set_texture(assets.get_texture(fmt::format("border-puzzle/{}.png", 9)));
+
+    // top bottom
+	border_[1].set_size(width, 16);
+	border_[5].set_size(width, 16);
+    border_[1].set_repeat(true);
+    border_[5].set_repeat(true);
+
+	// left right
+	border_[3].set_size(10, height);
+	border_[7].set_size(10, height);
+    border_[3].set_repeat(true);
+    border_[7].set_repeat(true);
+
+    border_[0].set_position({x, y});
+    border_[1].set_position({x+10, y});
+    border_[2].set_position({x+10 + width, y});
+    border_[3].set_position({x+10 + width, y+16});
+    border_[4].set_position({x+10 + width, y+16+height});
+    border_[5].set_position({x+10, y+16+height});
+    border_[6].set_position({x, y+16 + height});
+    border_[7].set_position({x, y+16});
 }
 
 void ViewPuzzle::draw(bty::Gfx &gfx, glm::mat4 &camera) {
+    for (int i = 0; i < 8; i++) {
+        gfx.draw_sprite(border_[i], camera);
+    }
     for (int i = 0; i < 25; i++) {
         gfx.draw_sprite(sprites_[i], camera);
     }
