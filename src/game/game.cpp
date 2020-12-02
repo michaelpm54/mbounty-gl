@@ -1008,6 +1008,10 @@ void Game::setup_game()
     use_magic_.set_selection(0);
     dismiss_.set_selection(0);
 
+    if (state.hero_id == 2) {
+        state.magic = true;
+    }
+
     hud_.update_state();
 }
 
