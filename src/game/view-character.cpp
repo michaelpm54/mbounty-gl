@@ -37,6 +37,17 @@ void ViewCharacter::load(bty::Assets &assets, bty::BoxColor color, int hero_id) 
     }
 
     info_[0].set_position(112, 32);
+
+    float x = 206;
+    float y = 136;
+    for (int i = 0; i < 4; i++) {
+        if (i == 2) {
+            x -= 112;
+            y += 40;
+        }
+        map_sprites_[i].set_texture(assets.get_texture(fmt::format("maps/{}.png", i)));
+        map_sprites_[i].set_position(x + i * 56, y);
+    }
 }
 
 void ViewCharacter::draw(bty::Gfx &gfx, glm::mat4 &camera) {
@@ -45,6 +56,9 @@ void ViewCharacter::draw(bty::Gfx &gfx, glm::mat4 &camera) {
     gfx.draw_rect(rect_, camera);
     for (int i = 0; i < 11; i++) {
         gfx.draw_text(info_[i], camera);
+    }
+    for (int i = 0; i < found_maps_; i++) {
+        gfx.draw_sprite(map_sprites_[i], camera);
     }
 }
 
@@ -61,6 +75,13 @@ void ViewCharacter::view(const SharedState &state) {
     info_[9].set_string(fmt::format("Followers killed {:>7}", 0));
     info_[10].set_string(fmt::format("Current score {:>10}", 0));
     portrait_.set_texture(portraits_[state.hero_id]);
+
+    found_maps_ = 0;
+    for (int i = 0; i < 4; i++) {
+        if (state.maps_found[i]) {
+            found_maps_++;
+        }
+    }
 }
 
 void ViewCharacter::set_color(bty::BoxColor color) {

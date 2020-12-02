@@ -181,6 +181,7 @@ void Game::draw(bty::Gfx &gfx)
             break;
         case GameState::ViewArmy:
             map_.draw(game_camera_, continent);
+            hud_.draw(gfx, camera_);
             view_army_.draw(gfx, camera_);
             break;
         case GameState::ViewCharacter:
@@ -571,17 +572,13 @@ bool Game::loaded()
 }
 
 void Game::find_map(const Tile &tile) {
-    if (map_tiles_[0] == glm::ivec2{tile.tx, tile.ty}) {
+    auto &state = scene_switcher_->state();
+
+    if (state.continent < 3 && map_tiles_[state.continent] == glm::ivec2{tile.tx, tile.ty}) {
         hud_.set_title("You found a map!");
-
-        auto &state = scene_switcher_->state();
-
         map_.erase_tile(tile, state.continent);
-
         state.maps_found[state.continent+1] = true;
-
         found_map_continent_->set_string(kContinents[state.continent+1]);
-
         set_state(GameState::ChestMap);
     }
 }
@@ -1118,8 +1115,6 @@ void Game::setup_game()
 void Game::gen_tiles() {
     map_.reset();
 
-    auto *tiles = map_.get_data(scene_switcher_->state().continent);
-
     static constexpr int kNumShopsPerContinent[4] = {
 		6, 6, 4, 5
 	};
@@ -1187,32 +1182,39 @@ void Game::gen_tiles() {
 		ShopTree,
 	};
 
-    std::vector<glm::ivec2> random_tiles;
+    for (int continent = 0; continent < 4; continent++) {
+        auto *tiles = map_.get_data(continent);
 
-    int n = 0;
-    for (int y = 0; y < 64; y++) {
-        for (int x = 0; x < 64; x++) {
-            int id = tiles[n++];
-            if (id == 0x8B) {
-                random_tiles.push_back({x, y});
+        std::vector<glm::ivec2> random_tiles;
+
+        int n = 0;
+        for (int y = 0; y < 64; y++) {
+            for (int x = 0; x < 64; x++) {
+                int id = tiles[n++];
+                if (id == 0x8B) {
+                    random_tiles.push_back({x, y});
+                }
             }
         }
+
+        rng_.seed(std::chrono::system_clock::now().time_since_epoch().count());
+        std::shuffle(std::begin(random_tiles), std::end(random_tiles), rng_);
+
+        int used_tiles = 0;
+
+        for (int i = 0; i < kNumShopsPerContinent[continent]; i++) {
+            int unit = kAvailableUnitsPerContinent[continent][rand() % 6];
+            tiles[random_tiles[used_tiles].x + random_tiles[used_tiles].y * 64] = kShopTileForUnit[unit];
+            used_tiles++;
+        }
+
+        /* Saharia doesn't have a map to anywhere */
+        if (continent != 3) {
+            tiles[random_tiles[used_tiles].x + random_tiles[used_tiles].y * 64] = Chest;
+            map_tiles_[continent] = random_tiles[used_tiles];
+            used_tiles++;
+        }
     }
-
-    rng_.seed(std::chrono::system_clock::now().time_since_epoch().count());
-    std::shuffle(std::begin(random_tiles), std::end(random_tiles), rng_);
-
-    int used_tiles = 0;
-
-    for (int i = 0; i < kNumShopsPerContinent[0]; i++) {
-        int unit = kAvailableUnitsPerContinent[0][rand() % 6];
-        tiles[random_tiles[used_tiles].x + random_tiles[used_tiles].y * 64] = kShopTileForUnit[unit];
-        used_tiles++;
-    }
-
-    tiles[random_tiles[used_tiles].x + random_tiles[used_tiles].y * 64] = Chest;
-    map_tiles_[0] = random_tiles[used_tiles];
-    used_tiles++;
 
     map_.create_geometry();
 }
@@ -1391,16 +1393,34 @@ void Game::sail_to(int continent) {
         hero_.set_moving(true);
 
         switch (continent) {
+            case 0:
+                auto_move_dir_.x = 0;
+                auto_move_dir_.y = 1;
+                hero_.set_flip(false);
+                hero_.move_to_tile(map_.get_tile(11, 58, continent));
+                break;
             case 1:
                 auto_move_dir_.x = -1;
                 auto_move_dir_.y = 1;
                 hero_.set_flip(true);
+                hero_.move_to_tile(map_.get_tile(63, 1, continent));
+                break;
+            case 2:
+                auto_move_dir_.x = 1;
+                auto_move_dir_.y = 0;
+                hero_.set_flip(false);
+                hero_.move_to_tile(map_.get_tile(1, 20, continent));
+                break;
+            case 3:
+                auto_move_dir_.x = 0;
+                auto_move_dir_.y = 1;
+                hero_.set_flip(false);
+                hero_.move_to_tile(map_.get_tile(32, 63, continent));
                 break;
             default:
                 break;
         }
 
-        hero_.move_to_tile(map_.get_tile(63, 1, continent));
         hero_.set_mount(Mount::Boat);
         update_camera();
         scene_switcher_->state().continent = continent;
