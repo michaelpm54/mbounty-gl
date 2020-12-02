@@ -87,10 +87,9 @@ void Dialog::set_option(int index, std::string const &str)
 
 void Dialog::set_selection(int index)
 {
-	assert(index > -1 && index < static_cast<int>(options_.size()));
-
-	if (options_.empty())
+	if (options_.empty()) {
 		return;
+	}
 
 	selection_ = index;
 
