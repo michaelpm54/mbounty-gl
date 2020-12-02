@@ -10,6 +10,9 @@ namespace bty {
 
 void Dialog::next()
 {
+	if (options_.empty())
+		return;
+
 	int count = 0;
 	int sel = selection_;
 	do {
@@ -139,6 +142,11 @@ void Dialog::animate(float dt)
 int Dialog::get_selection() const
 {
 	return selection_;
+}
+
+void Dialog::clear_options()
+{
+	options_.clear();
 }
 
 }

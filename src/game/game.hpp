@@ -48,6 +48,8 @@ private:
     void lose_game();
     void setup_game();
     void view_puzzle();
+    void dismiss();
+    void dismiss_slot(int slot);
 
 private:
     enum class GameState {
@@ -62,6 +64,8 @@ private:
         WeekPassed,
         Disgrace,
         ViewPuzzle,
+        Dismiss,
+        DismissError,
     };
 
     enum WeekPassedCard {
@@ -111,6 +115,8 @@ private:
     bty::Sprite lose_pic_;
     bty::Text *lose_msg_name_;
     int lose_state_{0};
+
+    bty::Dialog dismiss_;
 };
 
 #endif    // BTY_GAME_GAME_HPP_

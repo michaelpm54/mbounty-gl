@@ -131,6 +131,9 @@ the Sceptre.)raw");
     lose_pic_.set_texture(assets.get_texture("bg/king-dead.png"));
     lose_pic_.set_position(168, 24);
 
+    dismiss_.create(1, 18, 30, 9, color, assets);
+    dismiss_.add_line(5, 1, "Dismiss which army?");
+
     loaded_ = true;
     return success;
 }
@@ -202,6 +205,13 @@ void Game::draw(bty::Gfx &gfx)
         case GameState::ViewPuzzle:
             hud_.draw(gfx, camera_);
             view_puzzle_.draw(gfx, camera_);
+            break;
+        case GameState::DismissError: [[fallthrough]];
+        case GameState::Dismiss:
+            map_.draw(game_camera_);
+            gfx.draw_sprite(hero_, game_camera_);
+            hud_.draw(gfx, camera_);
+            dismiss_.draw(gfx, camera_);
             break;
         default:
             break;
@@ -355,6 +365,12 @@ void Game::key(int key, int scancode, int action, int mods)
                                     state_ = GameState::ViewPuzzle;
                                     view_puzzle();
                                     break;
+                                case 7:
+                                    break;
+                                case 8:
+                                    state_ = GameState::Dismiss;
+                                    dismiss();
+                                    break;
                                 default:
                                     break;
                             }
@@ -454,6 +470,48 @@ void Game::key(int key, int scancode, int action, int mods)
                             else {
                                 week_passed_card_ = WeekPassedCard::Budget;
                             }
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case GameState::Dismiss:
+            switch (action) {
+                case GLFW_PRESS:
+                    switch (key) {
+                        case GLFW_KEY_UP:
+                            dismiss_.prev();
+                            break;
+                        case GLFW_KEY_DOWN:
+                            dismiss_.next();
+                            break;
+                        case GLFW_KEY_ENTER:
+                            dismiss_slot(dismiss_.get_selection());
+                            break;
+                        case GLFW_KEY_BACKSPACE:
+                            state_ = GameState::Unpaused;
+                            hud_.update_state();
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case GameState::DismissError:
+            switch (action) {
+                case GLFW_PRESS:
+                    switch (key) {
+                        case GLFW_KEY_ENTER: [[fallthrough]];
+                        case GLFW_KEY_BACKSPACE:
+                            state_ = GameState::Dismiss;
+                            hud_.update_state();
                             break;
                         default:
                             break;
@@ -572,7 +630,9 @@ void Game::update(float dt)
     || state_ == GameState::ViewContinent
     || state_ == GameState::UseMagic
     || state_ == GameState::ViewContract
-    || state_ == GameState::ViewPuzzle) {
+    || state_ == GameState::ViewPuzzle
+    || state_ == GameState::Dismiss
+    || state_ == GameState::DismissError) {
         hud_.update(dt);
         pause_menu_.animate(dt);
     }
@@ -587,6 +647,11 @@ void Game::update(float dt)
     }
     else if (state_ == GameState::ViewPuzzle) {
         view_puzzle_.update(dt);
+    }
+    else if (state_ == GameState::Dismiss
+    || state_ == GameState::DismissError) {
+        hero_.animate(dt);
+        dismiss_.animate(dt);
     }
 }
 
@@ -847,7 +912,7 @@ void Game::end_of_week(bool search)
 void Game::sort_army()
 {
     int *army = scene_switcher_->state().army;
-    int *army_counts = scene_switcher_->state().army;
+    int *army_counts = scene_switcher_->state().army_counts;
 
     int last_free = -1;
     for (int i = 0; i < 5; i++) {
@@ -941,6 +1006,7 @@ void Game::setup_game()
     /* Reset dialogs */
     pause_menu_.set_selection(0);
     use_magic_.set_selection(0);
+    dismiss_.set_selection(0);
 
     hud_.update_state();
 }
@@ -973,4 +1039,42 @@ void Game::lose_game() {
 void Game::view_puzzle()
 {
 
+}
+
+void Game::dismiss()
+{
+    int opt = dismiss_.get_selection();
+    dismiss_.clear_options();
+
+    auto &state = scene_switcher_->state();
+
+    for (int i = 0; i < 5; i++) {
+        if (state.army[i] != -1) {
+            dismiss_.add_option(11, 3 + i, kUnits[state.army[i]].name_plural);
+        }
+    }
+
+    if (opt > 0) {
+        dismiss_.set_selection(opt-1);
+    }
+}
+
+void Game::dismiss_slot(int slot) {
+    int num_units = 0;
+    for (int i = 0; i < 5; i++) {
+        if (scene_switcher_->state().army[i] != -1) {
+            num_units++;
+        }
+    }
+
+    if (num_units == 1) {
+        state_ = GameState::DismissError;
+        hud_.set_title("  You may not dismiss your last army!");
+        return;
+    }
+
+    scene_switcher_->state().army[slot] = -1;
+    scene_switcher_->state().army_counts[slot] = 0;
+    sort_army();
+    dismiss();
 }
