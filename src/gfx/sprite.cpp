@@ -12,10 +12,13 @@ void Sprite::set_texture(const Texture *texture)
         spdlog::warn("Sprite::set_texture: nullptr");
         return;
     }
-    else
-        set_size(texture->frame_width, texture->frame_height);
+    else if (texture == texture_) {
+        return;
+    }
 
     texture_ = texture;
+    
+    set_size(texture->frame_width, texture->frame_height);
 
     if (texture->num_frames_x && texture->num_frames_y) {
         load_animation();
@@ -31,6 +34,7 @@ void Sprite::load_animation() {
     animation_.exists = true;
     animation_.total_frames = texture_->num_frames_x * texture_->num_frames_y;
     animation_.time_per_frame = 0.15f;
+    animation_.current_frame = rand() % animation_.total_frames;
 }
 
 void Sprite::animate(float dt) {

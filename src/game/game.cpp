@@ -46,7 +46,7 @@ bool Game::load(bty::Assets &assets)
     pause_menu_.add_option(3, 9, "Search the area");
     pause_menu_.add_option(3, 10, "Dismiss army");
     pause_menu_.add_option(3, 11, "Game controls");
-    pause_menu_.add_option(3, 13, "Get password");
+    pause_menu_.add_option(3, 13, "Save game");
 
     /* Create "Use magic" menu */
     use_magic_.create(
@@ -78,6 +78,7 @@ bool Game::load(bty::Assets &assets)
     view_character_.load(assets, color, state.hero_id);
     view_continent_.load(assets, color);
     view_contract_.load(assets, color);
+    view_puzzle_.load(assets);
 
     /* Load map */
     map_.load(assets);
@@ -197,6 +198,10 @@ void Game::draw(bty::Gfx &gfx)
             hud_.draw(gfx, camera_);
             lose_msg_.draw(gfx, camera_);
             gfx.draw_sprite(lose_pic_, camera_);
+            break;
+        case GameState::ViewPuzzle:
+            hud_.draw(gfx, camera_);
+            view_puzzle_.draw(gfx, camera_);
             break;
         default:
             break;
@@ -346,6 +351,10 @@ void Game::key(int key, int scancode, int action, int mods)
                                     clock_ = 0;
                                     hud_.update_state();
                                     break;
+                                case 6:
+                                    state_ = GameState::ViewPuzzle;
+                                    view_puzzle();
+                                    break;
                                 default:
                                     break;
                             }
@@ -361,6 +370,7 @@ void Game::key(int key, int scancode, int action, int mods)
         case GameState::ViewArmy: [[fallthrough]];
         case GameState::ViewCharacter: [[fallthrough]];
         case GameState::ViewContinent: [[fallthrough]];
+        case GameState::ViewPuzzle: [[fallthrough]];
         case GameState::ViewContract:
             switch (action)
             {
@@ -561,7 +571,8 @@ void Game::update(float dt)
     || state_ == GameState::Unpaused
     || state_ == GameState::ViewContinent
     || state_ == GameState::UseMagic
-    || state_ == GameState::ViewContract) {
+    || state_ == GameState::ViewContract
+    || state_ == GameState::ViewPuzzle) {
         hud_.update(dt);
         pause_menu_.animate(dt);
     }
@@ -573,6 +584,9 @@ void Game::update(float dt)
     }
     else if (state_ == GameState::UseMagic) {
         use_magic_.animate(dt);
+    }
+    else if (state_ == GameState::ViewPuzzle) {
+        view_puzzle_.update(dt);
     }
 }
 
@@ -954,4 +968,9 @@ void Game::lose_game() {
     }
     hud_.set_blank_frame();
     lose_state_ = 0;
+}
+
+void Game::view_puzzle()
+{
+
 }

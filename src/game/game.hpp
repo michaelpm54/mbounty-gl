@@ -17,6 +17,7 @@
 #include "game/view-character.hpp"
 #include "game/view-continent.hpp"
 #include "game/view-contract.hpp"
+#include "game/view-puzzle.hpp"
 
 namespace bty {
 class Assets;
@@ -46,6 +47,7 @@ private:
     void disgrace();
     void lose_game();
     void setup_game();
+    void view_puzzle();
 
 private:
     enum class GameState {
@@ -59,6 +61,7 @@ private:
         LoseGame,
         WeekPassed,
         Disgrace,
+        ViewPuzzle,
     };
 
     enum WeekPassedCard {
@@ -88,6 +91,7 @@ private:
     ViewContinent view_continent_;
     bty::Dialog use_magic_;
     ViewContract view_contract_;
+    ViewPuzzle view_puzzle_;
 
     bty::Text *magic_spells_[14]{nullptr};
 

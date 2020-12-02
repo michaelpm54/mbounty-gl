@@ -35,6 +35,7 @@ set(MBOUNTYGL_SRC
 	src/game/view-character.cpp
 	src/game/view-continent.cpp
 	src/game/view-contract.cpp
+	src/game/view-puzzle.cpp
 )
 
 add_executable(${PROJECT_NAME}
