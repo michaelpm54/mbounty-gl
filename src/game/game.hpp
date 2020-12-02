@@ -41,6 +41,7 @@ private:
     void update_visited_tiles();
     void update_spells();
     void update_week_passed_cards();
+    void sort_army();
 
 private:
     enum class GameState {

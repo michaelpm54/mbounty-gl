@@ -715,6 +715,19 @@ void Game::update_spells()
     magic_spells_[n]->set_string(fmt::format("{} Turn Undead", spells[n]));
 }
 
+std::string number_with_ks(int num)
+{
+    if (num >= 1'000'000) {
+        return fmt::format("{}KK", num / 1'000'000);
+    }
+    else if (num >= 1'000) {
+        return fmt::format("{}K", num / 1'000);
+    }
+    else {
+        return fmt::format("{}", num);
+    }
+}
+
 void Game::update_week_passed_cards()
 {
     std::string week = fmt::format("Week #{}", weeks_passed_);
@@ -728,19 +741,13 @@ void Game::update_week_passed_cards()
 
     auto &state = scene_switcher_->state();
 
-    std::string on_hand;
-    int gold = state.gold;
-    if (gold >= 1'000'000) {
-        on_hand = fmt::format("{}KK", gold / 1'000'000);
-    }
-    else if (gold >= 1'000) {
-        on_hand = fmt::format("{}K", gold / 1'000);
-    }
-    else {
-        on_hand = fmt::format("{}", gold);
-    }
+    std::string on_hand = number_with_ks(state.gold);
 
     int army_total = 0;
+    int commission = state.commission;
+    int gold = state.gold;
+    int boat = boat_rented_ ? 500 : 0;
+    int balance = (commission + gold) - boat;
 
     for (int i = 0; i < state.army_size; i++) {
         if (state.army[i] == -1) {
@@ -749,36 +756,52 @@ void Game::update_week_passed_cards()
         else {
             const auto &unit = kUnits[state.army[i]];
             int weekly_cost = unit.weekly_cost * state.army_counts[i];
-            army_total += weekly_cost;
-            // 14 slots
-            std::string cost = std::to_string(weekly_cost);
-            std::string spaces(14-(cost.size()+unit.name_plural.size()), ' ');
-            budget_.set_line(7+i, fmt::format("{}{}{}", unit.name_plural, spaces, cost));
+            if (balance > weekly_cost || balance - weekly_cost == 0) {
+		        balance -= weekly_cost;
+		        army_total += weekly_cost;
+                std::string cost = number_with_ks(weekly_cost);
+                std::string spaces(14-(cost.size()+unit.name_plural.size()), ' ');
+                budget_.set_line(7+i, fmt::format("{}{}{}", unit.name_plural, spaces, cost));
+	        }
+            else {
+                std::string leave = "Leave";
+                std::string spaces(14-(leave.size()+unit.name_plural.size()), ' ');
+                budget_.set_line(7+i, fmt::format("{}{}{}", unit.name_plural, spaces, leave));
+                state.army[i] = -1;
+                state.army_counts[i] = -1;
+                state.army_size--;
+            }
         }
     }
 
-    int boat_cost = boat_rented_ ? 500 : 0;
-    gold -= army_total;
-    gold -= boat_cost;
-    gold += state.commission;
+    sort_army();
 
-    std::string balance;
-    if (gold >= 1'000'000) {
-        balance = fmt::format("{}KK", gold / 1'000'000);
-    }
-    else if (gold >= 1'000) {
-        balance = fmt::format("{}K", gold / 1'000);
-    }
-    else {
-        balance = fmt::format("{}", gold);
-    }
-
-    state.gold = gold;
+    state.gold = balance;
 
     budget_.set_line(0, week);
     budget_.set_line(2, fmt::format("On Hand: {:>4}", on_hand));
-    budget_.set_line(3, fmt::format("Payment: {:>4}", state.commission));
-    budget_.set_line(4, fmt::format("Boat: {:>7}", boat_cost));
+    budget_.set_line(3, fmt::format("Payment: {:>4}", commission));
+    budget_.set_line(4, fmt::format("Boat: {:>7}", boat));
     budget_.set_line(5, fmt::format("Army: {:>7}", army_total));
-    budget_.set_line(6, fmt::format("Balance: {:>4}", balance));
+    budget_.set_line(6, fmt::format("Balance: {:>4}", number_with_ks(balance)));
+}
+
+void Game::sort_army()
+{
+    int *army = scene_switcher_->state().army;
+    int *army_counts = scene_switcher_->state().army;
+
+    int last_free = -1;
+    for (int i = 0; i < 5; i++) {
+        if (last_free == -1 && army[i] == -1) {
+            last_free = i;
+        }
+        else if (last_free != -1 && army[i] != -1) {
+            army[last_free] = army[i];
+            army[i] = -1;
+            army_counts[last_free] = army_counts[i];
+            army_counts[i] = -1;
+            last_free = i;
+        }
+    }
 }
