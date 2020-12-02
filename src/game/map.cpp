@@ -87,7 +87,6 @@ void Map::update(float dt) {
 Tile Map::get_tile(int tx, int ty) const
 {
     if (tx < 0 || tx > 63 || ty < 0 || ty > 63) {
-        spdlog::warn("Map::get_tile: Tile index out of range: {}, {}", tx, ty);
         return {-1,-1,-1};
     }
 

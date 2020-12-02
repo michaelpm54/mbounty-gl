@@ -145,6 +145,9 @@ R"raw(  Hidden within an ancient
 charts describing passage to)raw");
     found_map_continent_ = found_map_.add_line(10, 6, "");
 
+    sail_dialog_.create(1, 18, 30, 9, color, assets);
+    sail_dialog_.add_line(3, 1, "Sail to which continent?");
+
     loaded_ = true;
     return success;
 }
@@ -229,6 +232,12 @@ void Game::draw(bty::Gfx &gfx)
             hero_.draw(gfx, game_camera_);
             hud_.draw(gfx, camera_);
             found_map_.draw(gfx, camera_);
+            break;
+        case GameState::SailNext:
+            map_.draw(game_camera_);
+            hero_.draw(gfx, game_camera_);
+            hud_.draw(gfx, camera_);
+            sail_dialog_.draw(gfx, camera_);
             break;
         default:
             break;
@@ -512,6 +521,30 @@ void Game::key(int key, int scancode, int action, int mods)
                     break;
             }
             break;
+        case GameState::SailNext:
+            switch (action)
+            {
+                case GLFW_PRESS:
+                    switch (key)
+                    {
+                        case GLFW_KEY_BACKSPACE:
+                            sail_to(scene_switcher_->state().continent);
+                            set_state(GameState::Unpaused);
+                            break;
+                        case GLFW_KEY_UP:
+                            sail_dialog_.prev();
+                            break;
+                        case GLFW_KEY_DOWN:
+                            sail_dialog_.next();
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
         default:
             break;
     }
@@ -560,21 +593,39 @@ void Game::collide(Tile &tile) {
 
 void Game::update(float dt)
 {
-    move_flags_ = MOVE_FLAGS_NONE;
-    if (scene_switcher_->get_key(GLFW_KEY_LEFT)) {
-        move_flags_ |= MOVE_FLAGS_LEFT;
-    }
-    if (scene_switcher_->get_key(GLFW_KEY_RIGHT)) {
-        move_flags_ |= MOVE_FLAGS_RIGHT;
-    }
-    if (scene_switcher_->get_key(GLFW_KEY_UP)) {
-        move_flags_ |= MOVE_FLAGS_UP;
-    }
-    if (scene_switcher_->get_key(GLFW_KEY_DOWN)) {
-        move_flags_ |= MOVE_FLAGS_DOWN;
-    }
-
     if (state_ == GameState::Unpaused) {
+        if (controls_locked_) {
+            control_lock_timer_ -= dt;
+            if (control_lock_timer_ <= 0) {
+                controls_locked_ = false;
+            }
+
+            float speed = 100;
+            float vel = speed * dt;
+            float dx = auto_move_dir_.x * vel;
+            float dy = auto_move_dir_.y * vel;
+
+            auto manifold = hero_.move(dx, dy, map_);
+            hero_.set_position(manifold.new_position);
+            update_visited_tiles();
+            update_camera();
+        }
+        else {
+            move_flags_ = MOVE_FLAGS_NONE;
+            if (scene_switcher_->get_key(GLFW_KEY_LEFT)) {
+                move_flags_ |= MOVE_FLAGS_LEFT;
+            }
+            if (scene_switcher_->get_key(GLFW_KEY_RIGHT)) {
+                move_flags_ |= MOVE_FLAGS_RIGHT;
+            }
+            if (scene_switcher_->get_key(GLFW_KEY_UP)) {
+                move_flags_ |= MOVE_FLAGS_UP;
+            }
+            if (scene_switcher_->get_key(GLFW_KEY_DOWN)) {
+                move_flags_ |= MOVE_FLAGS_DOWN;
+            }
+        }
+
         if (move_flags_) {
             hero_.set_moving(true);
 
@@ -604,7 +655,6 @@ void Game::update(float dt)
             auto manifold = hero_.move(dx, dy, map_);
 
             hero_.set_position(manifold.new_position);
-
 
             if (manifold.collided) {
                 for (auto &tile : manifold.collided_tiles) {
@@ -962,6 +1012,10 @@ void Game::setup_game()
 
     auto &state = scene_switcher_->state();
 
+    /* Misc */
+    controls_locked_ = false;
+    control_lock_timer_ = 0;
+
     /* Clear spells */
     for (int i = 0; i < 14; i++) {
         state.spells[i] = 0;
@@ -1041,6 +1095,9 @@ void Game::setup_game()
     }
 
     /* Add continentia to maps */
+    for (int i = 0; i < 4; i++) {
+        state.maps_found[i] = false;
+    }
     state.maps_found[0] = true;
 
     hud_.update_state();
@@ -1263,6 +1320,9 @@ void Game::set_state(GameState state) {
         case GameState::DismissError:
             hud_.set_title("  You may not dismiss your last army!");
             break;
+        case GameState::SailNext:
+            sail_next();
+            break;
         default:
             break;
     }
@@ -1274,4 +1334,39 @@ void Game::set_state(GameState state) {
 void Game::clear_movement() {
     move_flags_ = MOVE_FLAGS_NONE;
     hero_.set_moving(false);
+}
+
+void Game::sail_next() {
+    sail_dialog_.clear_options();
+
+    auto &state = scene_switcher_->state();
+
+    for (int i = 0; i < 4; i++) {
+        if (state.maps_found[i]) {
+            sail_dialog_.add_option(10, 3, kContinents[i]);
+        }
+    }
+}
+
+void Game::sail_to(int continent) {
+    if (continent == scene_switcher_->state().continent) {
+        auto pos = hero_.get_position();
+
+        if (pos.x < 0) {
+            auto_move_dir_.x = 1;
+        }
+        else {
+            auto_move_dir_.x = -1;
+        }
+
+        if (pos.y < 0) {
+            auto_move_dir_.y = 1;
+        }
+        else {
+            auto_move_dir_.y = -1;
+        }
+
+        control_lock_timer_ = 3;
+        controls_locked_ = true;
+    }
 }

@@ -74,6 +74,8 @@ private:
     void clear_movement();
     void set_state(GameState state);
     void find_map(const Tile &tile);
+    void sail_next();
+    void sail_to(int continent);
 
 private:
     enum WeekPassedCard {
@@ -132,6 +134,11 @@ private:
 
     bty::TextBox found_map_;
     bty::Text *found_map_continent_;
+
+    bty::Dialog sail_dialog_;
+    bool controls_locked_{false};
+    float control_lock_timer_{0};
+    glm::ivec2 auto_move_dir_{0};
 };
 
 #endif    // BTY_GAME_GAME_HPP_
