@@ -154,7 +154,7 @@ void Gfx::set_initial_gl_state() {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    glClearColor(0.3f, 0.6f, 0.3f, 1.0f);
+    glClearColor(0.0f, 163/255.0f, 166/255.0f, 1.0f);
 }
 
 void Gfx::create_geometry() {

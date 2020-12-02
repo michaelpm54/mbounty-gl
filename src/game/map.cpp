@@ -8,6 +8,11 @@
 
 #include <spdlog/spdlog.h>
 
+struct Vertex {
+    glm::vec2 pos;
+    glm::vec2 uv;
+};
+
 Map::~Map()
 {
     delete[] tiles_;
@@ -86,6 +91,8 @@ Tile Map::get_tile(int tx, int ty) const
         return {-1,-1,-1};
     }
 
+    // spdlog::debug("Get tile {} {}", tx, ty);
+
     return {tx, ty, tiles_[ty * 64 + tx]};
 }
 
@@ -102,16 +109,18 @@ Tile Map::get_tile(glm::vec2 pos) const
     return get_tile(pos.x, pos.y);
 }
 
+Tile Map::get_tile(glm::ivec2 coord) const
+{
+    return get_tile(coord.x, coord.y);
+}
+
 unsigned char *Map::get_data() {
     return tiles_;
 }
 
-void Map::create_geometry() {
-    struct Vertex {
-        glm::vec2 pos;
-        glm::vec2 uv;
-    };
 
+
+void Map::create_geometry() {
     float tex_adv_x = 1.0f / (tilesets_[0]->width / 50.0f);
     float tex_adv_y = 1.0f / (tilesets_[0]->height / 42.0f);
 
@@ -152,4 +161,40 @@ void Map::create_geometry() {
 
 void Map::reset() {
     std::memcpy(tiles_, read_only_tiles_, 4096);
+}
+
+void Map::erase_tile(const Tile &tile) {    
+    tiles_[tile.tx + tile.ty * 64] = Grass;
+
+    float tex_adv_x = 1.0f / (tilesets_[0]->width / 50.0f);
+    float tex_adv_y = 1.0f / (tilesets_[0]->height / 42.0f);
+
+    float px_offset_x = 1.0f / tilesets_[0]->width;
+    float px_offset_y = 1.0f / tilesets_[0]->height;
+
+    Vertex vertices[6];
+
+    Vertex *vtx {&vertices[0]};
+
+    float l = tile.tx * 48.0f;
+    float t = tile.ty * 40.0f;
+    float r = (tile.tx + 1) * 48.0f;
+    float b = (tile.ty + 1) * 40.0f;
+
+    float ua = px_offset_x;
+    float ub = tex_adv_x - px_offset_x;
+    float va = px_offset_y;
+    float vb = tex_adv_y - px_offset_y;
+
+    *vtx++ = { { l, t }, { ua, va } };
+    *vtx++ = { { r, t }, { ub, va } };
+    *vtx++ = { { l, b }, { ua, vb } };
+    *vtx++ = { { r, t }, { ub, va } };
+    *vtx++ = { { r, b }, { ub, vb } };
+    *vtx++ = { { l, b }, { ua, vb } };
+
+    auto size = 6 * sizeof(Vertex);
+    auto offset = (tile.ty + tile.tx * 64) * size;
+
+    glNamedBufferSubData(vbo_, offset, size, vertices);
 }

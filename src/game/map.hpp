@@ -25,9 +25,11 @@ public:
     Tile get_tile(int tx, int ty) const;
     Tile get_tile(float x, float y) const;
     Tile get_tile(glm::vec2 pos) const;
+    Tile get_tile(glm::ivec2 coord) const;
     unsigned char *get_data();
     void create_geometry();
     void reset();
+    void erase_tile(const Tile &tile);
 
 private:
     int num_vertices_{0};

@@ -36,7 +36,7 @@ int main(int argc, char *argv[])
 
     {
         bty::Assets assets;
-        bty::SceneSwitcher scene_switcher(window_width(window), window_height(window), assets);
+        bty::SceneSwitcher scene_switcher(window, assets);
         bty::Engine engine(*window, scene_switcher);
 
         Intro intro(scene_switcher);

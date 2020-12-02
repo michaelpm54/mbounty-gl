@@ -49,6 +49,12 @@ void Transformable::set_size(float x, float y)
     dirty_ = true;
 }
 
+void Transformable::set_size(const glm::vec2 &size)
+{
+    scale_ = {size.x, size.y, 1.0f};
+    dirty_ = true;
+}
+
 glm::vec2 Transformable::get_size() const
 {
     return scale_;

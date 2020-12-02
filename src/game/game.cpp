@@ -137,6 +137,14 @@ the Sceptre.)raw");
     dismiss_.create(1, 18, 30, 9, color, assets);
     dismiss_.add_line(5, 1, "Dismiss which army?");
 
+    /* Found a map message */
+    found_map_.create(1, 18, 30, 9, color, assets);
+    found_map_.add_line(1, 2,
+R"raw(  Hidden within an ancient
+  chest, you find maps and
+charts describing passage to)raw");
+    found_map_continent_ = found_map_.add_line(10, 6, "");
+
     loaded_ = true;
     return success;
 }
@@ -158,12 +166,12 @@ void Game::draw(bty::Gfx &gfx)
     switch (state_) {
         case GameState::Unpaused:
             map_.draw(game_camera_);
-            gfx.draw_sprite(hero_, game_camera_);
+            hero_.draw(gfx, game_camera_);
             hud_.draw(gfx, camera_);
             break;
         case GameState::Paused:
             map_.draw(game_camera_);
-            gfx.draw_sprite(hero_, game_camera_);
+            hero_.draw(gfx, game_camera_);
             hud_.draw(gfx, camera_);
             pause_menu_.draw(gfx, camera_);
             break;
@@ -191,7 +199,7 @@ void Game::draw(bty::Gfx &gfx)
             break;
         case GameState::WeekPassed:
             map_.draw(game_camera_);
-            gfx.draw_sprite(hero_, game_camera_);
+            hero_.draw(gfx, game_camera_);
             hud_.draw(gfx, camera_);
             if (week_passed_card_ == WeekPassedCard::Astrology) {
                 astrology_.draw(gfx, camera_);
@@ -212,9 +220,15 @@ void Game::draw(bty::Gfx &gfx)
         case GameState::DismissError: [[fallthrough]];
         case GameState::Dismiss:
             map_.draw(game_camera_);
-            gfx.draw_sprite(hero_, game_camera_);
+            hero_.draw(gfx, game_camera_);
             hud_.draw(gfx, camera_);
             dismiss_.draw(gfx, camera_);
+            break;
+        case GameState::ChestMap:
+            map_.draw(game_camera_);
+            hero_.draw(gfx, game_camera_);
+            hud_.draw(gfx, camera_);
+            found_map_.draw(gfx, camera_);
             break;
         default:
             break;
@@ -233,16 +247,20 @@ void Game::key(int key, int scancode, int action, int mods)
                 case GLFW_PRESS:
                     switch (key)
                     {
+                        case GLFW_KEY_G:
+                            hero_.set_mount(hero_.get_mount() == Mount::Fly ? Mount::Walk : Mount::Fly);
+                            break;
+                        case GLFW_KEY_P:
+                            hero_.set_collision_rect_visible(!hero_.get_collision_rect_visible());
+                            break;
                         case GLFW_KEY_R:
                             gen_tiles();
                             break;
                         case GLFW_KEY_L:
-                            state_ = GameState::LoseGame;
-                            lose_game();
+                            set_state(GameState::LoseGame);
                             break;
                         case GLFW_KEY_SPACE:
-                            state_ = GameState::Paused;
-                            move_flags_ = MOVE_FLAGS_NONE;
+                            set_state(GameState::Paused);
                             break;
                         case GLFW_KEY_B:
                             hero_.set_mount(hero_.get_mount() == Mount::Walk ? Mount::Boat : Mount::Walk);
@@ -255,36 +273,6 @@ void Game::key(int key, int scancode, int action, int mods)
                         case GLFW_KEY_C:
                             scene_switcher_->state().contract = (scene_switcher_->state().contract + 1) % 18;
                             hud_.update_state();
-                            break;
-                        case GLFW_KEY_LEFT:
-                            move_flags_ |= MOVE_FLAGS_LEFT;
-                            break;
-                        case GLFW_KEY_RIGHT:
-                            move_flags_ |= MOVE_FLAGS_RIGHT;
-                            break;
-                        case GLFW_KEY_UP:
-                            move_flags_ |= MOVE_FLAGS_UP;
-                            break;
-                        case GLFW_KEY_DOWN:
-                            move_flags_ |= MOVE_FLAGS_DOWN;
-                            break;
-                        default:
-                            break;
-                    }
-                    break;
-                case GLFW_RELEASE:
-                    switch (key) {
-                        case GLFW_KEY_LEFT:
-                            move_flags_ &= ~MOVE_FLAGS_LEFT;
-                            break;
-                        case GLFW_KEY_RIGHT:
-                            move_flags_ &= ~MOVE_FLAGS_RIGHT;
-                            break;
-                        case GLFW_KEY_UP:
-                            move_flags_ &= ~MOVE_FLAGS_UP;
-                            break;
-                        case GLFW_KEY_DOWN:
-                            move_flags_ &= ~MOVE_FLAGS_DOWN;
                             break;
                         default:
                             break;
@@ -302,7 +290,7 @@ void Game::key(int key, int scancode, int action, int mods)
                     {
                         case GLFW_KEY_BACKSPACE: [[fallthrough]];
                         case GLFW_KEY_SPACE:
-                            state_ = GameState::Unpaused;
+                            set_state(GameState::Unpaused);
                             break;
                         case GLFW_KEY_UP:
                             pause_menu_.prev();
@@ -313,29 +301,19 @@ void Game::key(int key, int scancode, int action, int mods)
                         case GLFW_KEY_ENTER:
                             switch (pause_menu_.get_selection()) {
                                 case 0:
-                                    state_ = GameState::ViewArmy;
-                                    view_army_.view(scene_switcher_->state());
+                                    set_state(GameState::ViewArmy);
                                     break;
                                 case 1:
-                                    state_ = GameState::ViewCharacter;
-                                    view_character_.view(scene_switcher_->state());
+                                    set_state(GameState::ViewCharacter);
                                     break;
                                 case 2:
-                                    state_ = GameState::ViewContinent;
-                                    view_continent_.view(
-                                        hero_.get_tile().tx,
-                                        hero_.get_tile().ty,
-                                        scene_switcher_->state().continent,
-                                        view_continent_fog_ ? scene_switcher_->state().visited_tiles.data() : map_.get_data()
-                                    );
+                                    set_state(GameState::ViewContinent);
                                     break;
                                 case 3:
-                                    state_ = GameState::UseMagic;
-                                    update_spells();
+                                    set_state(GameState::UseMagic);
                                     break;
                                 case 4:
-                                    state_ = GameState::ViewContract;
-                                    view_contract_.view(scene_switcher_->state().contract, false, hud_.get_contract());
+                                    set_state(GameState::ViewContract);
                                     break;
                                 case 5:
                                     /*
@@ -357,25 +335,21 @@ void Game::key(int key, int scancode, int action, int mods)
                                         scene_switcher_->state().days = ((scene_switcher_->state().days / 5) - 1) * 5;
                                     }
                                     if (scene_switcher_->state().days == 0) {
-                                        state_ = GameState::LoseGame;
+                                        set_state(GameState::LoseGame);
                                     }
                                     else {
-                                        state_ = GameState::WeekPassed;
-                                        weeks_passed_++;
-                                        end_of_week(false);
+                                        set_state(GameState::WeekPassed);
                                     }
                                     clock_ = 0;
                                     hud_.update_state();
                                     break;
                                 case 6:
-                                    state_ = GameState::ViewPuzzle;
-                                    view_puzzle();
+                                    set_state(GameState::ViewPuzzle);
                                     break;
                                 case 7:
                                     break;
                                 case 8:
-                                    state_ = GameState::Dismiss;
-                                    dismiss();
+                                    set_state(GameState::Dismiss);
                                     break;
                                 default:
                                     break;
@@ -402,7 +376,7 @@ void Game::key(int key, int scancode, int action, int mods)
                         case GLFW_KEY_SPACE: [[fallthrough]];
                         case GLFW_KEY_BACKSPACE: [[fallthrough]];
                         case GLFW_KEY_ENTER:
-                            state_ = GameState::Unpaused;
+                            set_state(GameState::Unpaused);
                             break;
                         default:
                             break;
@@ -419,8 +393,7 @@ void Game::key(int key, int scancode, int action, int mods)
                     switch (key)
                     {
                         case GLFW_KEY_BACKSPACE:
-                            state_ = GameState::Unpaused;
-                            hud_.update_state();
+                            set_state(GameState::Unpaused);
                             break;
                         case GLFW_KEY_UP:
                             use_magic_.prev();
@@ -452,9 +425,7 @@ void Game::key(int key, int scancode, int action, int mods)
                             }
                             break;
                         case GLFW_KEY_BACKSPACE:
-                            state_ = GameState::Unpaused;
-                            hud_.set_hud_frame();
-                            hud_.update_state();
+                            set_state(GameState::Unpaused);
                             break;
                     }
                     break;
@@ -471,7 +442,7 @@ void Game::key(int key, int scancode, int action, int mods)
                         case GLFW_KEY_ENTER:
                             if (week_passed_card_ == WeekPassedCard::Budget) {
                                 week_passed_card_ = WeekPassedCard::Astrology;
-                                state_ = GameState::Unpaused;
+                                set_state(GameState::Unpaused);
                             }
                             else {
                                 week_passed_card_ = WeekPassedCard::Budget;
@@ -499,8 +470,7 @@ void Game::key(int key, int scancode, int action, int mods)
                             dismiss_slot(dismiss_.get_selection());
                             break;
                         case GLFW_KEY_BACKSPACE:
-                            state_ = GameState::Unpaused;
-                            hud_.update_state();
+                            set_state(GameState::Unpaused);
                             break;
                         default:
                             break;
@@ -516,8 +486,23 @@ void Game::key(int key, int scancode, int action, int mods)
                     switch (key) {
                         case GLFW_KEY_ENTER: [[fallthrough]];
                         case GLFW_KEY_BACKSPACE:
-                            state_ = GameState::Dismiss;
-                            hud_.update_state();
+                            set_state(GameState::Dismiss);
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case GameState::ChestMap:
+            switch (action) {
+                case GLFW_PRESS:
+                    switch (key) {
+                        case GLFW_KEY_BACKSPACE: [[fallthrough]];
+                        case GLFW_KEY_ENTER:
+                            set_state(GameState::Unpaused);
                             break;
                         default:
                             break;
@@ -547,8 +532,27 @@ bool Game::loaded()
     return loaded_;
 }
 
+void Game::find_map(const Tile &tile) {
+    if (map_tiles_[0] == glm::ivec2{tile.tx, tile.ty}) {
+        hud_.set_title("You found a map!");
+
+        map_.erase_tile(tile);
+
+        auto &state = scene_switcher_->state();
+
+        state.maps_found[state.continent+1] = true;
+
+        found_map_continent_->set_string(kContinents[state.continent+1]);
+
+        set_state(GameState::ChestMap);
+    }
+}
+
 void Game::collide(Tile &tile) {
     switch (tile.id) {
+        case Chest:
+            find_map(tile);
+            break;
         default:
             break;
     }
@@ -556,6 +560,20 @@ void Game::collide(Tile &tile) {
 
 void Game::update(float dt)
 {
+    move_flags_ = MOVE_FLAGS_NONE;
+    if (scene_switcher_->get_key(GLFW_KEY_LEFT)) {
+        move_flags_ |= MOVE_FLAGS_LEFT;
+    }
+    if (scene_switcher_->get_key(GLFW_KEY_RIGHT)) {
+        move_flags_ |= MOVE_FLAGS_RIGHT;
+    }
+    if (scene_switcher_->get_key(GLFW_KEY_UP)) {
+        move_flags_ |= MOVE_FLAGS_UP;
+    }
+    if (scene_switcher_->get_key(GLFW_KEY_DOWN)) {
+        move_flags_ |= MOVE_FLAGS_DOWN;
+    }
+
     if (state_ == GameState::Unpaused) {
         if (move_flags_) {
             hero_.set_moving(true);
@@ -578,7 +596,7 @@ void Game::update(float dt)
             if (move_flags_ & MOVE_FLAGS_RIGHT)
                 dir.x += 1.0f;
 
-            static constexpr float speed = 100.0f;
+            float speed = hero_.get_mount() == Mount::Fly ? 200 : 100;
             float vel = speed * dt;
             float dx = dir.x * vel;
             float dy = dir.y * vel;
@@ -587,10 +605,14 @@ void Game::update(float dt)
 
             hero_.set_position(manifold.new_position);
 
+
             if (manifold.collided) {
                 for (auto &tile : manifold.collided_tiles) {
                     collide(tile);
                 }
+            }
+            else if (manifold.out_of_bounds) {
+                set_state(GameState::SailNext);
             }
             else {
                 if (manifold.changed_tile) {
@@ -615,13 +637,13 @@ void Game::update(float dt)
             int &days = scene_switcher_->state().days;
             days--;
             if (days == 0) {
-                state_ = GameState::LoseGame;
+                set_state(GameState::LoseGame);
             }
             else {
                 days_passed_this_week++;
                 if (days_passed_this_week == 5) {
                     days_passed_this_week = 0;
-                    state_ = GameState::WeekPassed;
+                    set_state(GameState::WeekPassed);
                     weeks_passed_++;
                     end_of_week(false);
                 }
@@ -910,8 +932,7 @@ void Game::end_of_week(bool search)
     budget_.set_line(6, fmt::format("Balance: {:>4}", number_with_ks(balance)));
 
     if ((state.army[0] == -1 || out_of_money) && search) {
-        state_ = GameState::Disgrace;
-        disgrace();
+        set_state(GameState::Disgrace);
     }
 }
 
@@ -937,8 +958,7 @@ void Game::sort_army()
 
 void Game::setup_game()
 {
-    state_ = GameState::Unpaused;
-    hud_.set_hud_frame();
+    set_state(GameState::Unpaused);
 
     auto &state = scene_switcher_->state();
 
@@ -1019,6 +1039,9 @@ void Game::setup_game()
     if (state.hero_id == 2) {
         state.magic = true;
     }
+
+    /* Add continentia to maps */
+    state.maps_found[0] = true;
 
     hud_.update_state();
 
@@ -1128,7 +1151,7 @@ void Game::gen_tiles() {
 }
 
 void Game::disgrace() {
-    state_ = GameState::LoseGame;
+    set_state(GameState::LoseGame);
 }
 
 void Game::lose_game() {
@@ -1184,8 +1207,7 @@ void Game::dismiss_slot(int slot) {
     }
 
     if (num_units == 1) {
-        state_ = GameState::DismissError;
-        hud_.set_title("  You may not dismiss your last army!");
+        set_state(GameState::DismissError);
         return;
     }
 
@@ -1193,4 +1215,63 @@ void Game::dismiss_slot(int slot) {
     scene_switcher_->state().army_counts[slot] = 0;
     sort_army();
     dismiss();
+}
+
+void Game::set_state(GameState state) {
+    switch (state) {
+        case GameState::Unpaused:
+            hud_.set_hud_frame();
+            hud_.update_state();
+            break;
+        case GameState::LoseGame:
+            lose_game();
+            break;
+        case GameState::ViewArmy:
+            view_army_.view(scene_switcher_->state());
+            break;
+        case GameState::ViewCharacter:
+            view_character_.view(scene_switcher_->state());
+            break;
+        case GameState::ViewContinent:
+            view_continent_.view(
+                hero_.get_tile().tx,
+                hero_.get_tile().ty,
+                scene_switcher_->state().continent,
+                view_continent_fog_ ? scene_switcher_->state().visited_tiles.data() : map_.get_data()
+            );
+            break;
+        case GameState::UseMagic:
+            update_spells();
+            break;
+        case GameState::ViewContract:
+            view_contract_.view(scene_switcher_->state().contract, false, hud_.get_contract());
+            break;
+        case GameState::WeekPassed:
+            weeks_passed_++;
+            end_of_week(false);
+            break;
+        case GameState::ViewPuzzle:
+            view_puzzle();
+            break;
+        case GameState::Dismiss:
+            dismiss();
+            hud_.update_state();
+            break;
+        case GameState::Disgrace:
+            disgrace();
+            break;
+        case GameState::DismissError:
+            hud_.set_title("  You may not dismiss your last army!");
+            break;
+        default:
+            break;
+    }
+
+    state_ = state;
+    clear_movement();
+}
+
+void Game::clear_movement() {
+    move_flags_ = MOVE_FLAGS_NONE;
+    hero_.set_moving(false);
 }

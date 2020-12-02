@@ -1,6 +1,10 @@
 #include "game/entity.hpp"
 
+#include <unordered_set>
+
 #include <spdlog/spdlog.h>
+
+#include "gfx/gfx.hpp"
 
 #include "game/move-flags.hpp"
 
@@ -14,83 +18,143 @@ Entity::CollisionManifold Entity::move(float dx, float dy, Map &map) {
     manifold.changed_tile = false;
     manifold.new_tile = {-1,-1,-1};
 
-    Tile tile{};
-    c2AABB entity_shape{};
-    c2AABB tile_shape{};
-    glm::vec2 next_pos{0};
-
-    /* Create a collision shape */
-    glm::vec2 rect_offset{16.0f, 24.0f};
-    glm::vec2 rect_size{12.0f, 8.0f};
-
-    entity_shape = {
-        position_.x + rect_offset.x,
-        position_.y + rect_offset.y,
-        position_.x + rect_offset.x + rect_size.x,
-        position_.y + rect_offset.y + rect_size.y,
-    };
-
-    /* Move along X */
-    entity_shape.min.x += dx;
-    entity_shape.max.x += dx;
-    /* Get the new tile */
-    tile = map.get_tile({entity_shape.min.x, entity_shape.min.y});
-    tile_shape = {
-    	tile.tx * 48.0f,
-        tile.ty * 40.0f,
-		tile.tx * 48.0f + 48.0f,
-        tile.ty * 40.0f + 40.0f,
-	};
-    if (tile.id == -1) {
-        manifold.collided = true;
-        return manifold;
+    std::vector<glm::ivec2> narrow_phase;
+    
+    if (dx > 0.5f) {
+        narrow_phase.push_back({tile_.tx + 1, tile_.ty + 1});
+        narrow_phase.push_back({tile_.tx + 1, tile_.ty});
+        narrow_phase.push_back({tile_.tx + 1, tile_.ty - 1});
     }
-    /* Test new tile for collision */
-    if (!can_move(tile.id) && c2AABBtoAABB(entity_shape, tile_shape)) {
-        manifold.collided = true;
-        manifold.collided_tiles.push_back(tile);
-        entity_shape.min.x -= dx;
-        entity_shape.max.x -= dx;
+    else if (dx < -0.5f) {
+        narrow_phase.push_back({tile_.tx - 1, tile_.ty + 1});
+        narrow_phase.push_back({tile_.tx - 1, tile_.ty});
+        narrow_phase.push_back({tile_.tx - 1, tile_.ty - 1});
     }
-    else {
-        /* This move is okay, proceed with it */
+
+    if (dy > 0.5f) {
+        if (dx > -0.5f) {
+            narrow_phase.push_back({tile_.tx - 1, tile_.ty + 1});
+        }
+        narrow_phase.push_back({tile_.tx, tile_.ty + 1});
+        if (dx < 0.5f)
+            narrow_phase.push_back({tile_.tx + 1, tile_.ty + 1});
+    }
+    else if (dy < -0.5f) {
+        if (dx > -0.5f)
+            narrow_phase.push_back({tile_.tx - 1, tile_.ty - 1});
+        narrow_phase.push_back({tile_.tx, tile_.ty - 1});
+        if (dx < 0.5f)
+            narrow_phase.push_back({tile_.tx + 1, tile_.ty - 1});
+    }
+
+    bool collide_x {false};
+
+    for (const auto &coord : narrow_phase) {
+        collided_rects_[num_collided_rects_].set_color({0.2f, 0.3f, 0.6f, 0.3f});
+        collided_rects_[num_collided_rects_].set_size({48.0f, 40.0f});
+        collided_rects_[num_collided_rects_].set_position({coord.x*48.0f,coord.y*40.0f});
+        num_collided_rects_++;
+
+        auto tile = map.get_tile(coord);
+
+        if (can_move(tile.id)) {
+            continue;
+        }
+
+        float l = coord.x * 48.0f;
+        float t = coord.y * 40.0f;
+        float r = l + 48.0f;
+        float b = t + 40.0f;
+
+        c2AABB tile_shape { l, t, r, b };
+        c2AABB rect_shape {
+            manifold.new_position.x + dx,
+            manifold.new_position.y,
+            manifold.new_position.x + dx + 42.0f,
+            manifold.new_position.y + 32.0f
+        };
+
+        if (c2AABBtoAABB(rect_shape, tile_shape)) {
+            collide_x = true;
+
+            collided_rects_[num_collided_rects_].set_color({0.9f, 0.3f, 0.6f, 0.9f});
+            collided_rects_[num_collided_rects_].set_size({48.0f, 40.0f});
+            collided_rects_[num_collided_rects_].set_position({coord.x*48.0f,coord.y*40.0f});
+            num_collided_rects_++;
+
+            manifold.collided_tiles.push_back(tile);
+
+            break;
+        }
+    }
+
+    if (!collide_x) {
         manifold.new_position.x += dx;
     }
 
-    /* Move along Y */
-    entity_shape.min.y += dy;
-    entity_shape.max.y += dy;
-    /* Get the new tile */
-    tile = map.get_tile({entity_shape.min.x, entity_shape.min.y});
-    tile_shape = {
-    	tile.tx * 48.0f,
-        tile.ty * 40.0f,
-		tile.tx * 48.0f + 48.0f,
-        tile.ty * 40.0f + 40.0f,
-	};
-    if (tile.id == -1) {
-        manifold.collided = true;
-        return manifold;
+    bool collide_y {false};
+
+    for (const auto &coord : narrow_phase) {
+        collided_rects_[num_collided_rects_].set_color({0.9f, 0.3f, 0.6f, 0.3f});
+        collided_rects_[num_collided_rects_].set_size({48.0f, 40.0f});
+        collided_rects_[num_collided_rects_].set_position({coord.x*48.0f,coord.y*40.0f});
+        num_collided_rects_++;
+
+        auto tile = map.get_tile(coord);
+
+        if (can_move(tile.id)) {
+            continue;
+        }
+
+        float l = coord.x * 48.0f;
+        float t = coord.y * 40.0f;
+        float r = l + 48.0f;
+        float b = t + 40.0f;
+
+        c2AABB tile_shape { l, t, r, b };
+        c2AABB rect_shape {
+            manifold.new_position.x,
+            manifold.new_position.y + dy,
+            manifold.new_position.x + 42.0f,
+            manifold.new_position.y + dy + 32.0f
+        };
+
+        if (c2AABBtoAABB(rect_shape, tile_shape)) {
+            collide_y = true;
+
+            collided_rects_[num_collided_rects_].set_color({0.9f, 0.3f, 0.6f, 0.9f});
+            collided_rects_[num_collided_rects_].set_size({48.0f, 40.0f});
+            collided_rects_[num_collided_rects_].set_position({coord.x*48.0f,coord.y*40.0f});
+            num_collided_rects_++;
+
+            manifold.collided_tiles.push_back(tile);
+
+            break;
+        }
     }
-    /* Test new tile for collision */
-    if (!can_move(tile.id) && c2AABBtoAABB(entity_shape, tile_shape)) {
-        manifold.collided = true;
-        manifold.collided_tiles.push_back(tile);
-    }
-    else {
-        /* This move is okay, proceed with it */
+
+    if (!collide_y) {
         manifold.new_position.y += dy;
     }
 
-    auto centre = c2Mulvs(c2Add(entity_shape.min, entity_shape.max), 0.5f);
-    int tx = centre.x / 48.0f;
-    int ty = centre.y / 40.0f;
+    collision_rect_.set_position(manifold.new_position);
+    collision_rect_.set_color({0.2f, 0.4f, 0.9f, 0.7f});
+    collision_rect_.set_size({42.0f, 32.0f});
 
-    manifold.new_tile = map.get_tile(centre.x, centre.y);
+    auto tile = map.get_tile(manifold.new_position + glm::vec2{21, 16});
 
-    if (tile_.tx != manifold.new_tile.tx || tile_.ty != manifold.new_tile.ty) {
-        manifold.changed_tile = true;
+    if (tile.id == -1) {
+        manifold.out_of_bounds = true;
+        return manifold;
     }
+
+    if (tile.tx != tile_.tx || tile.ty != tile_.ty) {
+        manifold.changed_tile = true;
+        manifold.new_tile = tile;
+        tile_ = tile;
+    }
+
+    manifold.collided = collide_x || collide_y;
 
     return manifold;
 }
@@ -120,4 +184,24 @@ void Entity::set_tile_info(const Tile &tile) {
 
 const Tile &Entity::get_tile() const {
     return tile_;
+}
+
+void Entity::set_collision_rect_visible(bool val) {
+    collision_rect_visible_ = val;
+}
+
+bool Entity::get_collision_rect_visible() const {
+    return collision_rect_visible_;
+}
+
+void Entity::draw(bty::Gfx &gfx, glm::mat4 &camera) {
+    gfx.draw_sprite(*this, camera);
+    if (collision_rect_visible_) {
+        gfx.draw_rect(collision_rect_, camera);
+        for (int i = 0; i < num_collided_rects_; i++) {
+            gfx.draw_rect(collided_rects_[i], camera);
+        }
+        collision_rect_.set_color(glm::vec4(0.2f, 0.4f, 0.9f, 0.7f));
+    }
+    num_collided_rects_ = 0;
 }

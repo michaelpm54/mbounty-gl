@@ -1,6 +1,8 @@
 #ifndef BTY_GAME_VIEW_ARMY_HPP_
 #define BTY_GAME_VIEW_ARMY_HPP_
 
+#include <array>
+
 #include "gfx/rect.hpp"
 #include "gfx/sprite.hpp"
 #include "gfx/text.hpp"
@@ -23,11 +25,11 @@ public:
     void set_color(bty::BoxColor color);
 
 private:
-    const bty::Texture *unit_textures_[25]{nullptr};
     bty::Sprite frame_;
-    bty::Rect rects_[5];
-    bty::Sprite units_[5];
-    bty::Text info_[5][7];
+    std::array<const bty::Texture *, 25> unit_textures_;
+    std::array<bty::Rect, 5> rects_;
+    std::array<bty::Sprite, 5> units_;
+    std::array<std::array<bty::Text, 7>, 5> info_;
     int num_units_{0};
 };
 

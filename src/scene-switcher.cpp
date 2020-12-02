@@ -6,14 +6,16 @@
 
 #include "scene.hpp"
 #include "gfx/gfx.hpp"
+#include "window.hpp"
 
 namespace bty {
 
-SceneSwitcher::SceneSwitcher(int window_width, int window_height, Assets &assets)
+SceneSwitcher::SceneSwitcher(Window *window, Assets &assets)
     : camera_(glm::ortho(0.0f, 320.0f, 224.0f, 0.0f, -1.0f, 1.0f))
     , assets_(&assets)
+    , window_(window)
 {
-    fade_rect_.set_size(window_width, window_height);
+    fade_rect_.set_size(window_width(window), window_height(window));
 }
 
 void SceneSwitcher::fade_to(SceneId id)
@@ -142,6 +144,11 @@ SharedState &SceneSwitcher::state() {
 void SceneSwitcher::key(int key, int scancode, int action, int mods)
 {
     scene_->key(key, scancode, action, mods);
+}
+
+bool SceneSwitcher::get_key(int key) const
+{
+    return glfwGetKey(window_->handle, key);
 }
 
 }

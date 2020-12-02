@@ -24,6 +24,7 @@ struct SharedState {
     int commission{0};
     int max_spells{0};
     int spell_power{0};
+    bool maps_found[4]{0};
 };
 
 #endif // BTY_SHARED_STATE_HPP_

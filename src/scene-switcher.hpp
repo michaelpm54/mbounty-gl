@@ -6,6 +6,7 @@
 #include "scene-id.hpp"
 #include "shared-state.hpp"
 #include "gfx/rect.hpp"
+#include "window.hpp"
 
 namespace bty {
 
@@ -15,7 +16,7 @@ class Scene;
 
 class SceneSwitcher {
 public:
-    SceneSwitcher(int window_width, int window_height, Assets &assets);
+    SceneSwitcher(Window *window, Assets &assets);
     void update(float dt);
     void draw(Gfx &gfx);
     void fade_to(SceneId id);
@@ -23,6 +24,7 @@ public:
     bool set_scene(SceneId id);
     SharedState &state();
     void key(int key, int scancode, int action, int mods);
+    bool get_key(int key) const;
 
 private:
     void update_fade_out(float dt);
@@ -45,6 +47,7 @@ private:
     Rect fade_rect_;
     float fade_elapsed_{0};
     float fade_alpha_{0};
+    Window *window_{nullptr};
 };
 
 }

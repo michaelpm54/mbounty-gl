@@ -39,22 +39,6 @@ public:
     void enter() override;
 
 private:
-    void update_camera();
-    void collide(Tile &tile);
-    void add_unit_to_army(int id, int count);
-    void update_visited_tiles();
-    void update_spells();
-    void end_of_week(bool search);
-    void sort_army();
-    void disgrace();
-    void lose_game();
-    void setup_game();
-    void view_puzzle();
-    void dismiss();
-    void dismiss_slot(int slot);
-    void gen_tiles();
-
-private:
     enum class GameState {
         Unpaused,
         Paused,
@@ -69,8 +53,29 @@ private:
         ViewPuzzle,
         Dismiss,
         DismissError,
+        ChestMap,
+        SailNext,
     };
 
+    void update_camera();
+    void collide(Tile &tile);
+    void add_unit_to_army(int id, int count);
+    void update_visited_tiles();
+    void update_spells();
+    void end_of_week(bool search);
+    void sort_army();
+    void disgrace();
+    void lose_game();
+    void setup_game();
+    void view_puzzle();
+    void dismiss();
+    void dismiss_slot(int slot);
+    void gen_tiles();
+    void clear_movement();
+    void set_state(GameState state);
+    void find_map(const Tile &tile);
+
+private:
     enum WeekPassedCard {
         Astrology,
         Budget,
@@ -124,6 +129,9 @@ private:
     bty::Dialog dismiss_;
 
     glm::ivec2 map_tiles_[3];
+
+    bty::TextBox found_map_;
+    bty::Text *found_map_continent_;
 };
 
 #endif    // BTY_GAME_GAME_HPP_

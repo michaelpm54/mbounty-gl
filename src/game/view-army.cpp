@@ -11,7 +11,7 @@
 #include "bounty.hpp"
 
 void ViewArmy::load(bty::Assets &assets, bty::BoxColor color) {
-    for (int i = 0; i < 25; i++) {
+    for (int i = 0; i < 24; i++) {
         auto name = kUnits[i].name_plural;
         std::transform(name.begin(), name.end(), name.begin(),
             [](unsigned char c){ return std::tolower(c);
@@ -68,6 +68,7 @@ void ViewArmy::view(const SharedState &state) {
         }
     }
     
+    assert(num_units_ < 5);
     for (int i = 0; i < num_units_; i++) {
         int unit_id = state.army[i];
         const auto &unit = kUnits[unit_id];
@@ -77,27 +78,21 @@ void ViewArmy::view(const SharedState &state) {
             int max_dmg = state.army_counts[i] * unit.melee_damage_max;
             int g_cost = state.army_counts[i] * unit.weekly_cost;
 
-            std::string morale = [](int morale) {
-                switch (morale) {
-                    case 0:
-                        return "Morale: Low";
-                    case 1:
-                        return "Morale: Medium";
-                    case 2:
-                        return "Morale: High";
-                    default:
-                        break;
-                }
-                return "Out of control";
-            }(state.army_morales[i]);
+            static const std::array<std::string, 4> kMoraleStrings = {{
+                "Morale: Low",
+                "Morale: Medium",
+                "Morale: High",
+                "Out of control",
+            }};
 
+            assert(unit_id < 25);
             units_[i].set_texture(unit_textures_[unit_id]);
             info_[i][0].set_string(fmt::format("{} {}", state.army_counts[i], unit.name_plural));
             info_[i][1].set_string(fmt::format("HitPts: {}", hp));
             info_[i][2].set_string(fmt::format("SL: {}", unit.skill_level));
             info_[i][3].set_string(fmt::format("MV: {}", unit.initial_moves));
             info_[i][4].set_string(fmt::format("Damage: {}-{}", min_dmg, max_dmg));
-            info_[i][5].set_string(fmt::format(morale));
+            info_[i][5].set_string(fmt::format(kMoraleStrings[state.army_morales[i]]));
             info_[i][6].set_string(fmt::format("G-Cost: {}", g_cost));
         }
     }
