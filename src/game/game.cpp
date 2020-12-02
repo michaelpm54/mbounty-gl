@@ -1002,6 +1002,8 @@ void Game::setup_game()
     state.gold = kStartingGold[state.hero_id];
     state.commission = kRankCommission[state.hero_id][0];
     state.leadership = kRankLeadership[state.hero_id][0];
+    state.max_spells = kRankSpells[state.hero_id][0];
+    state.spell_power = kRankSpellPower[state.hero_id][0];
 
     /* Reset dialogs */
     pause_menu_.set_selection(0);

@@ -22,6 +22,8 @@ struct SharedState {
     int spells[14];
     int gold{0};
     int commission{0};
+    int max_spells{0};
+    int spell_power{0};
 };
 
 #endif // BTY_SHARED_STATE_HPP_
