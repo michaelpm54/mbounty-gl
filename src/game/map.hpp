@@ -25,7 +25,9 @@ public:
     Tile get_tile(int tx, int ty) const;
     Tile get_tile(float x, float y) const;
     Tile get_tile(glm::vec2 pos) const;
-    const unsigned char *get_data() const;
+    unsigned char *get_data();
+    void create_geometry();
+    void reset();
 
 private:
     int num_vertices_{0};
@@ -37,7 +39,8 @@ private:
     const bty::Texture *tilesets_[10]{nullptr};
     float tileset_anim_timer_{0};
     int tileset_index_{0};
-    unsigned char *data_{nullptr};
+    unsigned char *tiles_{nullptr};
+    unsigned char *read_only_tiles_{nullptr};
 };
 
 enum TileId

@@ -10,7 +10,8 @@
 
 Map::~Map()
 {
-    delete[] data_;
+    delete[] tiles_;
+    delete[] read_only_tiles_;
     glDeleteVertexArrays(1, &vao_);
     glDeleteProgram(program_);
     glDeleteBuffers(1, &vbo_);
@@ -29,52 +30,15 @@ void Map::load(bty::Assets &assets) {
         num_vertices_ = 0;
         return;
     }
-    data_ = new unsigned char[4096];
-    fread(data_, 1, 4096, map_stream);
+    tiles_ = new unsigned char[4096];
+    fread(tiles_, 1, 4096, map_stream);
     fclose(map_stream);
 
-    struct Vertex {
-        glm::vec2 pos;
-        glm::vec2 uv;
-    };
-
-    float tex_adv_x = 1.0f / (tilesets_[0]->width / 50.0f);
-    float tex_adv_y = 1.0f / (tilesets_[0]->height / 42.0f);
-
-    float px_offset_x = 1.0f / tilesets_[0]->width;
-    float px_offset_y = 1.0f / tilesets_[0]->height;
-    
-    std::vector<Vertex> vertices(4096 * 6);
-
-    auto *vtx = &vertices[0];
-
-    for (int i = 0; i < 64; i++) {
-        for (int j = 0; j < 64; j++) {
-            float l = i * 48.0f;
-            float t = j * 40.0f;
-            float r = (i + 1) * 48.0f;
-            float b = (j + 1) * 40.0f;
-
-            int tile_id = data_[j * 64 + i];
-            int tile_x = tile_id % 16;
-            int tile_y = tile_id / 16;
-
-            float ua = tile_x * tex_adv_x + px_offset_x;
-            float ub = (tile_x + 1) * tex_adv_x - px_offset_x;
-            float va = tile_y * tex_adv_y + px_offset_y;
-            float vb = (tile_y + 1) * tex_adv_y - px_offset_y;
-
-            *vtx++ = { { l, t }, { ua, va } };
-            *vtx++ = { { r, t }, { ub, va } };
-            *vtx++ = { { l, b }, { ua, vb } };
-            *vtx++ = { { r, t }, { ub, va } };
-            *vtx++ = { { r, b }, { ub, vb } };
-            *vtx++ = { { l, b }, { ua, vb } };
-        }
-    }
+    read_only_tiles_ = new unsigned char[4096];
+    std::memcpy(read_only_tiles_, tiles_, 4096);
 
     glCreateBuffers(1, &vbo_);
-    glNamedBufferStorage(vbo_, 4096 * 6 * sizeof(Vertex), vertices.data(), 0);
+    glNamedBufferStorage(vbo_, 4096 * 6 * sizeof(GLfloat) * 4, nullptr, GL_DYNAMIC_STORAGE_BIT);
 
     glCreateVertexArrays(1, &vao_);
     glBindVertexArray(vao_);
@@ -122,7 +86,7 @@ Tile Map::get_tile(int tx, int ty) const
         return {-1,-1,-1};
     }
 
-    return {tx, ty, data_[ty * 64 + tx]};
+    return {tx, ty, tiles_[ty * 64 + tx]};
 }
 
 Tile Map::get_tile(float x, float y) const
@@ -138,6 +102,54 @@ Tile Map::get_tile(glm::vec2 pos) const
     return get_tile(pos.x, pos.y);
 }
 
-const unsigned char *Map::get_data() const {
-    return data_;
+unsigned char *Map::get_data() {
+    return tiles_;
+}
+
+void Map::create_geometry() {
+    struct Vertex {
+        glm::vec2 pos;
+        glm::vec2 uv;
+    };
+
+    float tex_adv_x = 1.0f / (tilesets_[0]->width / 50.0f);
+    float tex_adv_y = 1.0f / (tilesets_[0]->height / 42.0f);
+
+    float px_offset_x = 1.0f / tilesets_[0]->width;
+    float px_offset_y = 1.0f / tilesets_[0]->height;
+    
+    std::vector<Vertex> vertices(4096 * 6);
+
+    auto *vtx = &vertices[0];
+
+    for (int i = 0; i < 64; i++) {
+        for (int j = 0; j < 64; j++) {
+            float l = i * 48.0f;
+            float t = j * 40.0f;
+            float r = (i + 1) * 48.0f;
+            float b = (j + 1) * 40.0f;
+
+            int tile_id = tiles_[j * 64 + i];
+            int tile_x = tile_id % 16;
+            int tile_y = tile_id / 16;
+
+            float ua = tile_x * tex_adv_x + px_offset_x;
+            float ub = (tile_x + 1) * tex_adv_x - px_offset_x;
+            float va = tile_y * tex_adv_y + px_offset_y;
+            float vb = (tile_y + 1) * tex_adv_y - px_offset_y;
+
+            *vtx++ = { { l, t }, { ua, va } };
+            *vtx++ = { { r, t }, { ub, va } };
+            *vtx++ = { { l, b }, { ua, vb } };
+            *vtx++ = { { r, t }, { ub, va } };
+            *vtx++ = { { r, b }, { ub, vb } };
+            *vtx++ = { { l, b }, { ua, vb } };
+        }
+    }
+
+    glNamedBufferSubData(vbo_, 0, 4096 * 6 * sizeof(GLfloat) * 4, vertices.data());
+}
+
+void Map::reset() {
+    std::memcpy(tiles_, read_only_tiles_, 4096);
 }

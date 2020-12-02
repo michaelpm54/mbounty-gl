@@ -1,5 +1,8 @@
 #include "game/game.hpp"
 
+#include <algorithm>
+#include <chrono>
+
 #include <GLFW/glfw3.h>
 #include <spdlog/spdlog.h>
 
@@ -230,6 +233,9 @@ void Game::key(int key, int scancode, int action, int mods)
                 case GLFW_PRESS:
                     switch (key)
                     {
+                        case GLFW_KEY_R:
+                            gen_tiles();
+                            break;
                         case GLFW_KEY_L:
                             state_ = GameState::LoseGame;
                             lose_game();
@@ -751,11 +757,11 @@ void Game::add_unit_to_army(int id, int count) {
 
 void Game::update_visited_tiles() {
     auto tile = hero_.get_tile();
-    auto tile_index = tile.tx + tile.ty * 64;
+    auto index = tile.tx + tile.ty * 64;
     auto *visited = scene_switcher_->state().visited_tiles.data();
     auto *tiles = map_.get_data();
 
-    visited[tile_index] = tile.id;
+    visited[index] = tile.id;
     
     int initial_x = tile.tx;
     int initial_y = tile.ty;
@@ -1015,6 +1021,110 @@ void Game::setup_game()
     }
 
     hud_.update_state();
+
+    gen_tiles();
+}
+
+void Game::gen_tiles() {
+    map_.reset();
+
+    auto *tiles = map_.get_data();
+
+    static constexpr int kNumShopsPerContinent[4] = {
+		6, 6, 4, 5
+	};
+
+    static constexpr int kAvailableUnitsPerContinent[4][6] = {
+		{
+            Peasants,
+            Sprites,
+            Orcs,
+            Skeletons,
+            Wolves,
+            Gnomes,
+        },
+		{
+            Dwarves,
+            Zombies,
+            Nomads,
+            Elves,
+            Ogres,
+            Elves
+        },
+		{
+            Ghosts,
+            Barbarians,
+            Trolls,
+            Druids,
+            Peasants,
+            Peasants
+        },
+		{
+            Giants,
+            Vampires,
+            Archmages,
+            Dragons,
+            Demons,
+            Peasants
+        },
+	};
+
+    static constexpr int kShopTileForUnit[] = {
+		ShopWagon,
+		ShopTree,
+		ShopCave,
+		ShopDungeon,
+		ShopCave,
+		ShopTree,
+		ShopDungeon,
+		ShopTree,
+		ShopTree,
+		ShopTree,
+		ShopCave,
+		ShopTree,
+		ShopCave,
+		ShopTree,
+		ShopDungeon,
+		ShopTree,
+		ShopTree,
+		ShopCave,
+		ShopTree,
+		ShopTree,
+		ShopTree,
+		ShopTree,
+		ShopTree,
+		ShopTree,
+		ShopTree,
+	};
+
+    std::vector<glm::ivec2> random_tiles;
+
+    int n = 0;
+    for (int y = 0; y < 64; y++) {
+        for (int x = 0; x < 64; x++) {
+            int id = tiles[n++];
+            if (id == 0x8B) {
+                random_tiles.push_back({x, y});
+            }
+        }
+    }
+
+    rng_.seed(std::chrono::system_clock::now().time_since_epoch().count());
+    std::shuffle(std::begin(random_tiles), std::end(random_tiles), rng_);
+
+    int used_tiles = 0;
+
+    for (int i = 0; i < kNumShopsPerContinent[0]; i++) {
+        int unit = kAvailableUnitsPerContinent[0][rand() % 6];
+        tiles[random_tiles[used_tiles].x + random_tiles[used_tiles].y * 64] = kShopTileForUnit[unit];
+        used_tiles++;
+    }
+
+    tiles[random_tiles[used_tiles].x + random_tiles[used_tiles].y * 64] = Chest;
+    map_tiles_[0] = random_tiles[used_tiles];
+    used_tiles++;
+
+    map_.create_geometry();
 }
 
 void Game::disgrace() {

@@ -1,6 +1,8 @@
 #ifndef BTY_GAME_GAME_HPP_
 #define BTY_GAME_GAME_HPP_
 
+#include <random>
+
 #include "scene.hpp"
 #include "gfx/font.hpp"
 #include "gfx/sprite.hpp"
@@ -50,6 +52,7 @@ private:
     void view_puzzle();
     void dismiss();
     void dismiss_slot(int slot);
+    void gen_tiles();
 
 private:
     enum class GameState {
@@ -72,6 +75,8 @@ private:
         Astrology,
         Budget,
     };
+
+    std::default_random_engine rng_{};
     
     bty::SceneSwitcher *scene_switcher_;
     GameState state_{GameState::Unpaused};
@@ -117,6 +122,8 @@ private:
     int lose_state_{0};
 
     bty::Dialog dismiss_;
+
+    glm::ivec2 map_tiles_[3];
 };
 
 #endif    // BTY_GAME_GAME_HPP_
