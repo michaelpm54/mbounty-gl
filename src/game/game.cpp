@@ -1280,7 +1280,7 @@ void Game::gen_tiles() {
         for (int y = 0; y < 64; y++) {
             for (int x = 0; x < 64; x++) {
                 int id = tiles[n];
-                if (id == 0x8B) {
+                if (id == Tile_GenRandom) {
                     random_tiles.push_back({x, y});
                 }
                 else if (id == Tile_GenTown) {
