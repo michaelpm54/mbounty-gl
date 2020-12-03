@@ -61,6 +61,23 @@ void Hud::load(bty::Assets &assets, SharedState &state) {
         }
     }
 
+    const auto *gold_tex = assets.get_texture("hud/gold-2-gold.png");
+    const auto *silver_tex = assets.get_texture("hud/gold-1-silver.png");
+    const auto *copper_tex = assets.get_texture("hud/gold-0-copper.png");
+
+    for (int i = 0; i < 10; i++) {
+        gold_[i].set_texture(gold_tex);
+        gold_[i].set_position(264, 208 - i * 2);
+    }
+    for (int i = 0; i < 10; i++) {
+        gold_[10+i].set_texture(silver_tex);
+        gold_[10+i].set_position(280, 208 - i * 2);
+    }
+    for (int i = 0; i < 10; i++) {
+        gold_[20+i].set_texture(copper_tex);
+        gold_[20+i].set_position(296, 208 - i * 2);
+    }
+
     update_state();
 }
 
@@ -79,6 +96,15 @@ void Hud::draw(bty::Gfx &gfx, glm::mat4 &camera) {
             gfx.draw_sprite(pieces_[i], camera);
         }
     }
+    for (int i = 0; i < num_gold_coins_; i++) {
+        gfx.draw_sprite(gold_[i], camera);
+    }
+    for (int i = 0; i < num_silver_coins_; i++) {
+        gfx.draw_sprite(gold_[10+i], camera);
+    }
+    for (int i = 0; i < num_copper_coins_; i++) {
+        gfx.draw_sprite(gold_[20+i], camera);
+    }
 }
 
 void Hud::update_state() {
@@ -93,6 +119,15 @@ void Hud::update_state() {
     for (int i = 0; i < 8; i++) {
         hide_piece_[kPuzzleArtifactPositions[i]] = state_->artifacts_found[i];
     }
+    int gold = state_->gold;
+    int num_gold = gold / 10000;
+    gold -= (num_gold * 10000);
+    int num_silver = gold / 1000;
+    gold -= (num_silver * 1000);
+    int num_copper = gold / 100;
+    num_gold_coins_ = num_gold > 10 ? 10 : num_gold;
+    num_silver_coins_ = num_silver > 10 ? 10 : num_silver;
+    num_copper_coins_ = num_copper > 10 ? 10 : num_copper;
 }
 
 void Hud::update(float dt) {

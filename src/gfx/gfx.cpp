@@ -65,6 +65,7 @@ void Gfx::draw_sprite(Sprite &sprite, glm::mat4 &camera)
     }
     else {
         glBindTextureUnit(0, GL_NONE);
+        return;
     }
 
     glBindVertexArray(quad_vao_);

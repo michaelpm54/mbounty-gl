@@ -61,6 +61,11 @@ private:
 
     bty::Sprite pieces_[25];
     bool hide_piece_[25];
+
+    bty::Sprite gold_[30];
+    int num_gold_coins_{0};
+    int num_silver_coins_{0};
+    int num_copper_coins_{0};
 };
 
 #endif // GAME_HUD_HPP_
