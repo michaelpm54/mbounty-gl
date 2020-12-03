@@ -18,6 +18,7 @@ void Town::load(bty::Assets &assets, bty::BoxColor color, SharedState &state) {
     dialog_.add_option(3, 4, ""); // Rent boat
     dialog_.add_option(3, 5, "Gather information");
     dialog_.add_option(3, 6, ""); // Spell
+    dialog_.add_option(3, 7, "Buy siege weapons (3000)");
 
     unit_.set_position(56, 104);
     bg_.set_texture(assets.get_texture("bg/town.png"));
@@ -103,6 +104,8 @@ R"raw(Castle {}{}is under {}'s rule.
     dialog_.set_option(3, fmt::format("{} spell ({})", kSpellNames[spell], kSpellCosts[spell]));
     
     current_info_contract_ = occ.occupier;
+
+    dialog_.set_option_visibility(4, !state_->siege);
 }
 
 void Town::update(float dt) {
@@ -135,6 +138,12 @@ int Town::key(int key) {
                 show_gather_information_ = true;
                 if (current_info_contract_ != -1) {
                     state_->known_villains[current_info_contract_] = true;
+                }
+            }
+            else if (dialog_.get_selection() == 4) {
+                if (state_->gold >= 3000) {
+                    dialog_.set_option_visibility(4, false);
+                    return 4;
                 }
             }
             return dialog_.get_selection();

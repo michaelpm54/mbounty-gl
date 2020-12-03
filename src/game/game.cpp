@@ -1656,6 +1656,9 @@ void Game::town_option(int opt) {
         case 3:
             buy_spell();
             break;
+        case 4:
+            buy_siege();
+            break;
         default:
             break;
     }
@@ -1750,12 +1753,27 @@ void Game::buy_spell()
             hud_.set_title(fmt::format("     You can learn {} more spell{}.", remaining, remaining != 1 ? "s" : ""));
         }
         else {
-            hud_.set_title(" You can not afford anymore spells!");
+            hud_.set_title("    You do not have enough gold!");
             set_state(GameState::HudMessage);
         }
     }
     else {
         hud_.set_title("  You can not learn anymore spells!");
         set_state(GameState::HudMessage);
+    }
+}
+
+void Game::buy_siege()
+{
+    auto &state = scene_switcher_->state();
+
+    if (state.gold < 3000) {
+        hud_.set_title("    You do not have enough gold!");
+        set_state(GameState::HudMessage);
+    }
+    else {
+        state.siege = true;
+        hud_.update_state();
+        town_.update_gold();
     }
 }

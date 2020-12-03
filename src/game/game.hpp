@@ -90,6 +90,7 @@ private:
     void rent_boat();
     void view_contract();
     void buy_spell();
+    void buy_siege();
 
 private:
     enum WeekPassedCard {
