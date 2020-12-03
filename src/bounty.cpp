@@ -2,41 +2,86 @@
 
 #include <fmt/format.h>
 
-const TownLocation kTownLocations[] = {
+const TownInfo kTownInfo[] = {
 	/* Continentia */
-	{ "Bayside", 41, 58 },
-	{ "Fjord", 46, 35 },
-	{ "Hunterville", 12, 3 },
-	{ "Isla Vista", 57, 5},
-	{ "King's Haven", 17, 21 },
-	{ "Lakeview", 17, 44 },
-	{ "Nyre", 50, 13 },
-	{ "Path's End", 38, 50 },
-	{ "Quiln Point", 14, 27 },
-	{ "Riverton", 29, 12 },
-	{ "Xoctan", 51, 28 },
+	{ "Bayside", 41, 58, -1 },
+	{ "Fjord", 46, 35, -1 },
+	{ "Hunterville", 12, 3, 9 },
+	{ "Isla Vista", 57, 5, -1 },
+	{ "King's Haven", 17, 21, -1 },
+	{ "Lakeview", 17, 44, -1 },
+	{ "Nyre", 50, 13, -1 },
+	{ "Path's End", 38, 50, -1 },
+	{ "Quiln Point", 14, 27, -1 },
+	{ "Riverton", 29, 12, -1 },
+	{ "Xoctan", 51, 28, -1 },
 	/* Forestria */
-	{ "Anomaly", 34, 23 },
-	{ "Dark Corner", 58, 60 },
-	{ "Elan's Landing", 3, 37 },
-	{ "Midland", 58, 33 },
-	{ "Underfoot", 58, 4 },
-	{ "Wood's End", 3, 8 },
+	{ "Anomaly", 34, 23, -1 },
+	{ "Dark Corner", 58, 60, -1 },
+	{ "Elan's Landing", 3, 37, -1 },
+	{ "Midland", 58, 33, -1 },
+	{ "Underfoot", 58, 4, -1 },
+	{ "Wood's End", 3, 8, -1 },
 	/* Archipelia */
-	{ "Centrapf", 9, 39 },
-	{ "Japper", 13, 7 },
-	{ "Overthere", 57, 57 },
-	{ "Simpleton", 13, 60 },
-	{ "Topshore", 5, 50 },
-	{ "Yakonia", 49, 8 },
+	{ "Centrapf", 9, 39, -1 },
+	{ "Japper", 13, 7, -1 },
+	{ "Overthere", 57, 57, -1 },
+	{ "Simpleton", 13, 60, -1 },
+	{ "Topshore", 5, 50, -1 },
+	{ "Yakonia", 49, 8, -1 },
 	/* Saharia */
-	{ "Grimwold", 9, 60 },
-	{ "Vengeance", 7, 3 },
-	{ "Zaezoizu", 58, 48 },
+	{ "Grimwold", 9, 60, -1 },
+	{ "Vengeance", 7, 3, -1 },
+	{ "Zaezoizu", 58, 48, -1 },
 };
 
 const int kTownsPerContinent[4] = {
 	11, 6, 6, 3
+};
+
+const int kTownIndices[4] = {
+	0, 11, 17, 23,
+};
+
+const CastleInfo kCastleInfo[] = {
+	/* Continentia */
+	{ "Azram", 30, 27 },
+	{ "Cancomar", 36, 49 },
+	{ "Faxis", 22, 49 },
+	{ "Irok", 11, 30 },
+	{ "Kookamunga", 57, 58 },
+	{ "Nilslag", 22, 24 },
+	{ "Ophiraund", 6, 57 },
+	{ "Portalis", 58, 23 },
+	{ "Rythacon", 54, 6 },
+	{ "Vutar", 40, 5 },
+	{ "Wankelforte", 40, 41 },
+	/* Forestria */
+	{ "Basefit", 47, 6 },
+	{ "Duvock", 30, 18 },
+	{ "Jhan", 41, 34 },
+	{ "Mooseweigh", 25, 39 },
+	{ "Quinderwitch", 42, 56 },
+	{ "Yeneverre", 19, 19 },
+	/* Archipelia */
+	{ "Endryx", 11, 46 },
+	{ "Goobare", 41, 36 },
+	{ "Hyppus", 43, 27 },
+	{ "Lorshe", 52, 57 },
+	{ "Tylitch", 9, 18 },
+	{ "Xelox", 45, 6 },
+	/* Saharia */
+	{ "Spockana", 17, 39 },
+	{ "Uzare", 41, 12 },
+	{ "Zyzzarzaz", 46, 43 },
+};
+
+const int kCastlesPerContinent[4] = {
+	11, 6, 6, 3
+};
+
+const int kCastleIndices[4] = {
+	0, 11, 17, 23,
 };
 
 const int kPuzzleVillainPositions[17] = {
@@ -567,6 +612,8 @@ std::string number_with_ks(int num)
     else if (num >= 1'000) {
         return fmt::format("{}K", num / 1'000);
     }
+
+	return "???";
 }
 
 glm::vec4 get_color(BoxColor color, bool outline) {

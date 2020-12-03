@@ -152,7 +152,8 @@ private:
     glm::ivec2 auto_move_dir_{0};
     
     Town town_;
-    std::array<std::unordered_map<int, int>, 4> town_units_;
+    std::array<int, 26> town_units_;
+    std::array<CastleOccupation, 26> castle_occupations_;
 };
 
 #endif    // BTY_GAME_GAME_HPP_

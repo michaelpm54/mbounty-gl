@@ -148,7 +148,7 @@ charts describing passage to)raw");
     sail_dialog_.create(1, 18, 30, 9, color, assets);
     sail_dialog_.add_line(3, 1, "Sail to which continent?");
 
-    town_.load(assets, color, state, hud_);
+    town_.load(assets, color, state);
 
     loaded_ = true;
     return success;
@@ -584,15 +584,7 @@ void Game::key(int key, int scancode, int action, int mods)
             switch (action)
             {
                 case GLFW_PRESS:
-                    switch (key)
-                    {
-                        case GLFW_KEY_BACKSPACE:
-                            set_state(GameState::Unpaused);
-                            break;
-                        default:
-                            town_option(town_.key(key));
-                            break;
-                    }
+                    town_option(town_.key(key));
                     break;
                 default:
                     break;
@@ -636,12 +628,17 @@ int coord(int x, int y) {
 
 void Game::town(const Tile &tile) {
     int continent = scene_switcher_->state().continent;
-    int coords = coord(tile.tx, tile.ty);
-    if (!town_units_[continent].contains(coords)) {
-        spdlog::debug("No town on continent {} for tile {:04x}", coords);
-        return;
+
+    int town = -1;
+
+    for (int i = 0; i < 26; i++) {
+        if (kTownInfo[i].x == tile.tx && 63 - kTownInfo[i].y == tile.ty) {
+            town = i;
+            break;
+        }
     }
-    town_.view(tile, continent, town_units_[continent][coords]);
+
+    town_.view(tile, continent, town_units_[town], castle_occupations_[kTownInfo[town].castle]);
     set_state(GameState::Town);
 }
 
@@ -1183,6 +1180,10 @@ void Game::gen_tiles() {
 		6, 6, 4, 5
 	};
 
+    static constexpr int kVillainsPerContinent[4] = {
+        6, 4, 4, 3
+    };
+
     static constexpr int kAvailableUnitsPerContinent[4][6] = {
 		{
             Peasants,
@@ -1262,6 +1263,10 @@ void Game::gen_tiles() {
 
     int artifact_index = 0;
 
+    for (int i = 0; i < 26; i++) {
+        town_units_[i] = Peasants;
+    }
+
     /* For generating unit IDs */
     std::uniform_int_distribution<int> unit_gen(0, 24);
 
@@ -1269,24 +1274,78 @@ void Game::gen_tiles() {
         auto *tiles = map_.get_data(continent);
 
         std::vector<glm::ivec2> random_tiles;
-        std::vector<glm::ivec2> towns;
+        std::vector<int> castle_indices;
 
         int n = 0;
         for (int y = 0; y < 64; y++) {
             for (int x = 0; x < 64; x++) {
-                int id = tiles[n++];
+                int id = tiles[n];
                 if (id == 0x8B) {
                     random_tiles.push_back({x, y});
                 }
                 else if (id == Tile_GenTown) {
-                    town_units_[continent][((x&0xFF)<<8)|y] = unit_gen(rng_);
-                    tiles[n-1] = Tile_Town;
+                    int town = -1;
+                    for (int i = 0; i < kTownsPerContinent[continent]; i++) {
+                        int index = kTownIndices[continent] + i;
+                        if (kTownInfo[index].x == x && 63 - kTownInfo[index].y == y) {
+                            town = index;
+                        }
+                    }
+                    if (town != -1) {
+                        town_units_[town] = unit_gen(rng_);
+                        tiles[x + y * 64] = Tile_Town;
+                    }
+                    else {
+                        spdlog::warn("({}) Unknown town at {}, {}", continent, x, 63-y);
+                    }
+                }
+                else if (id == Tile_GenCastleGate) {
+                    int castle = -1;
+                    for (int i = 0; i < kCastlesPerContinent[continent]; i++) {
+                        int index = kCastleIndices[continent] + i;
+                        if (kCastleInfo[index].x == x && 63 - kCastleInfo[index].y == y) {
+                            castle = index;
+                            break;
+                        }
+                    }
+                    if (castle != -1) {
+                        castle_indices.push_back(castle);
+                        tiles[x + y * 64] = Tile_CastleB;
+                    }
+                    else {
+                        /* Not king's castle */
+                        if (continent != 0 && x != 11 && y != 56) {
+                            spdlog::warn("({}) Unknown castle at {}, {}", continent, x, 63-y);
+                        }
+                    }
+                }
+                n++;
+            }
+        }
+
+        if (castle_indices.size() != kCastlesPerContinent[continent]) {
+            spdlog::error("({}) Failed to find {} castles!", continent, kCastlesPerContinent[continent] - castle_indices.size());
+
+            for (int i = 0; i < kCastlesPerContinent[continent]; i++) {
+                bool found = false;
+                int index = kCastleIndices[continent] + i;
+                for (int j = 0; j < castle_indices.size(); j++) {
+                    if (castle_indices[j] == index) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    spdlog::error("Missing {}", kCastleInfo[index].name);
                 }
             }
         }
 
         rng_.seed(std::chrono::system_clock::now().time_since_epoch().count());
         std::shuffle(std::begin(random_tiles), std::end(random_tiles), rng_);
+
+        rng_.seed(std::chrono::system_clock::now().time_since_epoch().count());
+        std::shuffle(std::begin(castle_indices), std::end(castle_indices), rng_);
 
         int used_tiles = 0;
 
@@ -1308,6 +1367,32 @@ void Game::gen_tiles() {
         tiles[tile.x + tile.y * 64] = kArtifactTiles[artifacts[artifact_index++]];
         tile = random_tiles[used_tiles++];
         tiles[tile.x + tile.y * 64] = kArtifactTiles[artifacts[artifact_index++]];
+
+        for (int i = 0; i < kCastlesPerContinent[continent]; i++) {
+            int index = kCastleIndices[continent] + i;
+            castle_occupations_[index] = {
+                index,
+                -1,
+                {{Peasants, Peasants, Peasants, Peasants, Peasants}},
+                {{0xFF, 0xFF, 0xFF, 0xFF, 0xFF}}
+            };
+        }
+
+        int used_castles = 0;
+        for (int i = 0; i < kVillainsPerContinent[continent]; i++) {
+            int castle = castle_indices[used_castles++];
+
+            CastleOccupation occ;
+            occ.index = castle;
+            occ.occupier = i;
+
+            for (int j = 0; j < 5; j++) {
+                occ.army[j] = unit_gen(rng_);
+                occ.army_counts[j] = rand() % 100;
+            }
+
+            castle_occupations_[castle] = occ;
+        }
     }
 
     map_.create_geometry();
@@ -1528,6 +1613,11 @@ void Game::rent_boat() {
 
 void Game::town_option(int opt) {
     switch (opt) {
+        case -1: // internal option
+            break;
+        case -2: // close town
+            set_state(GameState::Unpaused);
+            break;
         case 0:
             next_contract();
             break;

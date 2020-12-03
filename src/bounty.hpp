@@ -6,14 +6,25 @@
 
 #include <glm/vec4.hpp>
 
-struct TownLocation {
+struct TownInfo {
+	std::string name;
+	int x;
+	int y;
+	int castle;
+};
+
+struct CastleInfo {
 	std::string name;
 	int x;
 	int y;
 };
 
-extern const TownLocation kTownLocations[];
+extern const TownInfo kTownInfo[];
 extern const int kTownsPerContinent[4];
+extern const int kTownIndices[4];
+extern const CastleInfo kCastleInfo[];
+extern const int kCastlesPerContinent[4];
+extern const int kCastleIndices[4];
 
 enum ArtifactId {
 	ArtiArticlesOfNobility,
