@@ -41,15 +41,18 @@ public:
 	void animate(float dt);
 	int get_selection() const;
 	void clear_options();
+	void set_option_visibility(int index, bool visible);
 
 private:
 	void update_arrow();
 
 private:
 	std::deque<Text> options_;
-	std::unordered_set<int> disabled_options_;
+	std::vector<bool> disabled_options_;
+	std::vector<bool> visible_options_;
 	Sprite arrow_;
 	int selection_{0};
+	bool draw_arrow_{true};
 };
 
 }

@@ -44,6 +44,8 @@ extern int const kRankVillainsCaptured[4][4];
 
 namespace bty {
 
+std::string number_with_ks(int num);
+
 enum class BoxColor {
     Easy,
     Normal,

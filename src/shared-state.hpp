@@ -28,6 +28,7 @@ struct SharedState {
     bool maps_found[4]{0};
     bool villains_caught[17];
     bool artifacts_found[8];
+    bool boat_rented{false};
 };
 
 #endif // BTY_SHARED_STATE_HPP_

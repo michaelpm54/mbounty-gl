@@ -18,6 +18,7 @@ public:
 
     void create(int x, int y, const std::string &string, const Font &font);
     void set_string(const std::string &string);
+    const std::string get_string() const;
     GLuint get_vao() const;
     GLuint get_num_vertices() const;
     void set_font(const Font &font);

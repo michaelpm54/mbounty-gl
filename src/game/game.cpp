@@ -148,7 +148,7 @@ charts describing passage to)raw");
     sail_dialog_.create(1, 18, 30, 9, color, assets);
     sail_dialog_.add_line(3, 1, "Sail to which continent?");
 
-    town_.load(assets, color);
+    town_.load(assets, color, state, hud_);
 
     loaded_ = true;
     return success;
@@ -383,8 +383,7 @@ void Game::key(int key, int scancode, int action, int mods)
         case GameState::ViewArmy: [[fallthrough]];
         case GameState::ViewCharacter: [[fallthrough]];
         case GameState::ViewContinent: [[fallthrough]];
-        case GameState::ViewPuzzle: [[fallthrough]];
-        case GameState::ViewContract:
+        case GameState::ViewPuzzle:
             switch (action)
             {
                 case GLFW_PRESS:
@@ -394,6 +393,30 @@ void Game::key(int key, int scancode, int action, int mods)
                         case GLFW_KEY_BACKSPACE: [[fallthrough]];
                         case GLFW_KEY_ENTER:
                             set_state(GameState::Unpaused);
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case GameState::ViewContract:
+            switch (action)
+            {
+                case GLFW_PRESS:
+                    switch (key)
+                    {
+                        case GLFW_KEY_SPACE: [[fallthrough]];
+                        case GLFW_KEY_BACKSPACE: [[fallthrough]];
+                        case GLFW_KEY_ENTER:
+                            if (last_state_ == GameState::Town) {
+                                set_state(GameState::Town);
+                            }
+                            else {
+                                set_state(GameState::Unpaused);
+                            }
                             break;
                         default:
                             break;
@@ -566,13 +589,8 @@ void Game::key(int key, int scancode, int action, int mods)
                         case GLFW_KEY_BACKSPACE:
                             set_state(GameState::Unpaused);
                             break;
-                        case GLFW_KEY_UP:
-                            town_.prev();
-                            break;
-                        case GLFW_KEY_DOWN:
-                            town_.next();
-                            break;
                         default:
+                            town_option(town_.key(key));
                             break;
                     }
                     break;
@@ -784,6 +802,7 @@ void Game::update(float dt)
         sail_dialog_.animate(dt);
     }
     else if (state_== GameState::Town) {
+        hud_.update(dt);
         town_.update(dt);
     }
 }
@@ -962,19 +981,6 @@ void Game::update_spells()
     magic_spells_[n]->set_string(fmt::format("{} Turn Undead", spells[n]));
 }
 
-std::string number_with_ks(int num)
-{
-    if (num >= 1'000'000) {
-        return fmt::format("{}KK", num / 1'000'000);
-    }
-    else if (num >= 1'000) {
-        return fmt::format("{}K", num / 1'000);
-    }
-    else {
-        return fmt::format("{}", num);
-    }
-}
-
 void Game::end_of_week(bool search)
 {
     std::string week = fmt::format("Week #{}", weeks_passed_);
@@ -988,12 +994,12 @@ void Game::end_of_week(bool search)
 
     auto &state = scene_switcher_->state();
 
-    std::string on_hand = number_with_ks(state.gold);
+    std::string on_hand = bty::number_with_ks(state.gold);
 
     int army_total = 0;
     int commission = state.commission;
     int gold = state.gold;
-    int boat = boat_rented_ ? 500 : 0;
+    int boat = state.boat_rented ? (state.artifacts_found[ArtiAnchorOfAdmirality] ? 100 : 500) : 0;
     int balance = (commission + gold) - boat;
 
     for (int i = 0; i < 5; i++) {
@@ -1007,7 +1013,7 @@ void Game::end_of_week(bool search)
         if (balance > weekly_cost || balance - weekly_cost == 0) {
             balance -= weekly_cost;
             army_total += weekly_cost;
-            std::string cost = number_with_ks(weekly_cost);
+            std::string cost = bty::number_with_ks(weekly_cost);
             std::string spaces(14-(cost.size()+unit.name_plural.size()), ' ');
             budget_.set_line(7+i, fmt::format("{}{}{}", unit.name_plural, spaces, cost));
         }
@@ -1034,7 +1040,7 @@ void Game::end_of_week(bool search)
     budget_.set_line(3, fmt::format("Payment: {:>4}", commission));
     budget_.set_line(4, fmt::format("Boat: {:>7}", boat));
     budget_.set_line(5, fmt::format("Army: {:>7}", army_total));
-    budget_.set_line(6, fmt::format("Balance: {:>4}", number_with_ks(balance)));
+    budget_.set_line(6, fmt::format("Balance: {:>4}", bty::number_with_ks(balance)));
 
     if ((state.army[0] == -1 || out_of_money) && search) {
         set_state(GameState::Disgrace);
@@ -1427,6 +1433,7 @@ void Game::set_state(GameState state) {
             break;
     }
 
+    last_state_ = state_;
     state_ = state;
     clear_movement();
 }
@@ -1513,4 +1520,65 @@ void Game::sail_to(int continent) {
         update_camera();
         scene_switcher_->state().continent = continent;
     }
+}
+
+void Game::rent_boat() {
+    scene_switcher_->state().boat_rented = !scene_switcher_->state().boat_rented;
+}
+
+void Game::town_option(int opt) {
+    switch (opt) {
+        case 0:
+            next_contract();
+            break;
+        case 1:
+            rent_boat();
+            break;
+        default:
+            break;
+    }
+}
+
+void Game::next_contract() {
+    auto &state = scene_switcher_->state();
+
+    int num_caught = 0;
+    for (int i = 0; i < 17; i++) {
+        if (state.villains_caught[i]) {
+            num_caught++;
+        }
+    }
+    if (num_caught == 17) {
+        return;
+    }
+
+    int contracts[5];
+    int have = 0;
+
+    /* Get the first five uncaught villains */
+    for (int i = 0; i < 17; i++) {
+        if (!state.villains_caught[i]) {
+            contracts[have++] = i;
+            if (have == 5) {
+                break;
+            }
+        }
+    }
+
+    int current = 0;
+    for (int i = 0; i < 5; i++) {
+        if (state.contract == contracts[i]) {
+            current = i;
+        }
+    }
+
+    if (state.contract == 17 && contracts[0] == 0) {
+        state.contract = 0;
+    }
+    else {
+        state.contract = contracts[(current + 1) % 5];
+    }
+
+    hud_.update_state();
+    set_state(GameState::ViewContract);
 }

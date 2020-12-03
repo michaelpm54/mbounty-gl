@@ -1,6 +1,6 @@
 #include "gfx/dialog.hpp"
 
-#include <cassert>
+#include <spdlog/spdlog.h>
 
 #include "gfx/gfx.hpp"
 #include "gfx/text.hpp"
@@ -10,17 +10,27 @@ namespace bty {
 
 void Dialog::next()
 {
-	if (options_.empty())
+	if (options_.empty()) {
+		spdlog::debug("Empty");
 		return;
+	}
 
-	int count = 0;
-	int sel = selection_;
-	do {
-		sel = (sel + 1) % options_.size();
-		count++;
-	} while (count < static_cast<int>(options_.size()) && disabled_options_.contains(sel));
+	int found = -1;
 
-	set_selection(sel);
+	for (int i = 0; i < options_.size(); i++) {
+		int selection = (selection_ + i + 1) % std::max(static_cast<int>(options_.size()), 1);
+		if (!disabled_options_[selection] && visible_options_[selection]) {
+			found = selection;
+			break;
+		}
+	}
+
+	if (found != -1) {
+		set_selection(found);
+	}
+	else {
+		spdlog::warn("Dialog::next: No available option found.");
+	}
 }
 
 void Dialog::prev()
@@ -28,14 +38,22 @@ void Dialog::prev()
 	if (options_.empty())
 		return;
 
-	int count = 0;
-	int sel = selection_;
-	do {
-		sel = sel = (sel - 1 + options_.size()) % options_.size();
-		count++;
-	} while (count < options_.size() && disabled_options_.contains(sel));
+	int found = -1;
 
-	set_selection(sel);
+	for (int i = 0; i < options_.size(); i++) {
+		int selection = (selection_ - i - 1 + options_.size()) % std::max(static_cast<int>(options_.size()), 1);
+		if (!disabled_options_[selection] && visible_options_[selection]) {
+			found = selection;
+			break;
+		}
+	}
+
+	if (found != -1) {
+		set_selection(found);
+	}
+	else {
+		spdlog::warn("Dialog::prev: No available option found.");
+	}
 }
 
 void Dialog::set_position(int x, int y)
@@ -61,8 +79,10 @@ void Dialog::create(
 	TextBox::set_size(w, h);
 
 	options_.clear();
-	selection_ = 0;
+	disabled_options_.clear();
+	visible_options_.clear();
 	arrow_.set_texture(assets.get_texture("arrow.png", {2, 2}));
+	selection_ = -1;
 
 	set_position(x, y);
 }
@@ -73,6 +93,8 @@ Text *Dialog::add_option(int x, int y, const std::string &str)
 	text.create(x_ + x, y_ + y, str, *font_);
 
 	options_.push_back(std::move(text));
+	visible_options_.push_back(true);
+	disabled_options_.push_back(false);
 
 	set_selection(0);
 
@@ -81,7 +103,10 @@ Text *Dialog::add_option(int x, int y, const std::string &str)
 
 void Dialog::set_option(int index, std::string const &str)
 {
-	assert(index > -1 && index < static_cast<int>(options_.size()));
+	if (index < 0 || index >= options_.size()) {
+		spdlog::warn("Dialog::set_option: {} out of range", index);
+		return;
+	}
 	options_[index].set_string(str);
 }
 
@@ -103,12 +128,12 @@ void Dialog::draw(Gfx &gfx, glm::mat4 &camera)
 	if (options_.empty())
 		return;
 
-	/* Don't draw the arrow if there are no usable options. */
-	if (disabled_options_.size() != options_.size())
-		gfx.draw_sprite(arrow_, camera);
+	gfx.draw_sprite(arrow_, camera);
 	
-	for (auto &option : options_) {
-		gfx.draw_text(option, camera);
+	for (int i = 0; i < options_.size(); i++) {
+		if (visible_options_[i]) {
+			gfx.draw_text(options_[i], camera);
+		}
 	}
 }
 
@@ -125,10 +150,8 @@ void Dialog::update_arrow()
 
 void Dialog::disable_option(int index)
 {
-	if (disabled_options_.contains(index))
-		return;
+	disabled_options_[index] = true;
 
-	disabled_options_.insert(index);
 	if (selection_ == index)
 		next();
 }
@@ -146,6 +169,21 @@ int Dialog::get_selection() const
 void Dialog::clear_options()
 {
 	options_.clear();
+	disabled_options_.clear();
+	visible_options_.clear();
+	selection_ = -1;
+}
+
+void Dialog::set_option_visibility(int index, bool visible)
+{
+	if (index < 0 || index >= options_.size()) {
+		spdlog::warn("Dialog::set_option_visibility: {} out of range", index);
+		return;
+	}
+	visible_options_[index] = visible;
+	if (index == selection_) {
+		next();
+	}
 }
 
 }

@@ -85,6 +85,9 @@ private:
     void sail_next();
     void sail_to(int continent);
     void town(const Tile &tile);
+    void town_option(int opt);
+    void next_contract();
+    void rent_boat();
 
 private:
     enum WeekPassedCard {
@@ -96,6 +99,7 @@ private:
     
     bty::SceneSwitcher *scene_switcher_;
     GameState state_{GameState::Unpaused};
+    GameState last_state_{GameState::Unpaused};
     bool loaded_ {false};
     glm::mat4 camera_ {1.0f};
 
@@ -129,8 +133,6 @@ private:
     WeekPassedCard week_passed_card_{WeekPassedCard::Astrology};
     bty::TextBox astrology_;
     bty::TextBox budget_;
-
-    bool boat_rented_{false};
 
     bty::TextBox lose_msg_;
     bty::Sprite lose_pic_;

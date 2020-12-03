@@ -1,5 +1,7 @@
 #include "bounty.hpp"
 
+#include <fmt/format.h>
+
 const TownLocation kTownLocations[] = {
 	/* Continentia */
 	{ "Bayside", 41, 58 },
@@ -552,6 +554,20 @@ int const kVillainRewards[17] = {
 };
 
 namespace bty {
+
+std::string number_with_ks(int num)
+{
+	if (num < 10'000) {
+		return std::to_string(num);
+	}
+
+    if (num >= 1'000'000) {
+        return fmt::format("{}KK", num / 1'000'000);
+    }
+    else if (num >= 1'000) {
+        return fmt::format("{}K", num / 1'000);
+    }
+}
 
 glm::vec4 get_color(BoxColor color, bool outline) {
     int o = static_cast<int>(!outline);

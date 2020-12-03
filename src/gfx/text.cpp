@@ -126,4 +126,8 @@ void Text::set_font(const Font &font) {
     font_ = &font;
 }
 
+const std::string Text::get_string() const {
+    return string_;
+}
+
 }
