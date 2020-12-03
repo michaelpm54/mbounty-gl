@@ -11,17 +11,11 @@
 #include "bounty.hpp"
 
 void ViewPuzzle::load(bty::Assets &assets) {
-    static constexpr int villain_positions[17] = {
-        15, 3, 23, 5, 19, 1, 9, 21, 7, 18, 11, 8, 17, 6, 13, 16, 12,
-    };
     for (int i = 0; i < 17; i++) {
-        textures_[villain_positions[i]] = assets.get_texture(fmt::format("villains/{}.png", i));
+        textures_[kPuzzleVillainPositions[i]] = assets.get_texture(fmt::format("villains/{}.png", i));
     }
-    static constexpr int artifact_positions[8] = {
-        10, 2, 4, 14, 20, 24, 22, 0,
-    };
     for (int i = 0; i < 8; i++) {
-        textures_[artifact_positions[i]] = assets.get_texture(fmt::format("artifacts/44x32/{}.png", i));
+        textures_[kPuzzleArtifactPositions[i]] = assets.get_texture(fmt::format("artifacts/44x32/{}.png", i));
     }
     int n = 0;
     for (int y = 0; y < 5; y++) {
@@ -68,16 +62,55 @@ void ViewPuzzle::draw(bty::Gfx &gfx, glm::mat4 &camera) {
         gfx.draw_sprite(border_[i], camera);
     }
     for (int i = 0; i < 25; i++) {
-        gfx.draw_sprite(sprites_[i], camera);
+        if (!hide_[i]) {
+            gfx.draw_sprite(sprites_[i], camera);
+        }
     }
 }
 
-void ViewPuzzle::view(const SharedState &state) {
-    
+void ViewPuzzle::view(bool *villains, bool *artifacts) {
+    for (int i = 0; i < 25; i++) {
+        to_hide_[i] = -1;
+    }
+    int sprite_index = 0;
+    for (int i = 0; i < 17; i++) {
+        if (villains[i]) {
+            to_hide_[sprite_index++] = kPuzzleVillainPositions[i];
+        }
+    }
+    for (int i = 0; i < 8; i++) {
+        if (artifacts[i]) {
+            to_hide_[sprite_index++] = kPuzzleArtifactPositions[i];
+        }
+    }
+    for (int i = 0; i < 25; i++) {
+        hide_[i] = false;
+    }
+    if (sprite_index) {
+        next_pop_ = 0;
+        done_ = false;
+    }
+    else {
+        next_pop_ = -1;
+        done_ = true;
+    }
 }
 
 void ViewPuzzle::update(float dt) {
+    if (!done_) {
+        pop_timer_ -= dt;
+        if (pop_timer_ <= 0) {
+            pop_timer_ = 0.3f;
+            hide_[to_hide_[next_pop_++]] = true;
+            if (next_pop_ == 25 || to_hide_[next_pop_] == -1) {
+                done_ = true;
+            }
+        }
+    }
+
     for (int i = 0; i < 25; i++) {
-        sprites_[i].animate(dt);
+        if (!hide_[i]) {
+            sprites_[i].animate(dt);
+        }
     }
 }

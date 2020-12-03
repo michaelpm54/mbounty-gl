@@ -47,6 +47,20 @@ void Hud::load(bty::Assets &assets, SharedState &state) {
     money_.set_texture(assets.get_texture("hud/gold-bg.png"));
     money_.set_position({262, 184});
 
+    const auto *piece_texture = assets.get_texture("hud/puzzle-piece.png");
+
+    int p = 0;
+
+    float x = 264;
+    float y = 145;
+    for (int j = 0; j < 5; j++) {
+        for (int i = 0; i < 5; i++) {
+            auto &piece = pieces_[p++];
+            piece.set_position(x + i * 8, y + j * 6);
+            piece.set_texture(piece_texture);
+        }
+    }
+
     update_state();
 }
 
@@ -60,6 +74,11 @@ void Hud::draw(bty::Gfx &gfx, glm::mat4 &camera) {
     gfx.draw_sprite(magic_, camera);
     gfx.draw_sprite(puzzle_, camera);
     gfx.draw_sprite(money_, camera);
+    for (int i = 0; i < 25; i++) {
+        if (!hide_piece_[i]) {
+            gfx.draw_sprite(pieces_[i], camera);
+        }
+    }
 }
 
 void Hud::update_state() {
@@ -68,6 +87,12 @@ void Hud::update_state() {
     days_.set_string(fmt::format("Days Left:{}", state_->days));
     siege_.set_texture(state_->siege ? siege_yes : siege_no);
     magic_.set_texture(state_->magic ? magic_yes : magic_no);
+    for (int i = 0; i < 17; i++) {
+        hide_piece_[kPuzzleVillainPositions[i]] = state_->villains_caught[i];
+    }
+    for (int i = 0; i < 8; i++) {
+        hide_piece_[kPuzzleArtifactPositions[i]] = state_->artifacts_found[i];
+    }
 }
 
 void Hud::update(float dt) {

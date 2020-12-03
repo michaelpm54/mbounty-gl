@@ -26,6 +26,8 @@ struct SharedState {
     int max_spells{0};
     int spell_power{0};
     bool maps_found[4]{0};
+    bool villains_caught[17];
+    bool artifacts_found[8];
 };
 
 #endif // BTY_SHARED_STATE_HPP_

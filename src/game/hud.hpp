@@ -58,6 +58,9 @@ private:
 
     const bty::Texture *magic_no{nullptr};
     const bty::Texture *magic_yes{nullptr};
+
+    bty::Sprite pieces_[25];
+    bool hide_piece_[25];
 };
 
 #endif // GAME_HUD_HPP_

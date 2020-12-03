@@ -1106,6 +1106,14 @@ void Game::setup_game()
         state.maps_found[i] = false;
     }
     state.maps_found[0] = true;
+    
+    /* Villains and artifacts */
+    for (int i = 0; i < 17; i++) {
+        state.villains_caught[i] = false;
+    }
+    for (int i = 0; i < 8; i++) {
+        state.artifacts_found[i] = false;
+    }
 
     hud_.update_state();
 
@@ -1246,7 +1254,7 @@ void Game::lose_game() {
 
 void Game::view_puzzle()
 {
-
+    view_puzzle_.view(scene_switcher_->state().villains_caught, scene_switcher_->state().artifacts_found);
 }
 
 void Game::dismiss()

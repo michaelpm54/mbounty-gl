@@ -6,6 +6,8 @@
 
 #include <glm/vec4.hpp>
 
+extern const int kPuzzleVillainPositions[17];
+extern const int kPuzzleArtifactPositions[8];
 extern char const* const kHeroNames[][4];
 extern int const kDays[4];
 extern char const* const kLoseMessage;
