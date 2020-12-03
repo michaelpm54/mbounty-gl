@@ -43,9 +43,9 @@ bool Hero::can_move(int id) {
         case Mount::Fly:
             return true;
         case Mount::Boat:
-            return id <= GrassInFrontOfCastle || id == BridgeHorizontal || id == BridgeVertical || id == WaterConnector || (id >= WaterInTopRight && id <= WaterOpen);
+            return id <= Tile_GrassInFrontOfCastle || id == Tile_BridgeHorizontal || id == Tile_BridgeVertical || id == Tile_WaterConnector || (id >= Tile_WaterIRT && id <= Tile_Water);
         case Mount::Walk:
-            return id <= GrassInFrontOfCastle || id == BridgeHorizontal || id == BridgeVertical;
+            return id <= Tile_GrassInFrontOfCastle || id == Tile_BridgeHorizontal || id == Tile_BridgeVertical;
         default:
             break;
     }

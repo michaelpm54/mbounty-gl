@@ -67,22 +67,22 @@ void ViewContinent::view(int x, int y, int continent, const unsigned char * cons
         if (id == 0xFF) {
             std::memcpy(p+i*4, &black, 4);
         }
-        else if (id <= GrassInFrontOfCastle) {
+        else if (id <= Tile_GrassInFrontOfCastle) {
             std::memcpy(p+i*4, &green, 4);
         }
-        else if (id >= WaterInTopRight && id <= WaterOpen) {
+        else if (id >= Tile_WaterIRT && id <= Tile_Water) {
             std::memcpy(p+i*4, &cyan, 4);
         }
-        else if (id >= TreeOutBottomRight && id <= TreeOpen) {
+        else if (id >= Tile_TreeERB && id <= Tile_Tree) {
             std::memcpy(p+i*4, &dark_green, 4);
         }
-        else if (id >= SandUnk0 && id <= SandOpen) {
+        else if (id >= Tile_SandELT && id <= Tile_Sand) {
             std::memcpy(p+i*4, &yellow, 4);
         }
-        else if (id >= RockOutTopLeft && id <= RockOpen) {
+        else if (id >= Tile_RockELT && id <= Tile_Rock) {
             std::memcpy(p+i*4, &brown, 4);
         }
-        else if (id >= CastleTopLeft && id <= CastleBottomRight) {
+        else if (id >= Tile_CastleLT && id <= Tile_CastleRB) {
             std::memcpy(p+i*4, &grey, 4);
         }
         else {

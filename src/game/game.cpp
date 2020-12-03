@@ -585,7 +585,7 @@ void Game::find_map(const Tile &tile) {
 
 void Game::collide(Tile &tile) {
     switch (tile.id) {
-        case Chest:
+        case Tile_Chest:
             find_map(tile);
             break;
         default:
@@ -669,7 +669,7 @@ void Game::update(float dt)
             else {
                 if (manifold.changed_tile) {
                     hero_.set_tile_info(manifold.new_tile);
-                    if (hero_.get_mount() == Mount::Boat && manifold.new_tile.id == Grass) {
+                    if (hero_.get_mount() == Mount::Boat && manifold.new_tile.id == Tile_Grass) {
                         hero_.set_mount(Mount::Walk);
                     }
                     update_visited_tiles();
@@ -1163,32 +1163,48 @@ void Game::gen_tiles() {
 	};
 
     static constexpr int kShopTileForUnit[] = {
-		ShopWagon,
-		ShopTree,
-		ShopCave,
-		ShopDungeon,
-		ShopCave,
-		ShopTree,
-		ShopDungeon,
-		ShopTree,
-		ShopTree,
-		ShopTree,
-		ShopCave,
-		ShopTree,
-		ShopCave,
-		ShopTree,
-		ShopDungeon,
-		ShopTree,
-		ShopTree,
-		ShopCave,
-		ShopTree,
-		ShopTree,
-		ShopTree,
-		ShopTree,
-		ShopTree,
-		ShopTree,
-		ShopTree,
+		Tile_ShopWagon,
+		Tile_ShopTree,
+		Tile_ShopCave,
+		Tile_ShopDungeon,
+		Tile_ShopCave,
+		Tile_ShopTree,
+		Tile_ShopDungeon,
+		Tile_ShopTree,
+		Tile_ShopTree,
+		Tile_ShopTree,
+		Tile_ShopCave,
+		Tile_ShopTree,
+		Tile_ShopCave,
+		Tile_ShopTree,
+		Tile_ShopDungeon,
+		Tile_ShopTree,
+		Tile_ShopTree,
+		Tile_ShopCave,
+		Tile_ShopTree,
+		Tile_ShopTree,
+		Tile_ShopTree,
+		Tile_ShopTree,
+		Tile_ShopTree,
+		Tile_ShopTree,
+		Tile_ShopTree,
 	};
+
+    static constexpr int kArtifactTiles[] = {
+        Tile_AfctScroll, Tile_AfctShield, Tile_AfctCrown, Tile_AfctAmulet,
+        Tile_AfctRing, Tile_AfctAnchor, Tile_AfctBook, Tile_AfctSword,
+    };
+
+    /* Place artifacts in random order, then when adding them to
+        continents just increment an index into this array. */
+    std::vector<int> artifacts {
+        0, 1, 2, 3, 4, 5, 6, 7
+    };
+    
+    rng_.seed(std::chrono::system_clock::now().time_since_epoch().count());
+    std::shuffle(std::begin(artifacts), std::end(artifacts), rng_);
+
+    int artifact_index = 0;
 
     for (int continent = 0; continent < 4; continent++) {
         auto *tiles = map_.get_data(continent);
@@ -1218,10 +1234,16 @@ void Game::gen_tiles() {
 
         /* Saharia doesn't have a map to anywhere */
         if (continent != 3) {
-            tiles[random_tiles[used_tiles].x + random_tiles[used_tiles].y * 64] = Chest;
+            tiles[random_tiles[used_tiles].x + random_tiles[used_tiles].y * 64] = Tile_Chest;
             map_tiles_[continent] = random_tiles[used_tiles];
             used_tiles++;
         }
+
+        /* 2 artifacts per continent */
+        auto tile = random_tiles[used_tiles++];
+        tiles[tile.x + tile.y * 64] = kArtifactTiles[artifacts[artifact_index++]];
+        tile = random_tiles[used_tiles++];
+        tiles[tile.x + tile.y * 64] = kArtifactTiles[artifacts[artifact_index++]];
     }
 
     map_.create_geometry();

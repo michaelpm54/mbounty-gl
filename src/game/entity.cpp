@@ -170,7 +170,7 @@ glm::vec2 Entity::get_center() const
 
 bool Entity::can_move(int id)
 {
-    return id == Grass || id == GrassInFrontOfCastle;
+    return id == Tile_Grass || id == Tile_GrassInFrontOfCastle;
 }
 
 void Entity::move_to_tile(const Tile &tile) {

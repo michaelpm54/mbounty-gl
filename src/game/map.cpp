@@ -177,7 +177,7 @@ void Map::reset() {
 }
 
 void Map::erase_tile(const Tile &tile, int continent) {    
-    tiles_[continent][tile.tx + tile.ty * 64] = Grass;
+    tiles_[continent][tile.tx + tile.ty * 64] = Tile_Grass;
 
     float tex_adv_x = 1.0f / (tilesets_[0]->width / 50.0f);
     float tex_adv_y = 1.0f / (tilesets_[0]->height / 42.0f);

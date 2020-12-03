@@ -6,6 +6,17 @@
 
 #include <glm/vec4.hpp>
 
+enum ArtifactId {
+	ArtiArticlesOfNobility,
+	ArtiShieldOfProtection,
+	ArtiCrownOfCommand,
+	ArtiAmuletOfAugmentation,
+	ArtiRingOfHeroism,
+	ArtiAnchorOfAdmirality,
+	ArtiBookOfNecros,
+	ArtiSwordOfProwess,
+};
+
 extern const int kPuzzleVillainPositions[17];
 extern const int kPuzzleArtifactPositions[8];
 extern char const* const kHeroNames[][4];
