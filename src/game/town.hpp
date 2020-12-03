@@ -30,6 +30,7 @@ public:
     int key(int key);
     int get_town() const;
     void update_gold();
+    void set_color(bty::BoxColor color);
 
 private:
     SharedState *state_;

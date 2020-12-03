@@ -167,3 +167,8 @@ int Town::get_town() const {
 void Town::update_gold() {
     dialog_.set_line(1, fmt::format("GP={}", bty::number_with_ks(state_->gold)));
 }
+
+void Town::set_color(bty::BoxColor color) {
+    dialog_.set_color(color);
+    gather_information_.set_color(color);
+}

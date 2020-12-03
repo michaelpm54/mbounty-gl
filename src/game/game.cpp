@@ -1128,6 +1128,9 @@ void Game::setup_game()
     view_contract_.set_color(color);
     astrology_.set_color(color);
     budget_.set_color(color);
+    town_.set_color(color);
+    sail_dialog_.set_color(color);
+    dismiss_.set_color(color);
 
     /* Add starting army */
     for (int i = 0; i < 5; i++) {
