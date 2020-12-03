@@ -148,6 +148,8 @@ charts describing passage to)raw");
     sail_dialog_.create(1, 18, 30, 9, color, assets);
     sail_dialog_.add_line(3, 1, "Sail to which continent?");
 
+    town_.load(assets, color);
+
     loaded_ = true;
     return success;
 }
@@ -240,6 +242,10 @@ void Game::draw(bty::Gfx &gfx)
             hero_.draw(gfx, game_camera_);
             hud_.draw(gfx, camera_);
             sail_dialog_.draw(gfx, camera_);
+            break;
+        case GameState::Town:
+            hud_.draw(gfx, camera_);
+            town_.draw(gfx, camera_);
             break;
         default:
             break;
@@ -551,6 +557,29 @@ void Game::key(int key, int scancode, int action, int mods)
                     break;
             }
             break;
+        case GameState::Town:
+            switch (action)
+            {
+                case GLFW_PRESS:
+                    switch (key)
+                    {
+                        case GLFW_KEY_BACKSPACE:
+                            set_state(GameState::Unpaused);
+                            break;
+                        case GLFW_KEY_UP:
+                            town_.prev();
+                            break;
+                        case GLFW_KEY_DOWN:
+                            town_.next();
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
         default:
             break;
     }
@@ -583,10 +612,28 @@ void Game::find_map(const Tile &tile) {
     }
 }
 
+int coord(int x, int y) {
+    return ((x & 0xFF) << 8) | y;
+}
+
+void Game::town(const Tile &tile) {
+    int continent = scene_switcher_->state().continent;
+    int coords = coord(tile.tx, tile.ty);
+    if (!town_units_[continent].contains(coords)) {
+        spdlog::debug("No town on continent {} for tile {:04x}", coords);
+        return;
+    }
+    town_.view(town_units_[continent][coords]);
+    set_state(GameState::Town);
+}
+
 void Game::collide(Tile &tile) {
     switch (tile.id) {
         case Tile_Chest:
             find_map(tile);
+            break;
+        case Tile_Town:
+            town(tile);
             break;
         default:
             break;
@@ -735,6 +782,9 @@ void Game::update(float dt)
     }
     else if (state_ == GameState::SailNext) {
         sail_dialog_.animate(dt);
+    }
+    else if (state_== GameState::Town) {
+        town_.update(dt);
     }
 }
 
@@ -1206,10 +1256,14 @@ void Game::gen_tiles() {
 
     int artifact_index = 0;
 
+    /* For generating unit IDs */
+    std::uniform_int_distribution<int> unit_gen(0, 24);
+
     for (int continent = 0; continent < 4; continent++) {
         auto *tiles = map_.get_data(continent);
 
         std::vector<glm::ivec2> random_tiles;
+        std::vector<glm::ivec2> towns;
 
         int n = 0;
         for (int y = 0; y < 64; y++) {
@@ -1217,6 +1271,10 @@ void Game::gen_tiles() {
                 int id = tiles[n++];
                 if (id == 0x8B) {
                     random_tiles.push_back({x, y});
+                }
+                else if (id == Tile_GenTown) {
+                    town_units_[continent][((x&0xFF)<<8)|y] = unit_gen(rng_);
+                    tiles[n-1] = Tile_Town;
                 }
             }
         }

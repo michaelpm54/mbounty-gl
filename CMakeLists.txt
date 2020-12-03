@@ -36,6 +36,7 @@ set(MBOUNTYGL_SRC
 	src/game/view-continent.cpp
 	src/game/view-contract.cpp
 	src/game/view-puzzle.cpp
+	src/game/town.cpp
 )
 
 add_executable(${PROJECT_NAME}
@@ -46,6 +47,8 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
 	_CRT_SECURE_NO_WARNINGS
 	SPDLOG_FMT_EXTERNAL
 )
+
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
 
 include(cmake/conan.cmake)
 conan_cmake_run(

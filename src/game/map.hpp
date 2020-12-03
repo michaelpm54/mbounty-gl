@@ -1,6 +1,9 @@
 #ifndef BTY_GAME_MAP_HPP_
 #define BTY_GAME_MAP_HPP_
 
+#include <array>
+#include <vector>
+
 #include "gfx/gl.hpp"
 
 #include <glm/mat4x4.hpp>
@@ -41,8 +44,8 @@ private:
     const bty::Texture *tilesets_[10]{nullptr};
     float tileset_anim_timer_{0};
     int tileset_index_{0};
-    unsigned char *tiles_[4]{nullptr};
-    unsigned char *read_only_tiles_[4]{nullptr};
+	std::array<std::vector<unsigned char>, 4> tiles_;
+	std::array<std::vector<unsigned char>, 4> read_only_tiles_;
 };
 
 enum TileId

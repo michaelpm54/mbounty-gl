@@ -15,10 +15,6 @@ struct Vertex {
 
 Map::~Map()
 {
-    for (int i = 0; i > 4; i++) {
-        delete[] tiles_[i];
-        delete[] read_only_tiles_[i];
-    }
     glDeleteVertexArrays(4, vaos_);
     glDeleteBuffers(4, vbos_);
     glDeleteProgram(program_);
@@ -42,21 +38,19 @@ void Map::load(bty::Assets &assets) {
     glCreateVertexArrays(4, vaos_);
 
     for (int i = 0; i < 4; i++) {
+        tiles_[i].resize(4096);
+        read_only_tiles_[i].resize(4096);
         FILE *map_stream = fopen(kContinentNames[i], "rb");
         if (!map_stream) {
             spdlog::error("Failed to load map: {}", kContinentNames[i]);
             num_vertices_ = 0;
             return;
         }
-        tiles_[i] = new unsigned char[4096];
-        fread(tiles_[i], 1, 4096, map_stream);
+        fread(tiles_[i].data(), 1, 4096, map_stream);
         fclose(map_stream);
-
-        read_only_tiles_[i] = new unsigned char[4096];
-        std::memcpy(read_only_tiles_[i], tiles_[i], 4096);   
+        std::copy(tiles_[i].begin(), tiles_[i].end(), read_only_tiles_[i].begin());
 
         glNamedBufferStorage(vbos_[i], 4096 * 6 * sizeof(GLfloat) * 4, nullptr, GL_DYNAMIC_STORAGE_BIT);
-
         glBindVertexArray(vaos_[i]);
         glBindBuffer(GL_ARRAY_BUFFER, vbos_[i]);
         glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 4, nullptr);
@@ -126,7 +120,7 @@ Tile Map::get_tile(glm::ivec2 coord, int continent) const
 }
 
 unsigned char *Map::get_data(int continent) {
-    return tiles_[continent];
+    return tiles_[continent].data();
 }
 
 void Map::create_geometry() {
@@ -172,7 +166,7 @@ void Map::create_geometry() {
 
 void Map::reset() {
     for (int i = 0; i < 4; i++) {
-        std::memcpy(tiles_[i], read_only_tiles_[i], 4096);
+        std::copy(read_only_tiles_[i].begin(), read_only_tiles_[i].end(), tiles_[i].begin());
     }
 }
 

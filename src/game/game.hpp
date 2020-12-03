@@ -20,6 +20,7 @@
 #include "game/view-continent.hpp"
 #include "game/view-contract.hpp"
 #include "game/view-puzzle.hpp"
+#include "game/town.hpp"
 
 namespace bty {
 class Assets;
@@ -55,6 +56,13 @@ private:
         DismissError,
         ChestMap,
         SailNext,
+        Town,
+    };
+
+    struct EventTile {
+        int x;
+        int y;
+        int c;
     };
 
     void update_camera();
@@ -76,6 +84,7 @@ private:
     void find_map(const Tile &tile);
     void sail_next();
     void sail_to(int continent);
+    void town(const Tile &tile);
 
 private:
     enum WeekPassedCard {
@@ -139,6 +148,9 @@ private:
     bool controls_locked_{false};
     float control_lock_timer_{0};
     glm::ivec2 auto_move_dir_{0};
+    
+    Town town_;
+    std::array<std::unordered_map<int, int>, 4> town_units_;
 };
 
 #endif    // BTY_GAME_GAME_HPP_
