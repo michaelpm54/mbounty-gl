@@ -80,8 +80,10 @@ void TextBox::draw(Gfx &gfx, glm::mat4 &camera)
 	gfx.draw_rect(background_outline_, camera);
 	gfx.draw_rect(background_, camera);
 
-	for (auto &line : lines_) {
-		gfx.draw_text(line, camera);
+	for (int i = 0; i < lines_.size(); i++) {
+		if (lines_visible_[i]) {
+			gfx.draw_text(lines_[i], camera);
+		}
 	}
 }
 
@@ -95,6 +97,7 @@ Text *TextBox::add_line(int x, int y, std::string const &str)
 	Text text;
 	text.create(x_ + x, y_ + y, str, *font_);
 	lines_.push_back(std::move(text));
+	lines_visible_.push_back(true);
 
 	return &lines_.back();
 }
@@ -119,6 +122,15 @@ void TextBox::set_color(bty::BoxColor color)
 {
 	background_outline_.set_color(bty::get_color(color, true));
 	background_.set_color(bty::get_color(color, false));
+}
+
+void TextBox::set_line_visible(int index, bool value)
+{
+	if (index < 0 || index >= lines_.size()) {
+		spdlog::warn("TextBox::set_line_visible: {} out of range", index);
+		return;
+	}
+	lines_visible_[index] = value;
 }
 
 }

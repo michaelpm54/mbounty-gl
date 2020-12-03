@@ -34,6 +34,7 @@ public:
 	Text *add_line(int x, int y, std::string const &str);
 	void set_line(int i, std::string const &str);
 	void set_color(bty::BoxColor color);
+	void set_line_visible(int index, bool value);
 
 protected:
 	void set_size(int w, int h);
@@ -42,6 +43,7 @@ protected:
 private:
 	std::array<Sprite, 8> box_;
 	std::deque<Text> lines_;
+	std::vector<bool> lines_visible_;
 	Rect background_;
 	Rect background_outline_;
 	float width_;

@@ -21,6 +21,7 @@
 #include "game/view-contract.hpp"
 #include "game/view-puzzle.hpp"
 #include "game/town.hpp"
+#include "game/kings-castle.hpp"
 
 namespace bty {
 class Assets;
@@ -57,6 +58,7 @@ private:
         SailNext,
         Town,
         HudMessage,
+        KingsCastle,
     };
 
     struct EventTile {
@@ -91,6 +93,7 @@ private:
     void view_contract();
     void buy_spell();
     void buy_siege();
+    void kings_castle_option(int opt);
 
 private:
     enum WeekPassedCard {
@@ -158,6 +161,8 @@ private:
     std::array<int, 26> town_units_;
     std::array<CastleOccupation, 26> castle_occupations_;
     std::array<int, 26> town_spells_;
+
+    KingsCastle kings_castle_;
 };
 
 #endif    // BTY_GAME_GAME_HPP_

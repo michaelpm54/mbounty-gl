@@ -15,4 +15,10 @@ void Rect::set_color(BoxColor color) {
     set_color(bty::get_color(color));
 }
 
+Rect::Rect(const glm::vec4 &color, const glm::vec2 &size, const glm::vec2 &position) {
+    set_color(color);
+    set_position(position);
+    set_size(size);
+}
+
 }

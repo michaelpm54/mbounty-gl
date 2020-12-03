@@ -42,6 +42,8 @@ Window *window_init()
 
     glfwMakeContextCurrent(window->handle);
 
+    glfwSwapInterval(1);
+
     spdlog::info("Window created with OpenGL version {}", glGetString(GL_VERSION));
 
     glewExperimental = GL_TRUE;

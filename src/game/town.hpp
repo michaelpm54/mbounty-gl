@@ -7,7 +7,6 @@
 
 struct SharedState;
 struct Tile;
-class Hud;
 
 namespace bty {
 class Gfx;
@@ -34,7 +33,6 @@ public:
 
 private:
     SharedState *state_;
-    Hud *hud_;
     bty::Sprite bg_;
     bty::Sprite unit_;
     bty::Dialog dialog_;

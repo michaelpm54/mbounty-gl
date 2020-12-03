@@ -1,5 +1,7 @@
 #include "game/hero.hpp"
 
+#include <spdlog/spdlog.h>
+
 #include "assets.hpp"
 #include "game/map.hpp"
 

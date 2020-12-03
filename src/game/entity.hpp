@@ -29,8 +29,8 @@ public:
     void move_to_tile(const Tile &tile);
     const Tile &get_tile() const;
     glm::vec2 get_center() const;
-    void set_collision_rect_visible(bool val);
-    bool get_collision_rect_visible() const;
+    void set_debug(bool val);
+    bool get_debug() const;
     void draw(bty::Gfx &gfx, glm::mat4 &camera);
 
 protected:
@@ -41,9 +41,8 @@ protected:
 
 private:
     bty::Rect collision_rect_;
-    bool collision_rect_visible_{false};
-    std::array<bty::Rect, 20> collided_rects_;
-    int num_collided_rects_{0};
+    bool debug_{false};
+    std::vector<bty::Rect> collided_rects_;
 };
 
 #endif // BTY_GAME_ENTITY_HPP_

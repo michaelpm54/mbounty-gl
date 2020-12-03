@@ -153,6 +153,7 @@ charts describing passage to)raw");
     sail_dialog_.add_line(3, 1, "Sail to which continent?");
 
     town_.load(assets, color, state);
+    kings_castle_.load(assets, color, state);
 
     loaded_ = true;
     return success;
@@ -256,6 +257,10 @@ void Game::draw(bty::Gfx &gfx)
             hud_.draw(gfx, camera_);
             town_.draw(gfx, camera_);
             break;
+        case GameState::KingsCastle:
+            hud_.draw(gfx, camera_);
+            kings_castle_.draw(gfx, camera_);
+            break;
         default:
             break;
     }
@@ -280,7 +285,7 @@ void Game::key(int key, int scancode, int action, int mods)
                             hero_.set_mount(hero_.get_mount() == Mount::Fly ? Mount::Walk : Mount::Fly);
                             break;
                         case GLFW_KEY_P:
-                            hero_.set_collision_rect_visible(!hero_.get_collision_rect_visible());
+                            hero_.set_debug(!hero_.get_debug());
                             break;
                         case GLFW_KEY_R:
                             gen_tiles();
@@ -602,6 +607,17 @@ void Game::key(int key, int scancode, int action, int mods)
                     break;
             }
             break;
+        case GameState::KingsCastle:
+            switch (action)
+            {
+                case GLFW_RELEASE: [[fallthrough]];
+                case GLFW_PRESS:
+                    kings_castle_option(kings_castle_.key(key, action));
+                    break;
+                default:
+                    break;
+            }
+            break;
         default:
             break;
     }
@@ -662,6 +678,11 @@ void Game::collide(Tile &tile) {
         case Tile_Town:
             town(tile);
             break;
+        case Tile_CastleB:
+            if (tile.tx == 11 && tile.ty == 56) {
+                set_state(GameState::KingsCastle);
+            }
+            break;
         default:
             break;
     }
@@ -717,6 +738,7 @@ void Game::update(float dt)
                 hero_.set_flip(false);
             }
 
+
             glm::vec2 dir{0.0f};
 
             if (move_flags_ & MOVE_FLAGS_UP)
@@ -734,7 +756,6 @@ void Game::update(float dt)
             float dy = dir.y * vel;
 
             auto manifold = hero_.move(dx, dy, map_, scene_switcher_->state().continent);
-
             hero_.set_position(manifold.new_position);
 
             if (manifold.collided) {
@@ -760,8 +781,10 @@ void Game::update(float dt)
         else if (!controls_locked_) {
             hero_.set_moving(false);
         }
+
         map_.update(dt);
         hero_.animate(dt);
+        hud_.update(dt);
 
         if (clock_ >= 14) {
             clock_ = 0;
@@ -784,8 +807,7 @@ void Game::update(float dt)
 
         clock_ += dt;
     }
-    if (state_ == GameState::Paused
-    || state_ == GameState::Unpaused
+    else if (state_ == GameState::Paused
     || state_ == GameState::ViewContinent
     || state_ == GameState::UseMagic
     || state_ == GameState::ViewContract
@@ -816,6 +838,9 @@ void Game::update(float dt)
     else if (state_== GameState::Town) {
         hud_.update(dt);
         town_.update(dt);
+    }
+    else if (state_ == GameState::KingsCastle) {
+        kings_castle_.update(dt);
     }
 
     if (tmp_hud) {
@@ -1131,6 +1156,7 @@ void Game::setup_game()
     town_.set_color(color);
     sail_dialog_.set_color(color);
     dismiss_.set_color(color);
+    kings_castle_.set_color(color);
 
     /* Add starting army */
     for (int i = 0; i < 5; i++) {
@@ -1349,6 +1375,9 @@ void Game::gen_tiles() {
                         if (continent != 0 && x != 11 && y != 56) {
                             spdlog::warn("({}) Unknown castle at {}, {}", continent, x, 63-y);
                         }
+                        else {
+                            tiles[x + y * 64] = Tile_CastleB;
+                        }
                     }
                 }
                 n++;
@@ -1541,10 +1570,11 @@ void Game::set_state(GameState state) {
         case GameState::Disgrace:
             disgrace();
             break;
-        case GameState::HudMessage:
-            break;
         case GameState::SailNext:
             sail_next();
+            break;
+        case GameState::KingsCastle:
+            kings_castle_.view();
             break;
         default:
             break;
@@ -1778,5 +1808,15 @@ void Game::buy_siege()
         state.siege = true;
         hud_.update_state();
         town_.update_gold();
+    }
+}
+
+void Game::kings_castle_option(int opt) {
+    switch (opt) {
+        case -2:
+            set_state(GameState::Unpaused);
+            break;
+        default:
+            break;
     }
 }
