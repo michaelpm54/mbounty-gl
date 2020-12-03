@@ -20,6 +20,13 @@ Entity::CollisionManifold Entity::move(float dx, float dy, Map &map, int contine
 
     std::vector<glm::ivec2> narrow_phase;
     
+    glm::vec2 ent_offset{12.0f, 24.0f};
+    glm::vec2 ent_size{16.0f, 8.0f};
+
+    auto bb_position = position_ + glm::vec3{ent_offset, 0} + glm::vec3{8, 4, 0};
+
+    tile_ = map.get_tile(bb_position.x, bb_position.y, continent);
+
     if (dx > 0.5f) {
         narrow_phase.push_back({tile_.tx + 1, tile_.ty + 1});
         narrow_phase.push_back({tile_.tx + 1, tile_.ty});
@@ -68,10 +75,10 @@ Entity::CollisionManifold Entity::move(float dx, float dy, Map &map, int contine
 
         c2AABB tile_shape { l, t, r, b };
         c2AABB rect_shape {
-            manifold.new_position.x + dx,
-            manifold.new_position.y,
-            manifold.new_position.x + dx + 42.0f,
-            manifold.new_position.y + 32.0f
+            manifold.new_position.x + ent_offset.x + dx,
+            manifold.new_position.y + ent_offset.y,
+            manifold.new_position.x + ent_offset.x + ent_size.x + dx,
+            manifold.new_position.y + ent_offset.y + ent_size.y
         };
 
         if (c2AABBtoAABB(rect_shape, tile_shape)) {
@@ -85,6 +92,12 @@ Entity::CollisionManifold Entity::move(float dx, float dy, Map &map, int contine
             manifold.collided_tiles.push_back(tile);
 
             break;
+        }
+        else {
+            collided_rects_[num_collided_rects_].set_color({0.3f, 1.0f, 0.6f, 0.9f});
+            collided_rects_[num_collided_rects_].set_size({48.0f, 40.0f});
+            collided_rects_[num_collided_rects_].set_position({coord.x*48.0f,coord.y*40.0f});
+            num_collided_rects_++;
         }
     }
 
@@ -113,10 +126,10 @@ Entity::CollisionManifold Entity::move(float dx, float dy, Map &map, int contine
 
         c2AABB tile_shape { l, t, r, b };
         c2AABB rect_shape {
-            manifold.new_position.x,
-            manifold.new_position.y + dy,
-            manifold.new_position.x + 42.0f,
-            manifold.new_position.y + dy + 32.0f
+            manifold.new_position.x + ent_offset.x,
+            manifold.new_position.y + ent_offset.y + dy,
+            manifold.new_position.x + ent_offset.x + ent_size.x,
+            manifold.new_position.y + ent_offset.y + ent_size.y + dy
         };
 
         if (c2AABBtoAABB(rect_shape, tile_shape)) {
@@ -131,15 +144,21 @@ Entity::CollisionManifold Entity::move(float dx, float dy, Map &map, int contine
 
             break;
         }
+        else {
+            collided_rects_[num_collided_rects_].set_color({0.3f, 1.0f, 0.6f, 0.9f});
+            collided_rects_[num_collided_rects_].set_size({48.0f, 40.0f});
+            collided_rects_[num_collided_rects_].set_position({coord.x*48.0f,coord.y*40.0f});
+            num_collided_rects_++;
+        }
     }
 
     if (!collide_y) {
         manifold.new_position.y += dy;
     }
 
-    collision_rect_.set_position(manifold.new_position);
+    collision_rect_.set_position(manifold.new_position + ent_offset);
     collision_rect_.set_color({0.2f, 0.4f, 0.9f, 0.7f});
-    collision_rect_.set_size({42.0f, 32.0f});
+    collision_rect_.set_size(ent_size);
 
     auto tile = map.get_tile(manifold.new_position + glm::vec2{21, 16}, continent);
 
@@ -175,7 +194,7 @@ bool Entity::can_move(int id)
 
 void Entity::move_to_tile(const Tile &tile) {
     tile_ = tile;
-    set_position({tile.tx * 48.0f + 2.0f, tile.ty * 40.0f - 8.0f});
+    set_position({tile.tx * 48.0f, tile.ty * 40.0f - 8.0f});
 }
 
 void Entity::set_tile_info(const Tile &tile) {
