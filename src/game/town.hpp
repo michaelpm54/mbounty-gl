@@ -6,6 +6,7 @@
 #include "bounty.hpp"
 
 struct SharedState;
+struct Tile;
 
 namespace bty {
 class Gfx;
@@ -16,7 +17,7 @@ class Town {
 public:
     void load(bty::Assets &assets, bty::BoxColor color);
     void draw(bty::Gfx &gfx, glm::mat4 &camera);
-    void view(int unit_id);
+    void view(const Tile &tile, int continent, int unit_id);
     void update(float dt);
     void prev();
     void next();

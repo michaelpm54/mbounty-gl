@@ -1,5 +1,42 @@
 #include "bounty.hpp"
 
+const TownLocation kTownLocations[] = {
+	/* Continentia */
+	{ "Bayside", 41, 58 },
+	{ "Fjord", 46, 35 },
+	{ "Hunterville", 12, 3 },
+	{ "Isla Vista", 57, 5},
+	{ "King's Haven", 17, 21 },
+	{ "Lakeview", 17, 44 },
+	{ "Nyre", 50, 13 },
+	{ "Path's End", 38, 50 },
+	{ "Quiln Point", 14, 27 },
+	{ "Riverton", 29, 12 },
+	{ "Xoctan", 51, 28 },
+	/* Forestria */
+	{ "Anomaly", 34, 23 },
+	{ "Dark Corner", 58, 60 },
+	{ "Elan's Landing", 3, 37 },
+	{ "Midland", 58, 33 },
+	{ "Underfoot", 58, 4 },
+	{ "Wood's End", 3, 8 },
+	/* Archipelia */
+	{ "Centrapf", 9, 39 },
+	{ "Japper", 13, 7 },
+	{ "Overthere", 57, 57 },
+	{ "Simpleton", 13, 60 },
+	{ "Topshore", 5, 50 },
+	{ "Yakonia", 49, 8 },
+	/* Saharia */
+	{ "Grimwold", 9, 60 },
+	{ "Vengeance", 7, 3 },
+	{ "Zaezoizu", 58, 48 },
+};
+
+const int kTownsPerContinent[4] = {
+	11, 6, 6, 3
+};
+
 const int kPuzzleVillainPositions[17] = {
 	15, 3, 23, 5, 19, 1, 9, 21, 7, 18, 11, 8, 17, 6, 13, 16, 12,
 };

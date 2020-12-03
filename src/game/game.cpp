@@ -623,7 +623,7 @@ void Game::town(const Tile &tile) {
         spdlog::debug("No town on continent {} for tile {:04x}", coords);
         return;
     }
-    town_.view(town_units_[continent][coords]);
+    town_.view(tile, continent, town_units_[continent][coords]);
     set_state(GameState::Town);
 }
 
