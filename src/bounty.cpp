@@ -2,6 +2,48 @@
 
 #include <fmt/format.h>
 
+const int kVillainIndices[4] = {
+	0, 6, 10, 14,
+};
+
+const int kVillainsPerContinent[4] = {
+    6, 4, 4, 3
+};
+
+const char *const kSpellNames[14] = {
+	"Clone",
+	"Teleport",
+	"Fireball",
+	"Lightning",
+	"Freeze",
+	"Resurrect",
+	"Turn Undead",
+	"Bridge",
+	"Time Stop",
+	"Find Villain",
+	"Castle Gate",
+	"Town Gate",
+	"Instant Army",
+	"Raise Control",
+};
+
+const int kSpellCosts[14] = {
+	2000,
+	500,
+	1500,
+	500,
+	300,
+	5000,
+	2000,
+	100,
+	200,
+	1000,
+	1000,
+	500,
+	1000,
+	500,
+};
+
 const TownInfo kTownInfo[] = {
 	/* Continentia */
 	{ "Bayside", 41, 58, -1 },
@@ -87,6 +129,7 @@ const int kCastleIndices[4] = {
 const int kPuzzleVillainPositions[17] = {
 	15, 3, 23, 5, 19, 1, 9, 21, 7, 18, 11, 8, 17, 6, 13, 16, 12,
 };
+
 const int kPuzzleArtifactPositions[8] = {
 	10, 2, 4, 14, 20, 24, 22, 0,
 };

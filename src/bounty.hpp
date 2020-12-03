@@ -19,6 +19,8 @@ struct CastleInfo {
 	int y;
 };
 
+extern const char *const kSpellNames[14];
+extern const int kSpellCosts[14];
 extern const TownInfo kTownInfo[];
 extern const int kTownsPerContinent[4];
 extern const int kTownIndices[4];
@@ -37,6 +39,8 @@ enum ArtifactId {
 	ArtiSwordOfProwess,
 };
 
+extern const int kVillainIndices[4];
+extern const int kVillainsPerContinent[4];
 extern const int kPuzzleVillainPositions[17];
 extern const int kPuzzleArtifactPositions[8];
 extern char const* const kHeroNames[][4];

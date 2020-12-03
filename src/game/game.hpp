@@ -53,10 +53,10 @@ private:
         Disgrace,
         ViewPuzzle,
         Dismiss,
-        DismissError,
         ChestMap,
         SailNext,
         Town,
+        HudMessage,
     };
 
     struct EventTile {
@@ -88,6 +88,8 @@ private:
     void town_option(int opt);
     void next_contract();
     void rent_boat();
+    void view_contract();
+    void buy_spell();
 
 private:
     enum WeekPassedCard {
@@ -154,6 +156,7 @@ private:
     Town town_;
     std::array<int, 26> town_units_;
     std::array<CastleOccupation, 26> castle_occupations_;
+    std::array<int, 26> town_spells_;
 };
 
 #endif    // BTY_GAME_GAME_HPP_

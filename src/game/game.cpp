@@ -76,6 +76,10 @@ bool Game::load(bty::Assets &assets)
     magic_spells_[12] = use_magic_.add_option(4, 19, "");
     magic_spells_[13] = use_magic_.add_option(4, 20, "");
 
+    for (int i = 7; i < 14; i++) {
+        use_magic_.set_option_disabled(i, true);
+    }
+
     /* Create various pause-menu menu's */
     view_army_.load(assets, color);
     view_character_.load(assets, color, state.hero_id);
@@ -168,6 +172,12 @@ void Game::update_camera()
 
 void Game::draw(bty::Gfx &gfx)
 {
+    bool tmp_hud{false};
+    if (state_ == GameState::HudMessage) {
+        state_ = last_state_;
+        tmp_hud = true;
+    }
+
     int continent = scene_switcher_->state().continent;
     switch (state_) {
         case GameState::Unpaused:
@@ -224,7 +234,6 @@ void Game::draw(bty::Gfx &gfx)
             hud_.draw(gfx, camera_);
             view_puzzle_.draw(gfx, camera_);
             break;
-        case GameState::DismissError: [[fallthrough]];
         case GameState::Dismiss:
             map_.draw(game_camera_, continent);
             hero_.draw(gfx, game_camera_);
@@ -249,6 +258,9 @@ void Game::draw(bty::Gfx &gfx)
             break;
         default:
             break;
+    }
+    if (tmp_hud) {
+        state_ = GameState::HudMessage;
     }
 }
 
@@ -520,13 +532,13 @@ void Game::key(int key, int scancode, int action, int mods)
                     break;
             }
             break;
-        case GameState::DismissError:
+        case GameState::HudMessage:
             switch (action) {
                 case GLFW_PRESS:
                     switch (key) {
                         case GLFW_KEY_ENTER: [[fallthrough]];
                         case GLFW_KEY_BACKSPACE:
-                            set_state(GameState::Dismiss);
+                            set_state(last_state_);
                             break;
                         default:
                             break;
@@ -638,7 +650,7 @@ void Game::town(const Tile &tile) {
         }
     }
 
-    town_.view(tile, continent, town_units_[town], castle_occupations_[kTownInfo[town].castle]);
+    town_.view(town, tile, continent, town_units_[town], town_spells_[town], castle_occupations_[kTownInfo[town].castle]);
     set_state(GameState::Town);
 }
 
@@ -657,6 +669,11 @@ void Game::collide(Tile &tile) {
 
 void Game::update(float dt)
 {
+    bool tmp_hud{false};
+    if (state_ == GameState::HudMessage) {
+        state_ = last_state_;
+    }
+
     if (state_ == GameState::Unpaused) {
         if (controls_locked_) {
             control_lock_timer_ -= dt;
@@ -773,8 +790,7 @@ void Game::update(float dt)
     || state_ == GameState::UseMagic
     || state_ == GameState::ViewContract
     || state_ == GameState::ViewPuzzle
-    || state_ == GameState::Dismiss
-    || state_ == GameState::DismissError) {
+    || state_ == GameState::Dismiss) {
         hud_.update(dt);
         pause_menu_.animate(dt);
     }
@@ -790,8 +806,7 @@ void Game::update(float dt)
     else if (state_ == GameState::ViewPuzzle) {
         view_puzzle_.update(dt);
     }
-    else if (state_ == GameState::Dismiss
-    || state_ == GameState::DismissError) {
+    else if (state_ == GameState::Dismiss) {
         hero_.animate(dt);
         dismiss_.animate(dt);
     }
@@ -801,6 +816,10 @@ void Game::update(float dt)
     else if (state_== GameState::Town) {
         hud_.update(dt);
         town_.update(dt);
+    }
+
+    if (tmp_hud) {
+        state_ = GameState::HudMessage;
     }
 }
 
@@ -934,11 +953,10 @@ void Game::update_spells()
 {
     bool no_spells = true;
     int *spells = scene_switcher_->state().spells;
-    for (int i = 0; i < 14; i++) {
-        if (spells[i] == 0) {
-            use_magic_.disable_option(i);
-        }
-        else {
+
+    for (int i = 0; i < 7; i++) {
+        use_magic_.set_option_disabled(i, spells[(i + 7) % 14] == 0);
+        if (spells[(i + 7) % 14] != 0) {
             no_spells = false;
         }
     }
@@ -949,33 +967,33 @@ void Game::update_spells()
 
     int n = 0;
 
-    magic_spells_[n]->set_string(fmt::format("{} Bridge", spells[n]));
+    magic_spells_[n]->set_string(fmt::format("{} Bridge", spells[7]));
     n++;
-    magic_spells_[n]->set_string(fmt::format("{} Time Stop", spells[n]));
+    magic_spells_[n]->set_string(fmt::format("{} Time Stop", spells[8]));
     n++;
-    magic_spells_[n]->set_string(fmt::format("{} Find Villain", spells[n]));
+    magic_spells_[n]->set_string(fmt::format("{} Find Villain", spells[9]));
     n++;
-    magic_spells_[n]->set_string(fmt::format("{} Castle Gate", spells[n]));
+    magic_spells_[n]->set_string(fmt::format("{} Castle Gate", spells[10]));
     n++;
-    magic_spells_[n]->set_string(fmt::format("{} Town Gate", spells[n]));
+    magic_spells_[n]->set_string(fmt::format("{} Town Gate", spells[11]));
     n++;
-    magic_spells_[n]->set_string(fmt::format("{} Instant Army", spells[n]));
+    magic_spells_[n]->set_string(fmt::format("{} Instant Army", spells[12]));
     n++;
-    magic_spells_[n]->set_string(fmt::format("{} Raise Control", spells[n]));
+    magic_spells_[n]->set_string(fmt::format("{} Raise Control", spells[13]));
     n++;
-    magic_spells_[n]->set_string(fmt::format("{} Clone", spells[n]));
+    magic_spells_[n]->set_string(fmt::format("{} Clone", spells[0]));
     n++;
-    magic_spells_[n]->set_string(fmt::format("{} Teleport", spells[n]));
+    magic_spells_[n]->set_string(fmt::format("{} Teleport", spells[1]));
     n++;
-    magic_spells_[n]->set_string(fmt::format("{} Fireball", spells[n]));
+    magic_spells_[n]->set_string(fmt::format("{} Fireball", spells[2]));
     n++;
-    magic_spells_[n]->set_string(fmt::format("{} Lightning", spells[n]));
+    magic_spells_[n]->set_string(fmt::format("{} Lightning", spells[3]));
     n++;
-    magic_spells_[n]->set_string(fmt::format("{} Freeze", spells[n]));
+    magic_spells_[n]->set_string(fmt::format("{} Freeze", spells[4]));
     n++;
-    magic_spells_[n]->set_string(fmt::format("{} Resurrect", spells[n]));
+    magic_spells_[n]->set_string(fmt::format("{} Resurrect", spells[5]));
     n++;
-    magic_spells_[n]->set_string(fmt::format("{} Turn Undead", spells[n]));
+    magic_spells_[n]->set_string(fmt::format("{} Turn Undead", spells[6]));
 }
 
 void Game::end_of_week(bool search)
@@ -1077,6 +1095,12 @@ void Game::setup_game()
     /* Clear spells */
     for (int i = 0; i < 14; i++) {
         state.spells[i] = 0;
+    }
+    state.known_spells = 0;
+
+    /* Known villains */
+    for (int i = 0; i < 17; i++) {
+        state.known_villains[i] = false;
     }
 
     /* Set days */
@@ -1180,10 +1204,6 @@ void Game::gen_tiles() {
 		6, 6, 4, 5
 	};
 
-    static constexpr int kVillainsPerContinent[4] = {
-        6, 4, 4, 3
-    };
-
     static constexpr int kAvailableUnitsPerContinent[4][6] = {
 		{
             Peasants,
@@ -1267,8 +1287,8 @@ void Game::gen_tiles() {
         town_units_[i] = Peasants;
     }
 
-    /* For generating unit IDs */
     std::uniform_int_distribution<int> unit_gen(0, 24);
+    std::uniform_int_distribution<int> spell_gen(0, 14);
 
     for (int continent = 0; continent < 4; continent++) {
         auto *tiles = map_.get_data(continent);
@@ -1293,6 +1313,15 @@ void Game::gen_tiles() {
                     }
                     if (town != -1) {
                         town_units_[town] = unit_gen(rng_);
+
+                        /* Hunterville always has Bridge */
+                        if (town == 2) {
+                            town_spells_[town] = 7;
+                        }
+                        else {
+                            town_spells_[town] = spell_gen(rng_);
+                        }
+
                         tiles[x + y * 64] = Tile_Town;
                     }
                     else {
@@ -1384,7 +1413,7 @@ void Game::gen_tiles() {
 
             CastleOccupation occ;
             occ.index = castle;
-            occ.occupier = i;
+            occ.occupier = i + kVillainIndices[continent];
 
             for (int j = 0; j < 5; j++) {
                 occ.army[j] = unit_gen(rng_);
@@ -1455,7 +1484,8 @@ void Game::dismiss_slot(int slot) {
     }
 
     if (num_units == 1) {
-        set_state(GameState::DismissError);
+        hud_.set_title("  You may not dismiss your last army!");
+        set_state(GameState::HudMessage);
         return;
     }
 
@@ -1492,7 +1522,7 @@ void Game::set_state(GameState state) {
             update_spells();
             break;
         case GameState::ViewContract:
-            view_contract_.view(scene_switcher_->state().contract, false, hud_.get_contract());
+            view_contract();
             break;
         case GameState::WeekPassed:
             weeks_passed_++;
@@ -1508,8 +1538,7 @@ void Game::set_state(GameState state) {
         case GameState::Disgrace:
             disgrace();
             break;
-        case GameState::DismissError:
-            hud_.set_title("  You may not dismiss your last army!");
+        case GameState::HudMessage:
             break;
         case GameState::SailNext:
             sail_next();
@@ -1624,6 +1653,9 @@ void Game::town_option(int opt) {
         case 1:
             rent_boat();
             break;
+        case 3:
+            buy_spell();
+            break;
         default:
             break;
     }
@@ -1671,4 +1703,59 @@ void Game::next_contract() {
 
     hud_.update_state();
     set_state(GameState::ViewContract);
+}
+
+void Game::view_contract() {
+    auto &state = scene_switcher_->state();
+
+    std::string castle;
+
+    if (state.known_villains[state.contract]) {
+        int castle_id = -1;
+        for (int i = 0; i < 26; i++) {
+            if (castle_occupations_[i].occupier == state.contract) {
+                castle_id = i;
+                break;
+            }
+        }
+        if (castle_id != -1) {
+            castle = kCastleInfo[castle_id].name;
+        }
+        else {
+            spdlog::warn("Can't find castle for villain {}", state.contract);
+            castle = "Unknown";
+        }
+    }
+    else {
+        castle = "Unknown";
+    }
+
+    view_contract_.view(scene_switcher_->state().contract, castle, hud_.get_contract());
+}
+
+void Game::buy_spell()
+{
+    auto &state = scene_switcher_->state();
+
+    int town = town_.get_town();
+
+    if (state.known_spells < state.max_spells) {
+        if (state.gold >= kSpellCosts[town_spells_[town]]) {
+            state.gold -= kSpellCosts[town_spells_[town]];
+            state.spells[town_spells_[town_.get_town()]]++;
+            state.known_spells++;
+            town_.update_gold();
+
+            int remaining = state.max_spells - state.known_spells;
+            hud_.set_title(fmt::format("     You can learn {} more spell{}.", remaining, remaining != 1 ? "s" : ""));
+        }
+        else {
+            hud_.set_title(" You can not afford anymore spells!");
+            set_state(GameState::HudMessage);
+        }
+    }
+    else {
+        hud_.set_title("  You can not learn anymore spells!");
+        set_state(GameState::HudMessage);
+    }
 }

@@ -25,9 +25,11 @@ class Town {
 public:
     void load(bty::Assets &assets, bty::BoxColor color, SharedState &state);
     void draw(bty::Gfx &gfx, glm::mat4 &camera);
-    void view(const Tile &tile, int continent, int unit_id, const CastleOccupation &info);
+    void view(int town, const Tile &tile, int continent, int unit_id, int spell, const CastleOccupation &info);
     void update(float dt);
     int key(int key);
+    int get_town() const;
+    void update_gold();
 
 private:
     SharedState *state_;
@@ -38,6 +40,8 @@ private:
     const bty::Texture *unit_textures_[25];
     bty::TextBox gather_information_;
     bool show_gather_information_{false};
+    int current_info_contract_{-1};
+    int town_{-1};
 };
 
 #endif // BTY_GAME_TOWN_HPP_

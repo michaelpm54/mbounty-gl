@@ -17,6 +17,7 @@ void Town::load(bty::Assets &assets, bty::BoxColor color, SharedState &state) {
     dialog_.add_option(3, 3, "Get contract");
     dialog_.add_option(3, 4, ""); // Rent boat
     dialog_.add_option(3, 5, "Gather information");
+    dialog_.add_option(3, 6, ""); // Spell
 
     unit_.set_position(56, 104);
     bg_.set_texture(assets.get_texture("bg/town.png"));
@@ -39,7 +40,9 @@ void Town::draw(bty::Gfx &gfx, glm::mat4 &camera) {
     gfx.draw_sprite(unit_, camera);
 }
 
-void Town::view(const Tile &tile, int continent, int unit_id, const CastleOccupation &occ) {
+void Town::view(int town, const Tile &tile, int continent, int unit_id, int spell, const CastleOccupation &occ) {
+    town_ = town;
+
     unit_.set_texture(unit_textures_[unit_id]);
 
     for (int i = 0; i < kTownsPerContinent[continent]; i++) {
@@ -48,7 +51,7 @@ void Town::view(const Tile &tile, int continent, int unit_id, const CastleOccupa
         }
     }
 
-    dialog_.set_line(1, fmt::format("GP={}", bty::number_with_ks(state_->gold)));
+    update_gold();
 
     int num_caught = 0;
     for (int i = 0; i < 17; i++) {
@@ -96,6 +99,10 @@ void Town::view(const Tile &tile, int continent, int unit_id, const CastleOccupa
     gather_information_.set_line(0, fmt::format(
 R"raw(Castle {}{}is under {}'s rule.
 {})raw", kCastleInfo[occ.index].name, occ.occupier == -1 ? "\n" : " ", occupier, army));
+
+    dialog_.set_option(3, fmt::format("{} spell ({})", kSpellNames[spell], kSpellCosts[spell]));
+    
+    current_info_contract_ = occ.occupier;
 }
 
 void Town::update(float dt) {
@@ -126,6 +133,9 @@ int Town::key(int key) {
             }
             else if (dialog_.get_selection() == 2) {
                 show_gather_information_ = true;
+                if (current_info_contract_ != -1) {
+                    state_->known_villains[current_info_contract_] = true;
+                }
             }
             return dialog_.get_selection();
         case GLFW_KEY_BACKSPACE:
@@ -141,4 +151,10 @@ int Town::key(int key) {
     return -1;
 }
 
+int Town::get_town() const {
+    return town_;
+}
 
+void Town::update_gold() {
+    dialog_.set_line(1, fmt::format("GP={}", bty::number_with_ks(state_->gold)));
+}

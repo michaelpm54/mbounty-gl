@@ -28,7 +28,7 @@ void ViewContract::draw(bty::Gfx &gfx, glm::mat4 &camera) {
     }
 }
 
-void ViewContract::view(int contract, bool known_location, bty::Sprite *contract_sprite) {
+void ViewContract::view(int contract, const std::string &castle, bty::Sprite *contract_sprite) {
     no_contract_ = contract == 17;
     contract_sprite_ = contract_sprite;
     
@@ -54,7 +54,7 @@ Crimes: {}
             kVillains[contract][1],
             reward,
             kContinents[kVillainContinents[contract]],
-            "Unknown",
+            castle,
             kVillains[contract][2],
             kVillains[contract][3])
         );

@@ -36,11 +36,11 @@ public:
 	void next();
 	void prev();
 	void set_selection(int index);
-	void disable_option(int index);
 	void draw(Gfx &gfx, glm::mat4 &camera);
 	void animate(float dt);
 	int get_selection() const;
 	void clear_options();
+	void set_option_disabled(int index, bool disabled);
 	void set_option_visibility(int index, bool visible);
 
 private:

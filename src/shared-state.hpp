@@ -29,6 +29,8 @@ struct SharedState {
     bool villains_caught[17];
     bool artifacts_found[8];
     bool boat_rented{false};
+    std::array<bool, 17> known_villains;
+    int known_spells{0};
 };
 
 #endif // BTY_SHARED_STATE_HPP_

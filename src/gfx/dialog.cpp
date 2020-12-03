@@ -26,9 +26,11 @@ void Dialog::next()
 	}
 
 	if (found != -1) {
+		draw_arrow_ = true;
 		set_selection(found);
 	}
 	else {
+		draw_arrow_ = false;
 		spdlog::warn("Dialog::next: No available option found.");
 	}
 }
@@ -49,9 +51,11 @@ void Dialog::prev()
 	}
 
 	if (found != -1) {
+		draw_arrow_ = true;
 		set_selection(found);
 	}
 	else {
+		draw_arrow_ = false;
 		spdlog::warn("Dialog::prev: No available option found.");
 	}
 }
@@ -128,7 +132,8 @@ void Dialog::draw(Gfx &gfx, glm::mat4 &camera)
 	if (options_.empty())
 		return;
 
-	gfx.draw_sprite(arrow_, camera);
+	if (draw_arrow_)
+		gfx.draw_sprite(arrow_, camera);
 	
 	for (int i = 0; i < options_.size(); i++) {
 		if (visible_options_[i]) {
@@ -145,12 +150,20 @@ void Dialog::update_arrow()
 	if (!arrow_.get_texture())
 		return;
 
+	if (disabled_options_[selection_] || !visible_options_[selection_]) {
+		draw_arrow_ = false;
+		return;
+	}
+	else {
+		draw_arrow_ = true;
+	}
+
 	arrow_.set_position(options_[selection_].get_position() - glm::vec2(arrow_.get_texture()->frame_width, 0.0f));
 }
 
-void Dialog::disable_option(int index)
+void Dialog::set_option_disabled(int index, bool disabled)
 {
-	disabled_options_[index] = true;
+	disabled_options_[index] = disabled;
 
 	if (selection_ == index)
 		next();
