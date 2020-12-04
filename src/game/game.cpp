@@ -1636,34 +1636,39 @@ void Game::sail_to(int continent)
         hero_.set_moving(true);
     }
     else {
-        control_lock_timer_ = 1;
         controls_locked_ = true;
         hero_.set_moving(true);
 
+        auto_move_dir_ = {0, 0};
+
         switch (continent) {
             case 0:
-                auto_move_dir_.x = 0;
-                auto_move_dir_.y = 1;
+                // Up
+                control_lock_timer_ = 1;
+                auto_move_dir_.y = -1;
                 hero_.set_flip(false);
-                hero_.move_to_tile(map_.get_tile(11, 58, continent));
+                hero_.move_to_tile(map_.get_tile(11, 64 - 1, continent));
                 break;
             case 1:
-                auto_move_dir_.x = -1;
-                auto_move_dir_.y = 1;
-                hero_.set_flip(true);
-                hero_.move_to_tile(map_.get_tile(63, 1, continent));
+                // Right
+                control_lock_timer_ = 0.4f;
+                auto_move_dir_.x = 1;
+                hero_.set_flip(false);
+                hero_.move_to_tile(map_.get_tile(0, 64 - 25, continent));
                 break;
             case 2:
-                auto_move_dir_.x = 1;
-                auto_move_dir_.y = 0;
-                hero_.set_flip(false);
-                hero_.move_to_tile(map_.get_tile(1, 20, continent));
-                break;
-            case 3:
-                auto_move_dir_.x = 0;
+                // Down
+                control_lock_timer_ = 0.6f;
                 auto_move_dir_.y = 1;
                 hero_.set_flip(false);
-                hero_.move_to_tile(map_.get_tile(32, 63, continent));
+                hero_.move_to_tile(map_.get_tile(14, 0, continent));
+                break;
+            case 3:
+                // Up
+                control_lock_timer_ = 1;
+                auto_move_dir_.y = -1;
+                hero_.set_flip(false);
+                hero_.move_to_tile(map_.get_tile(9, 64 - 1, continent));
                 break;
             default:
                 break;
