@@ -29,21 +29,23 @@ void Map::load(bty::Assets &assets)
     num_vertices_ = 4096 * 6;
 
     static constexpr const char *const kContinentNames[4] = {
-        "data/maps/genesis/continentia.bin",
-        "data/maps/genesis/forestria.bin",
-        "data/maps/genesis/archipelia.bin",
-        "data/maps/genesis/saharia.bin",
+        "maps/genesis/continentia.bin",
+        "maps/genesis/forestria.bin",
+        "maps/genesis/archipelia.bin",
+        "maps/genesis/saharia.bin",
     };
 
     glCreateBuffers(4, vbos_);
     glCreateVertexArrays(4, vaos_);
 
     for (int i = 0; i < 4; i++) {
+        const std::string &file_path = fmt::format("{}/{}", assets.get_base_path(), kContinentNames[i]);
+
         tiles_[i].resize(4096);
         read_only_tiles_[i].resize(4096);
-        FILE *map_stream = fopen(kContinentNames[i], "rb");
+        FILE *map_stream = fopen(file_path.c_str(), "rb");
         if (!map_stream) {
-            spdlog::error("Failed to load map: {}", kContinentNames[i]);
+            spdlog::error("Failed to load map: {}", file_path);
             num_vertices_ = 0;
             return;
         }
@@ -61,7 +63,9 @@ void Map::load(bty::Assets &assets)
         glBindVertexArray(GL_NONE);
     }
 
-    program_ = bty::load_shader("data/shaders/map.glsl.vert", "data/shaders/map.glsl.frag");
+    const auto &base_path = assets.get_base_path();
+
+    program_ = bty::load_shader(fmt::format("{}/shaders/map.glsl.vert", base_path), fmt::format("{}/shaders/map.glsl.frag", base_path));
     if (program_ == GL_NONE) {
         spdlog::warn("Map: Failed to load shader");
     }

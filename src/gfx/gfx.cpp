@@ -12,10 +12,10 @@
 
 namespace bty {
 
-Gfx::Gfx()
+Gfx::Gfx(Assets &assets)
 {
     set_initial_gl_state();
-    load_shaders();
+    load_shaders(assets);
     get_uniform_locations();
     create_geometry();
 }
@@ -129,24 +129,26 @@ void Gfx::get_uniform_locations()
     }
 }
 
-void Gfx::load_shaders()
+void Gfx::load_shaders(Assets &assets)
 {
-    sprite_shader_ = load_shader("data/shaders/sprite.glsl.vert", "data/shaders/sprite.glsl.frag");
+    const auto &base_path = assets.get_base_path();
+
+    sprite_shader_ = load_shader(fmt::format("{}/shaders/sprite.glsl.vert", base_path), fmt::format("{}/shaders/sprite.glsl.frag", base_path));
     if (sprite_shader_ == GL_NONE) {
         spdlog::warn("Gfx::load_shaders: Failed to load sprite shader");
     }
 
-    sprite_single_texture_shader_ = load_shader("data/shaders/sprite_single_texture.glsl.vert", "data/shaders/sprite_single_texture.glsl.frag");
+    sprite_single_texture_shader_ = load_shader(fmt::format("{}/shaders/sprite_single_texture.glsl.vert", base_path), fmt::format("{}/shaders/sprite_single_texture.glsl.frag", base_path));
     if (sprite_single_texture_shader_ == GL_NONE) {
         spdlog::warn("Gfx::load_shaders: Failed to load sprite_single_texture_shader_");
     }
 
-    rect_shader_ = load_shader("data/shaders/rect.glsl.vert", "data/shaders/rect.glsl.frag");
+    rect_shader_ = load_shader(fmt::format("{}/shaders/rect.glsl.vert", base_path), fmt::format("{}/shaders/rect.glsl.frag", base_path));
     if (rect_shader_ == GL_NONE) {
         spdlog::warn("Gfx::load_shaders: Failed to load rect shader");
     }
 
-    text_shader_ = load_shader("data/shaders/text.glsl.vert", "data/shaders/text.glsl.frag");
+    text_shader_ = load_shader(fmt::format("{}/shaders/text.glsl.vert", base_path), fmt::format("{}/shaders/text.glsl.frag", base_path));
     if (text_shader_ == GL_NONE) {
         spdlog::warn("Gfx::load_shaders: Failed to load text shader");
     }

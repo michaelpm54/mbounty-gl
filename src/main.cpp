@@ -6,6 +6,8 @@
 #include <GLFW/glfw3.h>
 /* clang-format on */
 
+#include <filesystem>
+
 #include <spdlog/spdlog.h>
 
 #include "engine.hpp"
@@ -27,6 +29,23 @@ int main(int argc, char *argv[])
 {
     srand(static_cast<unsigned int>(time(nullptr)));
 
+    spdlog::info("Running from '{}'", std::filesystem::current_path().string());
+
+    std::string base_path {""};
+
+    if (std::filesystem::exists("./data")) {
+        base_path = "./data";
+    }
+    else if (std::filesystem::exists("../data")) {
+        base_path = "../data";
+    }
+    else {
+        spdlog::error("Can't find a suitable 'data' folder");
+        return 1;
+    }
+
+    spdlog::info("Using base path '{}'", base_path);
+
     (void)argc;
     (void)argv;
 
@@ -43,9 +62,9 @@ int main(int argc, char *argv[])
     glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
 
     {
-        bty::Assets assets;
+        bty::Assets assets(base_path);
         bty::SceneSwitcher scene_switcher(window, assets);
-        bty::Engine engine(*window, scene_switcher);
+        bty::Engine engine(*window, assets, scene_switcher);
 
         Intro intro(scene_switcher);
         Game game(scene_switcher);

@@ -34,7 +34,6 @@ void ViewPuzzle::load(bty::Assets &assets)
     for (int i = 0; i < 8; i++) {
         border_[i].set_texture(assets.get_texture(fmt::format("border-puzzle/{}.png", i)));
     }
-    border_[5].set_texture(assets.get_texture(fmt::format("border-puzzle/{}.png", 9)));
 
     // top bottom
     border_[1].set_size(width, 16);

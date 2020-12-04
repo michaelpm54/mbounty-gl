@@ -12,12 +12,8 @@
 
 void ViewArmy::load(bty::Assets &assets, bty::BoxColor color)
 {
-    for (int i = 0; i < 24; i++) {
-        auto name = kUnits[i].name_plural;
-        std::transform(name.begin(), name.end(), name.begin(), [](unsigned char c) {
-            return std::tolower(c);
-        });
-        unit_textures_[i] = assets.get_texture(fmt::format("units/{}.png", name), {2, 2});
+    for (int i = 0; i < 25; i++) {
+        unit_textures_[i] = assets.get_texture(fmt::format("units/{}.png", i), {2, 2});
     }
 
     frame_.set_texture(assets.get_texture("frame/army.png"));

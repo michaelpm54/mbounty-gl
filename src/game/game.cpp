@@ -1411,8 +1411,9 @@ void Game::gen_tiles()
         int used_tiles = 0;
 
         for (int i = 0; i < kNumShopsPerContinent[continent]; i++) {
+            const glm::ivec2 &tile = random_tiles[used_tiles];
             int unit = kAvailableUnitsPerContinent[continent][rand() % 6];
-            tiles[random_tiles[used_tiles].x + random_tiles[used_tiles].y * 64] = kShopTileForUnit[unit];
+            tiles[tile.x + tile.y * 64] = kShopTileForUnit[unit];
             used_tiles++;
         }
 

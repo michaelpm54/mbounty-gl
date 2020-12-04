@@ -7,7 +7,8 @@
 
 namespace bty {
 
-Assets::Assets()
+Assets::Assets(const std::string &base_path)
+    : base_path_(base_path)
 {
     border_.resize(8);
     for (int i = 0; i < 8; i++) {
@@ -36,7 +37,8 @@ const Font &Assets::get_font() const
 
 Texture *Assets::get_texture(const std::string &path, glm::ivec2 num_frames)
 {
-    const auto texture_path = "data/textures/" + path;
+    const auto texture_path = fmt::format("{}/textures/{}", base_path_, path);
+
     if (textures_.contains(texture_path)) {
         return &textures_[texture_path];
     }
@@ -148,6 +150,11 @@ Texture *Assets::get_single_texture(const std::string &path)
     textures_[path] = {w, h, tex, 1, 1, w, h};
 
     return &textures_[path];
+}
+
+const std::string &Assets::get_base_path() const
+{
+    return base_path_;
 }
 
 }    // namespace bty

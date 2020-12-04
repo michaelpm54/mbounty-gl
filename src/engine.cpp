@@ -16,8 +16,8 @@
 
 namespace bty {
 
-Engine::Engine(Window &window, SceneSwitcher &scene_switcher)
-    : gfx_(std::make_unique<Gfx>())
+Engine::Engine(Window &window, Assets &assets, SceneSwitcher &scene_switcher)
+    : gfx_(std::make_unique<Gfx>(assets))
     , input_({.engine = this})
     , window_(&window)
     , scene_switcher_(&scene_switcher)

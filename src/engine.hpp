@@ -15,7 +15,7 @@ class SceneSwitcher;
 
 class Engine {
 public:
-    Engine(Window &window, SceneSwitcher &scene_switcher);
+    Engine(Window &window, Assets &assets, SceneSwitcher &scene_switcher);
     void run();
     void key(int key, int scancode, int action, int mods);
     void quit();

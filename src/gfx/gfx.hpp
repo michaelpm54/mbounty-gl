@@ -31,10 +31,11 @@ enum Locations {
 class Rect;
 class Sprite;
 class Text;
+class Assets;
 
 class Gfx {
 public:
-    Gfx();
+    Gfx(Assets &assets);
     ~Gfx();
     void clear();
     void draw_sprite(Sprite &sprite, glm::mat4 &camera);
@@ -43,7 +44,7 @@ public:
 
 private:
     void set_initial_gl_state();
-    void load_shaders();
+    void load_shaders(Assets &assets);
     void get_uniform_locations();
     void create_geometry();
 

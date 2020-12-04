@@ -109,6 +109,7 @@ void KingsCastle::view()
 void KingsCastle::update(float dt)
 {
     dialog_.animate(dt);
+    recruit_.animate(dt);
     unit_.animate(dt);
 
     if (increasing_amt_) {
