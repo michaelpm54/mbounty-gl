@@ -1,11 +1,11 @@
 #ifndef BTY_WINDOW_ENGINE_INTERFACE_HPP_
 #define BTY_WINDOW_ENGINE_INTERFACE_HPP_
 
-struct GLFWwindow;
+#include "glfw.hpp"
 
 namespace bty {
 
-struct Engine;
+class Engine;
 
 namespace input {
 

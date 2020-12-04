@@ -1,9 +1,7 @@
 #ifndef BTY_WINDOW_HPP_
 #define BTY_WINDOW_HPP_
 
-#include <GLFW/glfw3.h>
-
-struct GLFWwindow;
+#include "glfw.hpp"
 
 namespace bty {
 

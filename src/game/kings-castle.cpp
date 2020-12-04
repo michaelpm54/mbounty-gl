@@ -131,6 +131,9 @@ void KingsCastle::update(float dt)
         if (current_amt_ < 0) {
             current_amt_ = 0;
         }
+        if (current_amt_ > max_amt_) {
+            current_amt_ = max_amt_;
+        }
         to_buy_->set_string(fmt::format("{:>3}", current_amt_));
     }
 }
@@ -256,10 +259,7 @@ void KingsCastle::recruit_opt()
         recruit_.set_line_visible(3, true);
         recruit_.set_line_visible(4, true);
         recruit_.set_line_visible(5, true);
-        amount_->set_string(fmt::format("{}.", state_->leadership / kUnits[recruit_.get_selection()].hp));
-        return;
-    }
-    else {
+
         static constexpr int kKingsCastleUnits[5] = {
             Militias,
             Archers,
@@ -267,6 +267,23 @@ void KingsCastle::recruit_opt()
             Cavalries,
             Knights,
         };
+
+        int id = kKingsCastleUnits[recruit_.get_selection()];
+        int potential_amount = state_->leadership / kUnits[id].hp;
+        int existing_amount = 0;
+
+        for (int i = 0; i < 5; i++) {
+            if (state_->army[i] == id) {
+                existing_amount = state_->army_counts[i];
+                break;
+            }
+        }
+
+        max_amt_ = potential_amount - existing_amount;
+
+        amount_->set_string(fmt::format("{}.", max_amt_));
+
+        return;
     }
 }
 

@@ -1,6 +1,13 @@
 #include "engine.hpp"
 
+/* clang-format off */
+#include "gfx/gl.hpp"
+#ifdef _WIN32
+#include <windows.h>
+#endif
 #include <GLFW/glfw3.h>
+/* clang-format on */
+
 #include <spdlog/spdlog.h>
 
 #include "gfx/gfx.hpp"

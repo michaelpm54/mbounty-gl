@@ -1,6 +1,5 @@
 #include "intro/intro.hpp"
 
-#include <GLFW/glfw3.h>
 #include <spdlog/spdlog.h>
 
 #include <glm/gtc/matrix_transform.hpp>
@@ -8,6 +7,7 @@
 #include "assets.hpp"
 #include "bounty.hpp"
 #include "gfx/gfx.hpp"
+#include "glfw.hpp"
 #include "scene-switcher.hpp"
 #include "shared-state.hpp"
 

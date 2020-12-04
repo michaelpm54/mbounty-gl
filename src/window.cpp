@@ -1,10 +1,5 @@
-/* clang-format off */
-#include <GL/glew.h>
-/* clang-format on */
-
 #include "window.hpp"
 
-#include <GLFW/glfw3.h>
 #include <spdlog/spdlog.h>
 
 #include "window-engine-interface.hpp"

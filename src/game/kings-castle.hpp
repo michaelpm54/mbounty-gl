@@ -46,6 +46,7 @@ private:
     bool decreasing_amt_ {false};
     int add_amt_ {0};
     int current_amt_ {0};
+    int max_amt_ {0};
     float update_timer_ {0};
 
     int added_while_holding_ {0};

@@ -1,7 +1,5 @@
 #include "window-engine-interface.hpp"
 
-#include <GLFW/glfw3.h>
-
 #include "engine.hpp"
 
 namespace bty::input {
