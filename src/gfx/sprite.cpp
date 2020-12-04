@@ -6,6 +6,12 @@
 
 namespace bty {
 
+Sprite::Sprite(const Texture *texture, const glm::vec2 &position)
+{
+    set_texture(texture);
+    set_position(position);
+}
+
 void Sprite::set_texture(const Texture *texture)
 {
     if (!texture) {

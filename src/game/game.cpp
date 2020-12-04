@@ -27,6 +27,10 @@ bool Game::load(bty::Assets &assets)
     auto &state = scene_switcher_->state();
     auto color = bty::get_box_color(state.difficulty_level);
 
+    for (int i = 0; i < 25; i++) {
+        unit_textures_[i] = assets.get_texture(fmt::format("units/{}.png", i), {2, 2});
+    }
+
     hud_.load(assets, state);
 
     /* Create pause menu */
@@ -179,10 +183,16 @@ void Game::draw(bty::Gfx &gfx)
         tmp_hud = true;
     }
 
+    const auto &hero_tile = hero_.get_tile();
     int continent = scene_switcher_->state().continent;
     switch (state_) {
         case GameState::Unpaused:
             map_.draw(game_camera_, continent);
+            for (auto i = 0u; i < mob_entities_[continent].size(); i++) {
+                if (std::abs(hero_tile.tx - mob_x_[continent][i]) < 4 && std::abs(hero_tile.ty - mob_y_[continent][i]) < 4) {
+                    mob_entities_[continent][i].draw(gfx, game_camera_);
+                }
+            }
             hero_.draw(gfx, game_camera_);
             hud_.draw(gfx, camera_);
             break;
@@ -284,6 +294,9 @@ void Game::key(int key, int scancode, int action, int mods)
                             break;
                         case GLFW_KEY_P:
                             hero_.set_debug(!hero_.get_debug());
+                            for (int i = 0; i < mob_entities_[scene_switcher_->state().continent].size(); i++) {
+                                mob_entities_[scene_switcher_->state().continent][i].set_debug(!mob_entities_[scene_switcher_->state().continent][i].get_debug());
+                            }
                             break;
                         case GLFW_KEY_R:
                             gen_tiles();
@@ -781,6 +794,74 @@ void Game::update(float dt)
         hero_.animate(dt);
         hud_.update(dt);
 
+        const auto &hero_tile = hero_.get_tile();
+        const auto &hero_pos = hero_.get_position();
+
+        int continent = scene_switcher_->state().continent;
+
+        for (auto i = 0u; i < mob_entities_[continent].size(); i++) {
+            if (std::abs(hero_tile.tx - mob_x_[continent][i]) < 4 && std::abs(hero_tile.ty - mob_y_[continent][i]) < 4) {
+                auto &ent = mob_entities_[continent][i];
+                auto &ent_pos = ent.get_position();
+
+                ent.animate(dt);
+                ent.set_flip(hero_pos.x < ent_pos.x);
+
+                float distance_x = std::abs(hero_pos.x - ent_pos.x);
+                float distance_y = std::abs(hero_pos.y - ent_pos.y);
+
+                glm::vec2 dir {0.0f, 0.0f};
+
+                if (distance_x > 3.0f) {
+                    dir.x = hero_pos.x > ent_pos.x ? 1.0f : -1.0f;
+                }
+                if (distance_y > 3.0f) {
+                    dir.y = hero_pos.y > ent_pos.y ? 1.0f : -1.0f;
+                }
+
+                float speed = 70.0f;
+                float vel = speed * dt;
+                float dx = dir.x * vel;
+                float dy = dir.y * vel;
+
+                auto manifold = ent.move(dx, dy, map_, scene_switcher_->state().continent);
+
+                ent.set_position(manifold.new_position);
+
+                for (auto j = 0u; j < mob_entities_[continent].size(); j++) {
+                    if (i == j) {
+                        continue;
+                    }
+
+                    auto &other_ent = mob_entities_[continent][j];
+                    auto &other_ent_pos = other_ent.get_position();
+
+                    distance_x = std::abs(ent_pos.x - other_ent_pos.x);
+                    distance_y = std::abs(ent_pos.y - other_ent_pos.y);
+
+                    if (distance_x > 48.0f * 4 || distance_y > 40.0f * 4) {
+                        continue;
+                    }
+
+                    if (dir.x > 0.5f && other_ent_pos.x > ent_pos.x && distance_x < 12.0f) {
+                        ent.Transformable::move(-dx, 0.0f);
+                    }
+                    else if (dir.x < -0.5f && other_ent_pos.x < ent_pos.x && distance_x < 12.0f) {
+                        ent.Transformable::move(-dx, 0.0f);
+                    }
+                    if (dir.y > 0.5f && other_ent_pos.y > ent_pos.y && distance_y < 8.0f) {
+                        ent.Transformable::move(0.0f, -dy);
+                    }
+                    else if (dir.y < -0.5f && other_ent_pos.y < ent_pos.y && distance_y < 8.0f) {
+                        ent.Transformable::move(0.0f, -dy);
+                    }
+                }
+
+                mob_x_[continent][i] = ent.get_tile().tx;
+                mob_y_[continent][i] = ent.get_tile().ty;
+            }
+        }
+
         if (clock_ >= 14) {
             clock_ = 0;
             int &days = scene_switcher_->state().days;
@@ -1200,7 +1281,7 @@ void Game::setup_game()
 
     /* Add continentia to maps */
     for (int i = 0; i < 4; i++) {
-        state.maps_found[i] = false;
+        state.maps_found[i] = true;
     }
     state.maps_found[0] = true;
 
@@ -1215,6 +1296,183 @@ void Game::setup_game()
     hud_.update_state();
 
     gen_tiles();
+}
+
+static constexpr int kMaxMobCounts[4][25] = {
+    {
+        10,
+        20,
+        10,
+        5,
+        5,
+        5,
+        10,
+        5,
+        0,
+        5,
+        0,
+        4,
+        4,
+        2,
+        0,
+        2,
+        2,
+        2,
+        0,
+        1,
+        1,
+        2,
+        1,
+        1,
+        1,
+    },
+    {
+        20,
+        50,
+        20,
+        15,
+        10,
+        10,
+        25,
+        15,
+        0,
+        10,
+        0,
+        8,
+        10,
+        4,
+        0,
+        4,
+        4,
+        4,
+        0,
+        3,
+        2,
+        4,
+        2,
+        2,
+        1,
+    },
+    {
+        50,
+        100,
+        50,
+        30,
+        25,
+        25,
+        50,
+        30,
+        0,
+        25,
+        0,
+        15,
+        20,
+        10,
+        0,
+        8,
+        10,
+        8,
+        0,
+        6,
+        4,
+        10,
+        5,
+        4,
+        1,
+    },
+    {100,
+     127,
+     100,
+     80,
+     50,
+     75,
+     100,
+     80,
+     0,
+     50,
+     0,
+     30,
+     50,
+     20,
+     0,
+     15,
+     20,
+     15,
+     0,
+     10,
+     8,
+     25,
+     10,
+     8,
+     2},
+};
+
+int unit_count_gen(int continent, int unit)
+{
+    int base = kMaxMobCounts[continent][unit];
+    int a = rand() % (1 | (base / 8));
+    int b = rand() % 2;
+    return b | (base + a);
+}
+
+int unit_id_gen(int continent)
+{
+    static constexpr int kMobRollChances[16] = {
+        60,
+        20,
+        10,
+        3,
+        90,
+        70,
+        20,
+        6,
+        100,
+        95,
+        50,
+        10,
+        101,
+        100,
+        90,
+        40,
+    };
+
+    static constexpr int kMobRollIds[16] = {
+        Peasants,
+        Sprites,
+        Orcs,
+        Skeletons,
+        Wolves,
+        Gnomes,
+        Dwarves,
+        Zombies,
+        Nomads,
+        Elves,
+        Ogres,
+        Ghosts,
+        Barbarians,
+        Trolls,
+        Giants,
+        Vampires,
+    };
+
+    static constexpr int kMobRollUnlikelyIds[4] = {
+        Archmages,
+        Druids,
+        Dragons,
+        Demons,
+    };
+
+    int initial_roll = rand() % 11;
+    int max_tries = 4;
+    for (int i = 0; i < max_tries; i++) {
+        int roll = (rand() % 100) + 1;
+        if (roll < kMobRollChances[continent + i * 4]) {
+            int id = kMobRollIds[initial_roll / 4 + i * 4];
+            return id == 0 ? kMobRollIds[rand() % 8] | 1 : id;
+        }
+    }
+
+    return kMobRollUnlikelyIds[initial_roll / 4];
 }
 
 void Game::gen_tiles()
@@ -1379,6 +1637,34 @@ void Game::gen_tiles()
                             tiles[x + y * 64] = Tile_CastleB;
                         }
                     }
+                }
+                else if (id == Tile_GenMonster) {
+                    mob_x_[continent].push_back(x);
+                    mob_y_[continent].push_back(y);
+
+                    std::array<int, 5> mob_army;
+                    std::array<int, 5> mob_counts;
+
+                    int army_size = 1 | (rand() % 5);
+
+                    for (int i = 0; i < 5; i++) {
+                        mob_army[i] = -1;
+                        mob_counts[i] = 0;
+                    }
+
+                    for (int i = 0; i < army_size; i++) {
+                        mob_army[i] = unit_id_gen(continent);
+                        mob_counts[i] = unit_count_gen(continent, mob_army[i]);
+                    }
+
+                    int sprite_index = rand() % army_size;
+                    int unit_sprite_id = mob_army[sprite_index];
+                    const bty::Texture *texture = unit_textures_[unit_sprite_id];
+
+                    mob_entities_[continent].push_back(Entity(texture, glm::vec2 {0.0f, 0.0f}));
+                    mob_entities_[continent].back().move_to_tile({x, y, Tile_Grass});
+
+                    tiles[x + y * 64] = Tile_Grass;
                 }
                 n++;
             }
@@ -1618,7 +1904,7 @@ void Game::sail_to(int continent)
             auto_move_dir_.x = 1;
             hero_.set_flip(false);
         }
-        else if (pos.x >= 48 * 63) {
+        else if (pos.x >= 48 * 64) {
             auto_move_dir_.x = -1;
             hero_.set_flip(true);
         }
@@ -1626,7 +1912,7 @@ void Game::sail_to(int continent)
         if (pos.y <= 0) {
             auto_move_dir_.y = 1;
         }
-        else if (pos.y >= 40 * 63) {
+        else if (pos.y >= 40 * 64) {
             auto_move_dir_.y = -1;
         }
 

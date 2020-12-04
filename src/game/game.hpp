@@ -161,6 +161,14 @@ private:
     std::array<int, 26> town_spells_;
 
     KingsCastle kings_castle_;
+
+    std::array<const bty::Texture *, 25> unit_textures_;
+
+    std::array<std::vector<int>, 4> mob_x_;
+    std::array<std::vector<int>, 4> mob_y_;
+    std::array<std::vector<std::array<int, 5>>, 4> mob_armies_;
+    std::array<std::vector<std::array<int, 5>>, 4> mob_counts_;
+    std::array<std::vector<Entity>, 4> mob_entities_;
 };
 
 #endif    // BTY_GAME_GAME_HPP_
