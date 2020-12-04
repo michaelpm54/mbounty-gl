@@ -6,6 +6,26 @@
 
 namespace bty {
 
+void window_center(Window *window)
+{
+    auto *monitor = glfwGetPrimaryMonitor();
+
+    const GLFWvidmode *mode = glfwGetVideoMode(monitor);
+
+    if (!mode)
+        return;
+
+    int monitor_x, monitor_y;
+    glfwGetMonitorPos(monitor, &monitor_x, &monitor_y);
+
+    int window_width, window_height;
+    glfwGetWindowSize(window->handle, &window_width, &window_height);
+
+    glfwSetWindowPos(window->handle,
+                     monitor_x + (mode->width - window_width) / 2,
+                     monitor_y + (mode->height - window_height) / 2);
+}
+
 void window_error(int error_code, const char *description)
 {
     (void)error_code;
@@ -34,6 +54,8 @@ Window *window_init()
         glfwTerminate();
         return nullptr;
     }
+
+    window_center(window);
 
     glfwMakeContextCurrent(window->handle);
 
