@@ -1,6 +1,7 @@
 #ifndef BTY_GAME_GAME_HPP_
 #define BTY_GAME_GAME_HPP_
 
+#include <queue>
 #include <random>
 
 #include "game/entity.hpp"
@@ -57,6 +58,8 @@ private:
         Town,
         HudMessage,
         KingsCastle,
+        UntrainedInMagic,
+        Bridge,
     };
 
     struct EventTile {
@@ -92,6 +95,10 @@ private:
     void buy_spell();
     void buy_siege();
     void kings_castle_option(int opt);
+    void use_spell(int spell);
+    void bridge(int direction);
+    void bridge_fail();
+    void hud_messages(const std::vector<std::string> &messages);
 
 private:
     enum WeekPassedCard {
@@ -169,6 +176,11 @@ private:
     std::array<std::vector<std::array<int, 5>>, 4> mob_armies_;
     std::array<std::vector<std::array<int, 5>>, 4> mob_counts_;
     std::array<std::vector<Entity>, 4> mob_entities_;
+
+    bty::TextBox untrained_in_magic_;
+    bty::TextBox bridge_prompt_;
+
+    std::queue<std::string> hud_message_queue_;
 };
 
 #endif    // BTY_GAME_GAME_HPP_

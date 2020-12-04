@@ -27,7 +27,7 @@ bool Game::load(bty::Assets &assets)
     auto &state = scene_switcher_->state();
     auto color = bty::get_box_color(state.difficulty_level);
 
-    for (int i = 0; i < 25; i++) {
+    for (int i = 0; i < UnitId::UnitCount; i++) {
         unit_textures_[i] = assets.get_texture(fmt::format("units/{}.png", i), {2, 2});
     }
 
@@ -159,6 +159,21 @@ charts describing passage to)raw");
     town_.load(assets, color, state);
     kings_castle_.load(assets, color, state, hud_);
 
+    untrained_in_magic_.create(6, 10, 20, 10, color, assets);
+    untrained_in_magic_.add_line(1, 1,
+                                 R"raw( You haven't been
+trained in the art
+  of spellcasting
+  yet. Visit the
+ Archmage Aurange
+ in Continentia at
+  11,19 for this
+     ability.)raw");
+
+    bridge_prompt_.create(1, 20, 30, 7, color, assets);
+    bridge_prompt_.add_line(1, 1, " Bridge in which direction?");
+    bridge_prompt_.add_line(14, 3, " \x81\n\x84 \x82\n \x83");
+
     loaded_ = true;
     return success;
 }
@@ -270,6 +285,17 @@ void Game::draw(bty::Gfx &gfx)
         case GameState::KingsCastle:
             hud_.draw(gfx, camera_);
             kings_castle_.draw(gfx, camera_);
+            break;
+        case GameState::UntrainedInMagic:
+            map_.draw(game_camera_, continent);
+            hud_.draw(gfx, camera_);
+            untrained_in_magic_.draw(gfx, camera_);
+            break;
+        case GameState::Bridge:
+            map_.draw(game_camera_, continent);
+            hero_.draw(gfx, game_camera_);
+            hud_.draw(gfx, camera_);
+            bridge_prompt_.draw(gfx, camera_);
             break;
         default:
             break;
@@ -469,6 +495,9 @@ void Game::key(int key, int scancode, int action, int mods)
                         case GLFW_KEY_DOWN:
                             use_magic_.next();
                             break;
+                        case GLFW_KEY_ENTER:
+                            use_spell(use_magic_.get_selection());
+                            break;
                         default:
                             break;
                     }
@@ -551,7 +580,13 @@ void Game::key(int key, int scancode, int action, int mods)
                         case GLFW_KEY_ENTER:
                             [[fallthrough]];
                         case GLFW_KEY_BACKSPACE:
-                            set_state(last_state_);
+                            if (hud_message_queue_.empty()) {
+                                set_state(last_state_);
+                            }
+                            else {
+                                hud_.set_title(hud_message_queue_.back());
+                                hud_message_queue_.pop();
+                            }
                             break;
                         default:
                             break;
@@ -624,6 +659,52 @@ void Game::key(int key, int scancode, int action, int mods)
                     break;
             }
             break;
+        case GameState::UntrainedInMagic:
+            switch (action) {
+                case GLFW_PRESS:
+                    switch (key) {
+                        case GLFW_KEY_ENTER:
+                            [[fallthrough]];
+                        case GLFW_KEY_BACKSPACE:
+                            set_state(GameState::Unpaused);
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case GameState::Bridge:
+            switch (action) {
+                case GLFW_PRESS:
+                    switch (key) {
+                        case GLFW_KEY_ENTER:
+                            [[fallthrough]];
+                        case GLFW_KEY_BACKSPACE:
+                            set_state(GameState::Unpaused);
+                            break;
+                        case GLFW_KEY_LEFT:
+                            bridge(MOVE_FLAGS_LEFT);
+                            break;
+                        case GLFW_KEY_RIGHT:
+                            bridge(MOVE_FLAGS_RIGHT);
+                            break;
+                        case GLFW_KEY_UP:
+                            bridge(MOVE_FLAGS_UP);
+                            break;
+                        case GLFW_KEY_DOWN:
+                            bridge(MOVE_FLAGS_DOWN);
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
         default:
             break;
     }
@@ -649,7 +730,7 @@ void Game::find_map(const Tile &tile)
 
     if (state.continent < 3 && map_tiles_[state.continent] == glm::ivec2 {tile.tx, tile.ty}) {
         hud_.set_title("You found a map!");
-        map_.erase_tile(tile, state.continent);
+        map_.set_tile(tile, state.continent, Tile_Grass);
         state.maps_found[state.continent + 1] = true;
         found_map_continent_->set_string(kContinents[state.continent + 1]);
         set_state(GameState::ChestMap);
@@ -702,6 +783,7 @@ void Game::update(float dt)
     bool tmp_hud {false};
     if (state_ == GameState::HudMessage) {
         state_ = last_state_;
+        tmp_hud = true;
     }
 
     if (state_ == GameState::Unpaused) {
@@ -721,7 +803,7 @@ void Game::update(float dt)
             update_visited_tiles();
             update_camera();
         }
-        else {
+        else if (!tmp_hud) {
             move_flags_ = MOVE_FLAGS_NONE;
             if (scene_switcher_->get_key(GLFW_KEY_LEFT)) {
                 move_flags_ |= MOVE_FLAGS_LEFT;
@@ -962,7 +1044,7 @@ static char kMoraleChart[5][5] = {
 
 void Game::add_unit_to_army(int id, int count)
 {
-    if (id < 0 || id >= 25) {
+    if (id < 0 || id >= UnitId::UnitCount) {
         spdlog::warn("Game::add_unit_to_army: id out of range: {}", id);
         return;
     }
@@ -1097,7 +1179,7 @@ void Game::end_of_week(bool search)
 {
     std::string week = fmt::format("Week #{}", weeks_passed_);
 
-    int unit = rand() % 25;
+    int unit = rand() % UnitId::UnitCount;
 
     const auto &name = kUnits[unit].name_singular;
 
@@ -1298,7 +1380,7 @@ void Game::setup_game()
     gen_tiles();
 }
 
-static constexpr int kMaxMobCounts[4][25] = {
+static constexpr int kMaxMobCounts[4][UnitId::UnitCount] = {
     {
         10,
         20,
@@ -1574,7 +1656,7 @@ void Game::gen_tiles()
         town_units_[i] = Peasants;
     }
 
-    std::uniform_int_distribution<int> unit_gen(0, UnitId::UnitCount);
+    std::uniform_int_distribution<int> unit_gen(0, UnitId::UnitCount - 1);
     std::uniform_int_distribution<int> spell_gen(0, 14);
 
     for (int continent = 0; continent < 4; continent++) {
@@ -1805,8 +1887,7 @@ void Game::dismiss_slot(int slot)
     }
 
     if (num_units == 1) {
-        hud_.set_title("  You may not dismiss your last army!");
-        set_state(GameState::HudMessage);
+        hud_messages({"  You may not dismiss your last army!"});
         return;
     }
 
@@ -1819,9 +1900,13 @@ void Game::dismiss_slot(int slot)
 void Game::set_state(GameState state)
 {
     switch (state) {
+        case GameState::HudMessage:
+            break;
         case GameState::Unpaused:
-            hud_.set_hud_frame();
-            hud_.update_state();
+            if (hud_message_queue_.empty()) {
+                hud_.set_hud_frame();
+                hud_.update_state();
+            }
             break;
         case GameState::LoseGame:
             lose_game();
@@ -1871,6 +1956,7 @@ void Game::set_state(GameState state)
 
     last_state_ = state_;
     state_ = state;
+
     clear_movement();
 }
 
@@ -2087,13 +2173,11 @@ void Game::buy_spell()
             hud_.set_title(fmt::format("     You can learn {} more spell{}.", remaining, remaining != 1 ? "s" : ""));
         }
         else {
-            hud_.set_title("    You do not have enough gold!");
-            set_state(GameState::HudMessage);
+            hud_messages({"    You do not have enough gold!"});
         }
     }
     else {
-        hud_.set_title("  You can not learn anymore spells!");
-        set_state(GameState::HudMessage);
+        hud_messages({"  You can not learn anymore spells!"});
     }
 }
 
@@ -2102,8 +2186,7 @@ void Game::buy_siege()
     auto &state = scene_switcher_->state();
 
     if (state.gold < 3000) {
-        hud_.set_title("    You do not have enough gold!");
-        set_state(GameState::HudMessage);
+        hud_messages({"    You do not have enough gold!"});
     }
     else {
         state.siege = true;
@@ -2121,4 +2204,108 @@ void Game::kings_castle_option(int opt)
         default:
             break;
     }
+}
+
+void Game::use_spell(int spell)
+{
+    auto &state = scene_switcher_->state();
+
+    bool no_spells {true};
+    for (int i = 0; i < 7; i++) {
+        if (state.spells[i + 7]) {
+            no_spells = false;
+            break;
+        }
+    }
+    if (no_spells) {
+        return;
+    }
+
+    if (0 && !state.magic) {
+        set_state(GameState::UntrainedInMagic);
+        return;
+    }
+
+    assert(spell + 7 > -1 && spell + 7 < 14);
+    state.spells[spell + 7]--;
+
+    switch (spell) {
+        case 0:
+            set_state(GameState::Bridge);
+            break;
+        default:
+            break;
+    }
+}
+
+void Game::bridge(int direction)
+{
+    const auto &hero_tile = hero_.get_tile();
+    const int continent = scene_switcher_->state().continent;
+
+    if (direction == MOVE_FLAGS_LEFT) {
+        auto tile = map_.get_tile(hero_tile.tx - 1, hero_tile.ty, continent);
+        if (tile.id != -1 && tile.id >= Tile_WaterIRT && tile.id <= Tile_Water) {
+            map_.set_tile(tile, continent, Tile_BridgeHorizontal);
+            set_state(GameState::Unpaused);
+        }
+        else {
+            bridge_fail();
+        }
+    }
+    else if (direction == MOVE_FLAGS_RIGHT) {
+        auto tile = map_.get_tile(hero_tile.tx + 1, hero_tile.ty, continent);
+        if (tile.id != -1 && tile.id >= Tile_WaterIRT && tile.id <= Tile_Water) {
+            map_.set_tile(tile, continent, Tile_BridgeHorizontal);
+            set_state(GameState::Unpaused);
+        }
+        else {
+            bridge_fail();
+        }
+    }
+    else if (direction == MOVE_FLAGS_UP) {
+        auto tile = map_.get_tile(hero_tile.tx, hero_tile.ty - 1, continent);
+        if (tile.id != -1 && tile.id >= Tile_WaterIRT && tile.id <= Tile_Water) {
+            map_.set_tile(tile, continent, Tile_BridgeVertical);
+            set_state(GameState::Unpaused);
+        }
+        else {
+            bridge_fail();
+        }
+    }
+    else if (direction == MOVE_FLAGS_DOWN) {
+        auto tile = map_.get_tile(hero_tile.tx, hero_tile.ty + 1, continent);
+        if (tile.id != -1 && tile.id >= Tile_WaterIRT && tile.id <= Tile_Water) {
+            map_.set_tile(tile, continent, Tile_BridgeVertical);
+            set_state(GameState::Unpaused);
+        }
+        else {
+            bridge_fail();
+        }
+    }
+    else {
+    }
+}
+
+void Game::bridge_fail()
+{
+    set_state(GameState::Unpaused);
+    hud_messages({" Not a suitable location for a bridge!", "    What a waste of a good spell!"});
+}
+
+void Game::hud_messages(const std::vector<std::string> &messages)
+{
+    if (messages.empty()) {
+        return;
+    }
+
+    for (auto &m : messages) {
+        hud_message_queue_.push(m);
+    }
+
+    /* Stupid but it has the semantics I want. */
+    hud_.set_title(messages[0]);
+    hud_message_queue_.pop();
+
+    set_state(GameState::HudMessage);
 }

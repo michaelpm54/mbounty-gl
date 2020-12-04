@@ -31,7 +31,7 @@ public:
     unsigned char *get_data(int continent);
     void create_geometry();
     void reset();
-    void erase_tile(const Tile &tile, int continent);
+    void set_tile(const Tile &tile, int continent, int id);
 
 private:
     int num_vertices_ {0};
@@ -56,8 +56,8 @@ enum TileId {
     Tile_CastleB = 5,
     Tile_CastleRT = 6,
     Tile_CastleRB = 7,
-    Tile_BridgeHorizontal = 8,
-    Tile_BridgeVertical = 9,
+    Tile_BridgeVertical = 8,
+    Tile_BridgeHorizontal = 9,
     Tile_Town = 10,
     Tile_Chest = 11,
     Tile_ShopWagon = 12,

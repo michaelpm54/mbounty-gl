@@ -180,9 +180,9 @@ void Map::reset()
     }
 }
 
-void Map::erase_tile(const Tile &tile, int continent)
+void Map::set_tile(const Tile &tile, int continent, int id)
 {
-    tiles_[continent][tile.tx + tile.ty * 64] = Tile_Grass;
+    tiles_[continent][tile.tx + tile.ty * 64] = id;
 
     float tex_adv_x = 1.0f / (tilesets_[0]->width / 50.0f);
     float tex_adv_y = 1.0f / (tilesets_[0]->height / 42.0f);
@@ -199,10 +199,13 @@ void Map::erase_tile(const Tile &tile, int continent)
     float r = (tile.tx + 1) * 48.0f;
     float b = (tile.ty + 1) * 40.0f;
 
-    float ua = px_offset_x;
-    float ub = tex_adv_x - px_offset_x;
-    float va = px_offset_y;
-    float vb = tex_adv_y - px_offset_y;
+    int tile_x = id % 16;
+    int tile_y = id / 16;
+
+    float ua = tile_x * tex_adv_x + px_offset_x;
+    float ub = (tile_x + 1) * tex_adv_x - px_offset_x;
+    float va = tile_y * tex_adv_y + px_offset_y;
+    float vb = (tile_y + 1) * tex_adv_y - px_offset_y;
 
     *vtx++ = {{l, t}, {ua, va}};
     *vtx++ = {{r, t}, {ub, va}};
