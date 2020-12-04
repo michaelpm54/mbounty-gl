@@ -1,11 +1,12 @@
-#include "engine.hpp"
-#include "window.hpp"
-#include "scene-switcher.hpp"
-#include "intro/intro.hpp"
-#include "game/game.hpp"
-#include "scene-id.hpp"
-
 #include <spdlog/spdlog.h>
+
+#include "engine.hpp"
+#include "game/game.hpp"
+#include "intro/intro.hpp"
+#include "scene-id.hpp"
+#include "scene-switcher.hpp"
+#include "window.hpp"
+
 
 void APIENTRY glDebugOutput(GLenum source,
                             GLenum type,
@@ -17,7 +18,7 @@ void APIENTRY glDebugOutput(GLenum source,
 
 int main(int argc, char *argv[])
 {
-    srand(time(nullptr));
+    srand(static_cast<unsigned int>(time(nullptr)));
 
     (void)argc;
     (void)argv;

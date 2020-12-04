@@ -1,19 +1,18 @@
 #ifndef BTY_INTRO_INTRO_HPP_
 #define BTY_INTRO_INTRO_HPP_
 
-#include "scene.hpp"
+#include "gfx/dialog.hpp"
 #include "gfx/font.hpp"
 #include "gfx/sprite.hpp"
 #include "gfx/text.hpp"
 #include "gfx/textbox.hpp"
-#include "gfx/dialog.hpp"
+#include "scene.hpp"
 
 namespace bty {
 class Assets;
-struct Gfx;
+class Gfx;
 class SceneSwitcher;
 }    // namespace bty
-
 
 class Intro : public bty::Scene {
 public:
@@ -30,10 +29,10 @@ private:
         ChoosingHero,
         ChoosingDifficulty,
     };
-    
+
     bty::SceneSwitcher *scene_switcher_;
-    IntroState state_{IntroState::ChoosingHero};
-    int hero_{0};
+    IntroState state_ {IntroState::ChoosingHero};
+    int hero_ {0};
     bool loaded_ {false};
     bty::Font font_;
     bty::Sprite bg_;

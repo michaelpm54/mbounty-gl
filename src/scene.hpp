@@ -3,7 +3,7 @@
 
 namespace bty {
 
-struct Gfx;
+class Gfx;
 class Assets;
 
 class Scene {

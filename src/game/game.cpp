@@ -1,19 +1,17 @@
 #include "game/game.hpp"
 
-#include <algorithm>
-#include <chrono>
-
 #include <GLFW/glfw3.h>
 #include <spdlog/spdlog.h>
 
+#include <algorithm>
+#include <chrono>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/transform.hpp>
 
 #include "assets.hpp"
+#include "gfx/gfx.hpp"
 #include "scene-switcher.hpp"
 #include "shared-state.hpp"
-
-#include "gfx/gfx.hpp"
 
 Game::Game(bty::SceneSwitcher &scene_switcher)
     : scene_switcher_(&scene_switcher)
@@ -33,11 +31,12 @@ bool Game::load(bty::Assets &assets)
 
     /* Create pause menu */
     pause_menu_.create(
-		3, 7,
-		26, 16,
-		color,
-        assets
-	);
+        3,
+        7,
+        26,
+        16,
+        color,
+        assets);
 
     pause_menu_.add_option(3, 2, "View your army");
     pause_menu_.add_option(3, 3, "View your character");
@@ -53,12 +52,13 @@ bool Game::load(bty::Assets &assets)
 
     /* Create "Use magic" menu */
     use_magic_.create(
-		6, 4,
-		20, 22,
-		color,
-        assets
-	);
-    
+        6,
+        4,
+        20,
+        22,
+        color,
+        assets);
+
     use_magic_.add_line(1, 1, "Adventuring Spells");
     magic_spells_[0] = use_magic_.add_option(4, 3, "");
     magic_spells_[1] = use_magic_.add_option(4, 4, "");
@@ -92,7 +92,7 @@ bool Game::load(bty::Assets &assets)
 
     /* Load hero sprites */
     hero_.load(assets);
-    
+
     /* Create end-of-week messages */
     astrology_.create(1, 18, 30, 9, color, assets);
     budget_.create(1, 18, 30, 9, color, assets);
@@ -117,7 +117,7 @@ bool Game::load(bty::Assets &assets)
     lose_msg_.create(1, 3, 20, 24, color, assets);
     lose_msg_name_ = lose_msg_.add_line(1, 2, "");
     lose_msg_.add_line(1, 4,
-R"raw(you have failed to
+                       R"raw(you have failed to
 recover the
 Sceptre of Order
 in time to save
@@ -144,7 +144,7 @@ the Sceptre.)raw");
     /* Found a map message */
     found_map_.create(1, 18, 30, 9, color, assets);
     found_map_.add_line(1, 2,
-R"raw(  Hidden within an ancient
+                        R"raw(  Hidden within an ancient
   chest, you find maps and
 charts describing passage to)raw");
     found_map_continent_ = found_map_.add_line(10, 6, "");
@@ -173,7 +173,7 @@ void Game::update_camera()
 
 void Game::draw(bty::Gfx &gfx)
 {
-    bool tmp_hud{false};
+    bool tmp_hud {false};
     if (state_ == GameState::HudMessage) {
         state_ = last_state_;
         tmp_hud = true;
@@ -273,14 +273,12 @@ void Game::key(int key, int scancode, int action, int mods)
 {
     (void)scancode;
     (void)mods;
-    
+
     switch (state_) {
         case GameState::Unpaused:
-            switch (action)
-            {
+            switch (action) {
                 case GLFW_PRESS:
-                    switch (key)
-                    {
+                    switch (key) {
                         case GLFW_KEY_G:
                             hero_.set_mount(hero_.get_mount() == Mount::Fly ? Mount::Walk : Mount::Fly);
                             break;
@@ -317,12 +315,11 @@ void Game::key(int key, int scancode, int action, int mods)
             }
             break;
         case GameState::Paused:
-            switch (action)
-            {
+            switch (action) {
                 case GLFW_PRESS:
-                    switch (key)
-                    {
-                        case GLFW_KEY_BACKSPACE: [[fallthrough]];
+                    switch (key) {
+                        case GLFW_KEY_BACKSPACE:
+                            [[fallthrough]];
                         case GLFW_KEY_SPACE:
                             set_state(GameState::Unpaused);
                             break;
@@ -397,17 +394,20 @@ void Game::key(int key, int scancode, int action, int mods)
                     break;
             }
             break;
-        case GameState::ViewArmy: [[fallthrough]];
-        case GameState::ViewCharacter: [[fallthrough]];
-        case GameState::ViewContinent: [[fallthrough]];
+        case GameState::ViewArmy:
+            [[fallthrough]];
+        case GameState::ViewCharacter:
+            [[fallthrough]];
+        case GameState::ViewContinent:
+            [[fallthrough]];
         case GameState::ViewPuzzle:
-            switch (action)
-            {
+            switch (action) {
                 case GLFW_PRESS:
-                    switch (key)
-                    {
-                        case GLFW_KEY_SPACE: [[fallthrough]];
-                        case GLFW_KEY_BACKSPACE: [[fallthrough]];
+                    switch (key) {
+                        case GLFW_KEY_SPACE:
+                            [[fallthrough]];
+                        case GLFW_KEY_BACKSPACE:
+                            [[fallthrough]];
                         case GLFW_KEY_ENTER:
                             set_state(GameState::Unpaused);
                             break;
@@ -420,13 +420,13 @@ void Game::key(int key, int scancode, int action, int mods)
             }
             break;
         case GameState::ViewContract:
-            switch (action)
-            {
+            switch (action) {
                 case GLFW_PRESS:
-                    switch (key)
-                    {
-                        case GLFW_KEY_SPACE: [[fallthrough]];
-                        case GLFW_KEY_BACKSPACE: [[fallthrough]];
+                    switch (key) {
+                        case GLFW_KEY_SPACE:
+                            [[fallthrough]];
+                        case GLFW_KEY_BACKSPACE:
+                            [[fallthrough]];
                         case GLFW_KEY_ENTER:
                             if (last_state_ == GameState::Town) {
                                 set_state(GameState::Town);
@@ -444,11 +444,9 @@ void Game::key(int key, int scancode, int action, int mods)
             }
             break;
         case GameState::UseMagic:
-            switch (action)
-            {
+            switch (action) {
                 case GLFW_PRESS:
-                    switch (key)
-                    {
+                    switch (key) {
                         case GLFW_KEY_BACKSPACE:
                             set_state(GameState::Unpaused);
                             break;
@@ -467,11 +465,9 @@ void Game::key(int key, int scancode, int action, int mods)
             }
             break;
         case GameState::LoseGame:
-            switch (action)
-            {
+            switch (action) {
                 case GLFW_PRESS:
-                    switch (key)
-                    {
+                    switch (key) {
                         case GLFW_KEY_ENTER:
                             if (lose_state_ == 0) {
                                 hud_.set_title("      Press Enter to play again.");
@@ -491,11 +487,9 @@ void Game::key(int key, int scancode, int action, int mods)
             }
             break;
         case GameState::WeekPassed:
-            switch (action)
-            {
+            switch (action) {
                 case GLFW_PRESS:
-                    switch (key)
-                    {
+                    switch (key) {
                         case GLFW_KEY_ENTER:
                             if (week_passed_card_ == WeekPassedCard::Budget) {
                                 week_passed_card_ = WeekPassedCard::Astrology;
@@ -541,7 +535,8 @@ void Game::key(int key, int scancode, int action, int mods)
             switch (action) {
                 case GLFW_PRESS:
                     switch (key) {
-                        case GLFW_KEY_ENTER: [[fallthrough]];
+                        case GLFW_KEY_ENTER:
+                            [[fallthrough]];
                         case GLFW_KEY_BACKSPACE:
                             set_state(last_state_);
                             break;
@@ -557,7 +552,8 @@ void Game::key(int key, int scancode, int action, int mods)
             switch (action) {
                 case GLFW_PRESS:
                     switch (key) {
-                        case GLFW_KEY_BACKSPACE: [[fallthrough]];
+                        case GLFW_KEY_BACKSPACE:
+                            [[fallthrough]];
                         case GLFW_KEY_ENTER:
                             set_state(GameState::Unpaused);
                             break;
@@ -570,11 +566,9 @@ void Game::key(int key, int scancode, int action, int mods)
             }
             break;
         case GameState::SailNext:
-            switch (action)
-            {
+            switch (action) {
                 case GLFW_PRESS:
-                    switch (key)
-                    {
+                    switch (key) {
                         case GLFW_KEY_BACKSPACE:
                             set_state(GameState::Unpaused);
                             sail_to(scene_switcher_->state().continent);
@@ -598,8 +592,7 @@ void Game::key(int key, int scancode, int action, int mods)
             }
             break;
         case GameState::Town:
-            switch (action)
-            {
+            switch (action) {
                 case GLFW_PRESS:
                     town_option(town_.key(key));
                     break;
@@ -608,9 +601,9 @@ void Game::key(int key, int scancode, int action, int mods)
             }
             break;
         case GameState::KingsCastle:
-            switch (action)
-            {
-                case GLFW_RELEASE: [[fallthrough]];
+            switch (action) {
+                case GLFW_RELEASE:
+                    [[fallthrough]];
                 case GLFW_PRESS:
                     kings_castle_option(kings_castle_.key(key, action));
                     break;
@@ -628,8 +621,7 @@ void Game::key(int key, int scancode, int action, int mods)
             hero_.get_tile().tx,
             hero_.get_tile().ty,
             scene_switcher_->state().continent,
-            view_continent_fog_ ? scene_switcher_->state().visited_tiles[scene_switcher_->state().continent].data() : map_.get_data(scene_switcher_->state().continent)
-        );
+            view_continent_fog_ ? scene_switcher_->state().visited_tiles[scene_switcher_->state().continent].data() : map_.get_data(scene_switcher_->state().continent));
     }
 }
 
@@ -638,23 +630,26 @@ bool Game::loaded()
     return loaded_;
 }
 
-void Game::find_map(const Tile &tile) {
+void Game::find_map(const Tile &tile)
+{
     auto &state = scene_switcher_->state();
 
-    if (state.continent < 3 && map_tiles_[state.continent] == glm::ivec2{tile.tx, tile.ty}) {
+    if (state.continent < 3 && map_tiles_[state.continent] == glm::ivec2 {tile.tx, tile.ty}) {
         hud_.set_title("You found a map!");
         map_.erase_tile(tile, state.continent);
-        state.maps_found[state.continent+1] = true;
-        found_map_continent_->set_string(kContinents[state.continent+1]);
+        state.maps_found[state.continent + 1] = true;
+        found_map_continent_->set_string(kContinents[state.continent + 1]);
         set_state(GameState::ChestMap);
     }
 }
 
-int coord(int x, int y) {
+int coord(int x, int y)
+{
     return ((x & 0xFF) << 8) | y;
 }
 
-void Game::town(const Tile &tile) {
+void Game::town(const Tile &tile)
+{
     int continent = scene_switcher_->state().continent;
 
     int town = -1;
@@ -670,7 +665,8 @@ void Game::town(const Tile &tile) {
     set_state(GameState::Town);
 }
 
-void Game::collide(Tile &tile) {
+void Game::collide(Tile &tile)
+{
     switch (tile.id) {
         case Tile_Chest:
             find_map(tile);
@@ -690,7 +686,7 @@ void Game::collide(Tile &tile) {
 
 void Game::update(float dt)
 {
-    bool tmp_hud{false};
+    bool tmp_hud {false};
     if (state_ == GameState::HudMessage) {
         state_ = last_state_;
     }
@@ -738,8 +734,7 @@ void Game::update(float dt)
                 hero_.set_flip(false);
             }
 
-
-            glm::vec2 dir{0.0f};
+            glm::vec2 dir {0.0f};
 
             if (move_flags_ & MOVE_FLAGS_UP)
                 dir.y -= 1.0f;
@@ -750,7 +745,7 @@ void Game::update(float dt)
             if (move_flags_ & MOVE_FLAGS_RIGHT)
                 dir.x += 1.0f;
 
-            float speed = hero_.get_mount() == Mount::Fly ? 200 : 100;
+            float speed = hero_.get_mount() == Mount::Fly ? 200.0f : 100.0f;
             float vel = speed * dt;
             float dx = dir.x * vel;
             float dy = dir.y * vel;
@@ -807,12 +802,7 @@ void Game::update(float dt)
 
         clock_ += dt;
     }
-    else if (state_ == GameState::Paused
-    || state_ == GameState::ViewContinent
-    || state_ == GameState::UseMagic
-    || state_ == GameState::ViewContract
-    || state_ == GameState::ViewPuzzle
-    || state_ == GameState::Dismiss) {
+    else if (state_ == GameState::Paused || state_ == GameState::ViewContinent || state_ == GameState::UseMagic || state_ == GameState::ViewContract || state_ == GameState::ViewPuzzle || state_ == GameState::Dismiss) {
         hud_.update(dt);
         pause_menu_.animate(dt);
     }
@@ -835,7 +825,7 @@ void Game::update(float dt)
     else if (state_ == GameState::SailNext) {
         sail_dialog_.animate(dt);
     }
-    else if (state_== GameState::Town) {
+    else if (state_ == GameState::Town) {
         hud_.update(dt);
         town_.update(dt);
     }
@@ -889,7 +879,8 @@ static char kMoraleChart[5][5] = {
 #undef _L
 #undef _H
 
-void Game::add_unit_to_army(int id, int count) {
+void Game::add_unit_to_army(int id, int count)
+{
     if (id < 0 || id >= 25) {
         spdlog::warn("Game::add_unit_to_army: id out of range: {}", id);
         return;
@@ -928,8 +919,7 @@ void Game::add_unit_to_army(int id, int count) {
         /* Morale regresses to how the other guy feels about me */
         char morale_cnv[3] = {MORALE_LOW, MORALE_NORMAL, MORALE_HIGH};
         char my_morale = MORALE_HIGH;
-        for (int j = 0; j < 5; j++)
-        {
+        for (int j = 0; j < 5; j++) {
             if (army_counts[j] == 0)
                 break;
             char other_group = kUnits[army[j]].morale_group;
@@ -937,25 +927,26 @@ void Game::add_unit_to_army(int id, int count) {
             if (morale_cnv[other_morale] < morale_cnv[my_morale])
                 my_morale = other_morale;
         }
-        
+
         scene_switcher_->state().army_morales[i] = my_morale;
     }
 }
 
-void Game::update_visited_tiles() {
+void Game::update_visited_tiles()
+{
     auto tile = hero_.get_tile();
     auto index = tile.tx + tile.ty * 64;
     auto *visited = scene_switcher_->state().visited_tiles[scene_switcher_->state().continent].data();
     auto *tiles = map_.get_data(scene_switcher_->state().continent);
 
     visited[index] = tile.id;
-    
+
     int initial_x = tile.tx;
     int initial_y = tile.ty;
 
     int start_x = initial_x - 2;
     int start_y = initial_y - 2;
-    
+
     int end_x = initial_x + 2;
     int end_y = initial_y + 2;
 
@@ -1044,7 +1035,7 @@ void Game::end_of_week(bool search)
 
     for (int i = 0; i < 5; i++) {
         if (state.army[i] == -1) {
-            budget_.set_line(7+i, "");
+            budget_.set_line(7 + i, "");
             continue;
         }
 
@@ -1054,13 +1045,13 @@ void Game::end_of_week(bool search)
             balance -= weekly_cost;
             army_total += weekly_cost;
             std::string cost = bty::number_with_ks(weekly_cost);
-            std::string spaces(14-(cost.size()+unit.name_plural.size()), ' ');
-            budget_.set_line(7+i, fmt::format("{}{}{}", unit.name_plural, spaces, cost));
+            std::string spaces(14 - (cost.size() + unit.name_plural.size()), ' ');
+            budget_.set_line(7 + i, fmt::format("{}{}{}", unit.name_plural, spaces, cost));
         }
         else {
             std::string leave = "Leave";
-            std::string spaces(14-(leave.size()+unit.name_plural.size()), ' ');
-            budget_.set_line(7+i, fmt::format("{}{}{}", unit.name_plural, spaces, leave));
+            std::string spaces(14 - (leave.size() + unit.name_plural.size()), ' ');
+            budget_.set_line(7 + i, fmt::format("{}{}{}", unit.name_plural, spaces, leave));
             state.army[i] = -1;
             state.army_counts[i] = -1;
         }
@@ -1190,7 +1181,7 @@ void Game::setup_game()
         default:
             break;
     }
-    
+
     /* Set starting stats */
     state.gold = kStartingGold[state.hero_id];
     state.commission = kRankCommission[state.hero_id][0];
@@ -1212,7 +1203,7 @@ void Game::setup_game()
         state.maps_found[i] = false;
     }
     state.maps_found[0] = true;
-    
+
     /* Villains and artifacts */
     for (int i = 0; i < 17; i++) {
         state.villains_caught[i] = false;
@@ -1226,15 +1217,18 @@ void Game::setup_game()
     gen_tiles();
 }
 
-void Game::gen_tiles() {
+void Game::gen_tiles()
+{
     map_.reset();
 
     static constexpr int kNumShopsPerContinent[4] = {
-		6, 6, 4, 5
-	};
+        6,
+        6,
+        4,
+        5};
 
     static constexpr int kAvailableUnitsPerContinent[4][6] = {
-		{
+        {
             Peasants,
             Sprites,
             Orcs,
@@ -1242,72 +1236,78 @@ void Game::gen_tiles() {
             Wolves,
             Gnomes,
         },
-		{
-            Dwarves,
-            Zombies,
-            Nomads,
-            Elves,
-            Ogres,
-            Elves
-        },
-		{
-            Ghosts,
-            Barbarians,
-            Trolls,
-            Druids,
-            Peasants,
-            Peasants
-        },
-		{
-            Giants,
-            Vampires,
-            Archmages,
-            Dragons,
-            Demons,
-            Peasants
-        },
-	};
+        {Dwarves,
+         Zombies,
+         Nomads,
+         Elves,
+         Ogres,
+         Elves},
+        {Ghosts,
+         Barbarians,
+         Trolls,
+         Druids,
+         Peasants,
+         Peasants},
+        {Giants,
+         Vampires,
+         Archmages,
+         Dragons,
+         Demons,
+         Peasants},
+    };
 
     static constexpr int kShopTileForUnit[] = {
-		Tile_ShopWagon,
-		Tile_ShopTree,
-		Tile_ShopCave,
-		Tile_ShopDungeon,
-		Tile_ShopCave,
-		Tile_ShopTree,
-		Tile_ShopDungeon,
-		Tile_ShopTree,
-		Tile_ShopTree,
-		Tile_ShopTree,
-		Tile_ShopCave,
-		Tile_ShopTree,
-		Tile_ShopCave,
-		Tile_ShopTree,
-		Tile_ShopDungeon,
-		Tile_ShopTree,
-		Tile_ShopTree,
-		Tile_ShopCave,
-		Tile_ShopTree,
-		Tile_ShopTree,
-		Tile_ShopTree,
-		Tile_ShopTree,
-		Tile_ShopTree,
-		Tile_ShopTree,
-		Tile_ShopTree,
-	};
+        Tile_ShopWagon,
+        Tile_ShopTree,
+        Tile_ShopCave,
+        Tile_ShopDungeon,
+        Tile_ShopCave,
+        Tile_ShopTree,
+        Tile_ShopDungeon,
+        Tile_ShopTree,
+        Tile_ShopTree,
+        Tile_ShopTree,
+        Tile_ShopCave,
+        Tile_ShopTree,
+        Tile_ShopCave,
+        Tile_ShopTree,
+        Tile_ShopDungeon,
+        Tile_ShopTree,
+        Tile_ShopTree,
+        Tile_ShopCave,
+        Tile_ShopTree,
+        Tile_ShopTree,
+        Tile_ShopTree,
+        Tile_ShopTree,
+        Tile_ShopTree,
+        Tile_ShopTree,
+        Tile_ShopTree,
+    };
 
     static constexpr int kArtifactTiles[] = {
-        Tile_AfctScroll, Tile_AfctShield, Tile_AfctCrown, Tile_AfctAmulet,
-        Tile_AfctRing, Tile_AfctAnchor, Tile_AfctBook, Tile_AfctSword,
+        Tile_AfctScroll,
+        Tile_AfctShield,
+        Tile_AfctCrown,
+        Tile_AfctAmulet,
+        Tile_AfctRing,
+        Tile_AfctAnchor,
+        Tile_AfctBook,
+        Tile_AfctSword,
     };
 
     /* Place artifacts in random order, then when adding them to
         continents just increment an index into this array. */
     std::vector<int> artifacts {
-        0, 1, 2, 3, 4, 5, 6, 7
-    };
-    
-    rng_.seed(std::chrono::system_clock::now().time_since_epoch().count());
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7};
+
+    rng_.seed(static_cast<unsigned int>(std::chrono::system_clock::now().time_since_epoch().count()));
     std::shuffle(std::begin(artifacts), std::end(artifacts), rng_);
 
     int artifact_index = 0;
@@ -1354,7 +1354,7 @@ void Game::gen_tiles() {
                         tiles[x + y * 64] = Tile_Town;
                     }
                     else {
-                        spdlog::warn("({}) Unknown town at {}, {}", continent, x, 63-y);
+                        spdlog::warn("({}) Unknown town at {}, {}", continent, x, 63 - y);
                     }
                 }
                 else if (id == Tile_GenCastleGate) {
@@ -1373,7 +1373,7 @@ void Game::gen_tiles() {
                     else {
                         /* Not king's castle */
                         if (continent != 0 && x != 11 && y != 56) {
-                            spdlog::warn("({}) Unknown castle at {}, {}", continent, x, 63-y);
+                            spdlog::warn("({}) Unknown castle at {}, {}", continent, x, 63 - y);
                         }
                         else {
                             tiles[x + y * 64] = Tile_CastleB;
@@ -1402,10 +1402,10 @@ void Game::gen_tiles() {
             }
         }
 
-        rng_.seed(std::chrono::system_clock::now().time_since_epoch().count());
+        rng_.seed(static_cast<unsigned int>(std::chrono::system_clock::now().time_since_epoch().count()));
         std::shuffle(std::begin(random_tiles), std::end(random_tiles), rng_);
 
-        rng_.seed(std::chrono::system_clock::now().time_since_epoch().count());
+        rng_.seed(static_cast<unsigned int>(std::chrono::system_clock::now().time_since_epoch().count()));
         std::shuffle(std::begin(castle_indices), std::end(castle_indices), rng_);
 
         int used_tiles = 0;
@@ -1435,8 +1435,7 @@ void Game::gen_tiles() {
                 index,
                 -1,
                 {{Peasants, Peasants, Peasants, Peasants, Peasants}},
-                {{0xFF, 0xFF, 0xFF, 0xFF, 0xFF}}
-            };
+                {{0xFF, 0xFF, 0xFF, 0xFF, 0xFF}}};
         }
 
         int used_castles = 0;
@@ -1459,11 +1458,13 @@ void Game::gen_tiles() {
     map_.create_geometry();
 }
 
-void Game::disgrace() {
+void Game::disgrace()
+{
     set_state(GameState::LoseGame);
 }
 
-void Game::lose_game() {
+void Game::lose_game()
+{
     switch (scene_switcher_->state().hero_id) {
         case 0:
             lose_msg_name_->set_string("Oh, Sir Crimsaun");
@@ -1503,11 +1504,12 @@ void Game::dismiss()
     }
 
     if (opt > 0) {
-        dismiss_.set_selection(opt-1);
+        dismiss_.set_selection(opt - 1);
     }
 }
 
-void Game::dismiss_slot(int slot) {
+void Game::dismiss_slot(int slot)
+{
     int num_units = 0;
     for (int i = 0; i < 5; i++) {
         if (scene_switcher_->state().army[i] != -1) {
@@ -1527,7 +1529,8 @@ void Game::dismiss_slot(int slot) {
     dismiss();
 }
 
-void Game::set_state(GameState state) {
+void Game::set_state(GameState state)
+{
     switch (state) {
         case GameState::Unpaused:
             hud_.set_hud_frame();
@@ -1547,8 +1550,7 @@ void Game::set_state(GameState state) {
                 hero_.get_tile().tx,
                 hero_.get_tile().ty,
                 scene_switcher_->state().continent,
-                view_continent_fog_ ? scene_switcher_->state().visited_tiles[scene_switcher_->state().continent].data() : map_.get_data(scene_switcher_->state().continent)
-            );
+                view_continent_fog_ ? scene_switcher_->state().visited_tiles[scene_switcher_->state().continent].data() : map_.get_data(scene_switcher_->state().continent));
             break;
         case GameState::UseMagic:
             update_spells();
@@ -1585,28 +1587,31 @@ void Game::set_state(GameState state) {
     clear_movement();
 }
 
-void Game::clear_movement() {
+void Game::clear_movement()
+{
     move_flags_ = MOVE_FLAGS_NONE;
     hero_.set_moving(false);
 }
 
-void Game::sail_next() {
+void Game::sail_next()
+{
     sail_dialog_.clear_options();
 
     auto &state = scene_switcher_->state();
 
     for (int i = 0; i < 4; i++) {
         if (state.maps_found[i]) {
-            sail_dialog_.add_option(10, 3+i, kContinents[i]);
+            sail_dialog_.add_option(10, 3 + i, kContinents[i]);
         }
     }
 }
 
-void Game::sail_to(int continent) {
+void Game::sail_to(int continent)
+{
     if (continent == scene_switcher_->state().continent) {
         auto pos = hero_.get_position();
 
-        auto_move_dir_ = {0,0};
+        auto_move_dir_ = {0, 0};
 
         if (pos.x <= 0) {
             auto_move_dir_.x = 1;
@@ -1669,15 +1674,17 @@ void Game::sail_to(int continent) {
     }
 }
 
-void Game::rent_boat() {
+void Game::rent_boat()
+{
     scene_switcher_->state().boat_rented = !scene_switcher_->state().boat_rented;
 }
 
-void Game::town_option(int opt) {
+void Game::town_option(int opt)
+{
     switch (opt) {
-        case -1: // internal option
+        case -1:    // internal option
             break;
-        case -2: // close town
+        case -2:    // close town
             set_state(GameState::Unpaused);
             break;
         case 0:
@@ -1697,7 +1704,8 @@ void Game::town_option(int opt) {
     }
 }
 
-void Game::next_contract() {
+void Game::next_contract()
+{
     auto &state = scene_switcher_->state();
 
     int num_caught = 0;
@@ -1741,7 +1749,8 @@ void Game::next_contract() {
     set_state(GameState::ViewContract);
 }
 
-void Game::view_contract() {
+void Game::view_contract()
+{
     auto &state = scene_switcher_->state();
 
     std::string castle;
@@ -1811,7 +1820,8 @@ void Game::buy_siege()
     }
 }
 
-void Game::kings_castle_option(int opt) {
+void Game::kings_castle_option(int opt)
+{
     switch (opt) {
         case -2:
             set_state(GameState::Unpaused);

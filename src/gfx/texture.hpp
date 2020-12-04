@@ -14,7 +14,7 @@ struct Texture {
     int frame_width;
     int frame_height;
 };
-    
-}
 
-#endif // BTY_GFX_TEXTURE_HPP_
+}    // namespace bty
+
+#endif    // BTY_GFX_TEXTURE_HPP_

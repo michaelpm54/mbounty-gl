@@ -8,7 +8,7 @@
 
 namespace bty {
 
-struct Scene;
+class Scene;
 struct Window;
 class Assets;
 class SceneSwitcher;

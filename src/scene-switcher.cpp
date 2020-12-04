@@ -4,9 +4,10 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 
-#include "scene.hpp"
 #include "gfx/gfx.hpp"
+#include "scene.hpp"
 #include "window.hpp"
+
 
 namespace bty {
 
@@ -15,7 +16,7 @@ SceneSwitcher::SceneSwitcher(Window *window, Assets &assets)
     , assets_(&assets)
     , window_(window)
 {
-    fade_rect_.set_size(window_width(window), window_height(window));
+    fade_rect_.set_size(static_cast<float>(window_width(window)), static_cast<float>(window_height(window)));
 }
 
 void SceneSwitcher::fade_to(SceneId id)
@@ -37,7 +38,8 @@ void SceneSwitcher::fade_to(SceneId id)
     state_ = SwitchState::FadingOut;
 }
 
-void SceneSwitcher::update(float dt) {
+void SceneSwitcher::update(float dt)
+{
     if (!scene_) {
         return;
     }
@@ -56,7 +58,8 @@ void SceneSwitcher::update(float dt) {
     scene_->update(dt);
 }
 
-void SceneSwitcher::draw(Gfx &gfx) {
+void SceneSwitcher::draw(Gfx &gfx)
+{
     if (!scene_) {
         return;
     }
@@ -76,9 +79,10 @@ void SceneSwitcher::draw(Gfx &gfx) {
     }
 }
 
-static constexpr float kFadeTimeS { 1 };
+static constexpr float kFadeTimeS {1};
 
-void SceneSwitcher::update_fade_out(float dt) {
+void SceneSwitcher::update_fade_out(float dt)
+{
     fade_elapsed_ += dt;
 
     fade_alpha_ = fade_elapsed_ / kFadeTimeS;
@@ -98,7 +102,8 @@ void SceneSwitcher::update_fade_out(float dt) {
     fade_rect_.set_color({0.0f, 0.0f, 0.0f, fade_alpha_});
 }
 
-void SceneSwitcher::update_fade_in(float dt) {
+void SceneSwitcher::update_fade_in(float dt)
+{
     fade_elapsed_ += dt;
 
     fade_alpha_ = 1.0f - fade_elapsed_ / kFadeTimeS;
@@ -137,7 +142,8 @@ bool SceneSwitcher::set_scene(SceneId id)
     return true;
 }
 
-SharedState &SceneSwitcher::state() {
+SharedState &SceneSwitcher::state()
+{
     return shared_state_;
 }
 
@@ -151,4 +157,4 @@ bool SceneSwitcher::get_key(int key) const
     return glfwGetKey(window_->handle, key);
 }
 
-}
+}    // namespace bty

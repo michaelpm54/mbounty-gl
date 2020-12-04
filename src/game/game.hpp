@@ -3,32 +3,31 @@
 
 #include <random>
 
-#include "scene.hpp"
-#include "gfx/font.hpp"
-#include "gfx/sprite.hpp"
-#include "gfx/text.hpp"
-#include "gfx/textbox.hpp"
-#include "gfx/dialog.hpp"
-
-#include "game/hud.hpp"
-#include "game/map.hpp"
-#include "game/move-flags.hpp"
 #include "game/entity.hpp"
 #include "game/hero.hpp"
+#include "game/hud.hpp"
+#include "game/kings-castle.hpp"
+#include "game/map.hpp"
+#include "game/move-flags.hpp"
+#include "game/town.hpp"
 #include "game/view-army.hpp"
 #include "game/view-character.hpp"
 #include "game/view-continent.hpp"
 #include "game/view-contract.hpp"
 #include "game/view-puzzle.hpp"
-#include "game/town.hpp"
-#include "game/kings-castle.hpp"
+#include "gfx/dialog.hpp"
+#include "gfx/font.hpp"
+#include "gfx/sprite.hpp"
+#include "gfx/text.hpp"
+#include "gfx/textbox.hpp"
+#include "scene.hpp"
+
 
 namespace bty {
 class Assets;
-struct Gfx;
+class Gfx;
 class SceneSwitcher;
 }    // namespace bty
-
 
 class Game : public bty::Scene {
 public:
@@ -101,11 +100,11 @@ private:
         Budget,
     };
 
-    std::default_random_engine rng_{};
-    
+    std::default_random_engine rng_ {};
+
     bty::SceneSwitcher *scene_switcher_;
-    GameState state_{GameState::Unpaused};
-    GameState last_state_{GameState::Unpaused};
+    GameState state_ {GameState::Unpaused};
+    GameState last_state_ {GameState::Unpaused};
     bool loaded_ {false};
     glm::mat4 camera_ {1.0f};
 
@@ -113,11 +112,11 @@ private:
     Map map_;
     bty::Dialog pause_menu_;
 
-    glm::vec3 camera_pos_{0};
-    glm::mat4 game_camera_{1};
-    glm::mat4 zoom_{0};
+    glm::vec3 camera_pos_ {0};
+    glm::mat4 game_camera_ {1};
+    glm::mat4 zoom_ {0};
 
-    uint8_t move_flags_{MOVE_FLAGS_NONE};
+    uint8_t move_flags_ {MOVE_FLAGS_NONE};
 
     Hero hero_;
 
@@ -128,22 +127,22 @@ private:
     ViewContract view_contract_;
     ViewPuzzle view_puzzle_;
 
-    bty::Text *magic_spells_[14]{nullptr};
+    bty::Text *magic_spells_[14] {nullptr};
 
-    bool view_continent_fog_{true};
+    bool view_continent_fog_ {true};
 
-    float clock_{0};
-    int days_passed_this_week{0};
-    int weeks_passed_{0};
+    float clock_ {0};
+    int days_passed_this_week {0};
+    int weeks_passed_ {0};
 
-    WeekPassedCard week_passed_card_{WeekPassedCard::Astrology};
+    WeekPassedCard week_passed_card_ {WeekPassedCard::Astrology};
     bty::TextBox astrology_;
     bty::TextBox budget_;
 
     bty::TextBox lose_msg_;
     bty::Sprite lose_pic_;
     bty::Text *lose_msg_name_;
-    int lose_state_{0};
+    int lose_state_ {0};
 
     bty::Dialog dismiss_;
 
@@ -153,10 +152,10 @@ private:
     bty::Text *found_map_continent_;
 
     bty::Dialog sail_dialog_;
-    bool controls_locked_{false};
-    float control_lock_timer_{0};
-    glm::ivec2 auto_move_dir_{0};
-    
+    bool controls_locked_ {false};
+    float control_lock_timer_ {0};
+    glm::ivec2 auto_move_dir_ {0};
+
     Town town_;
     std::array<int, 26> town_units_;
     std::array<CastleOccupation, 26> castle_occupations_;
