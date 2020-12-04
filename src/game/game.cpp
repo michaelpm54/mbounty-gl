@@ -1316,7 +1316,7 @@ void Game::gen_tiles()
         town_units_[i] = Peasants;
     }
 
-    std::uniform_int_distribution<int> unit_gen(0, 24);
+    std::uniform_int_distribution<int> unit_gen(0, UnitId::UnitCount);
     std::uniform_int_distribution<int> spell_gen(0, 14);
 
     for (int continent = 0; continent < 4; continent++) {
