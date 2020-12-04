@@ -1,6 +1,8 @@
 #ifndef BTY_BATTLE_BATTLE_HPP_
 #define BTY_BATTLE_BATTLE_HPP_
 
+#include <array>
+
 #include "gfx/dialog.hpp"
 #include "gfx/font.hpp"
 #include "gfx/sprite.hpp"
@@ -32,8 +34,13 @@ private:
     bool loaded_ {false};
     bty::SceneSwitcher *scene_switcher_;
     BattleState state_ {BattleState::Moving};
-    bty::Text text_;
     glm::mat4 camera_ {1.0f};
+    bty::Sprite bg_;
+    bty::Sprite frame_;
+    bty::Rect bar_;
+    std::array<int, 2> army_sizes_;
+    std::array<std::array<bty::Sprite, 5>, 2> sprites_;
+    std::array<const bty::Texture *, 25> unit_textures_;
 };
 
 #endif    // BTY_INTRO_BATTLE_HPP_

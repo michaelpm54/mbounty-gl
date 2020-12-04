@@ -20,12 +20,14 @@ void Transformable::move(float dx, float dy)
 {
     position_.x += dx;
     position_.y += dy;
+    dirty_ = true;
 }
 
 void Transformable::move(glm::vec2 d)
 {
     position_.x += d.x;
     position_.x += d.y;
+    dirty_ = true;
 }
 
 glm::vec2 Transformable::get_position() const

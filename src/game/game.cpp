@@ -1379,7 +1379,7 @@ void Game::setup_game()
 
     /* Add continentia to maps */
     for (int i = 0; i < 4; i++) {
-        state.maps_found[i] = true;
+        state.maps_found[i] = false;
     }
     state.maps_found[0] = true;
 
@@ -1752,7 +1752,7 @@ void Game::gen_tiles()
                     std::array<int, 5> mob_army;
                     std::array<int, 5> mob_counts;
 
-                    int army_size = 1 | (rand() % 5);
+                    int army_size = std::max(rand() % 5, 2);
 
                     for (int i = 0; i < 5; i++) {
                         mob_army[i] = -1;
@@ -1760,7 +1760,14 @@ void Game::gen_tiles()
                     }
 
                     for (int i = 0; i < army_size; i++) {
-                        mob_army[i] = unit_id_gen(continent);
+                    regen:
+                        int id = unit_id_gen(continent);
+                        for (int j = 0; j < army_size; j++) {
+                            if (mob_army[j] == id) {
+                                goto regen;
+                            }
+                        }
+                        mob_army[i] = id;
                         mob_counts[i] = unit_count_gen(continent, mob_army[i]);
                     }
 
