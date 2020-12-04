@@ -78,7 +78,7 @@ void SceneSwitcher::draw(Gfx &gfx)
     }
 }
 
-static constexpr float kFadeTimeS {1};
+static constexpr float kFadeTimeS {0.5f};
 
 void SceneSwitcher::update_fade_out(float dt)
 {
