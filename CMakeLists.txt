@@ -38,6 +38,7 @@ set(MBOUNTYGL_SRC
 	src/game/view-puzzle.cpp
 	src/game/town.cpp
 	src/game/kings-castle.cpp
+	src/battle/battle.cpp
 )
 
 add_executable(${PROJECT_NAME}

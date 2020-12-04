@@ -1,11 +1,11 @@
 #include "game/town.hpp"
 
-#include <GLFW/glfw3.h>
 #include <spdlog/spdlog.h>
 
 #include "assets.hpp"
 #include "game/map.hpp"
 #include "gfx/gfx.hpp"
+#include "glfw.hpp"
 #include "shared-state.hpp"
 
 void Town::load(bty::Assets &assets, bty::BoxColor color, SharedState &state)

@@ -104,7 +104,7 @@ void Intro::key(int key, int scancode, int action, int mods)
                     else if (state_ == IntroState::ChoosingDifficulty) {
                         scene_switcher_->state().hero_id = hero_;
                         scene_switcher_->state().difficulty_level = diff_box_.get_selection();
-                        scene_switcher_->fade_to(SceneId::Game);
+                        scene_switcher_->fade_to(SceneId::Game, true);
                     }
                     break;
                 case GLFW_KEY_UP:
@@ -132,8 +132,13 @@ void Intro::update(float dt)
     diff_box_.animate(dt);
 }
 
-void Intro::enter()
+void Intro::enter(bool reset)
 {
+    /* Do nothing if we're not resetting, as we always reset Intro. */
+    if (!reset) {
+        return;
+    }
+
     state_ = IntroState::ChoosingHero;
     diff_box_.set_selection(1);
     hero_ = 0;

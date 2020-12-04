@@ -19,7 +19,7 @@ public:
     SceneSwitcher(Window *window, Assets &assets);
     void update(float dt);
     void draw(Gfx &gfx);
-    void fade_to(SceneId id);
+    void fade_to(SceneId id, bool reset);
     void add_scene(SceneId id, Scene &scene);
     bool set_scene(SceneId id);
     SharedState &state();

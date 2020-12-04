@@ -10,6 +10,11 @@
 #define CUTE_C2_IMPLEMENTATION
 #include "cute_c2.hpp"
 
+Entity::Entity(const bty::Texture *texture, const glm::vec2 &position)
+    : bty::Sprite(texture, position)
+{
+}
+
 Entity::CollisionManifold Entity::move(float dx, float dy, Map &map, int continent)
 {
     if (debug_) {

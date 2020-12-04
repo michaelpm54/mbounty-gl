@@ -21,6 +21,7 @@ struct Animation {
 class Sprite : public Transformable {
 public:
     Sprite() = default;
+    Sprite(const Sprite &) = default;
     Sprite(const Texture *texture, const glm::vec2 &position);
     void set_texture(const Texture *texture);
     const Texture *get_texture() const;

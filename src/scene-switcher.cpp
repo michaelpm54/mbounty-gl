@@ -18,7 +18,7 @@ SceneSwitcher::SceneSwitcher(Window *window, Assets &assets)
     fade_rect_.set_size(static_cast<float>(window_width(window)), static_cast<float>(window_height(window)));
 }
 
-void SceneSwitcher::fade_to(SceneId id)
+void SceneSwitcher::fade_to(SceneId id, bool reset)
 {
     if (!scene_map_.contains(id)) {
         spdlog::warn("SceneSwitcher::fade_to: No scene by ID {}", id);
@@ -30,7 +30,7 @@ void SceneSwitcher::fade_to(SceneId id)
             }
         }
         next_scene_ = scene_map_[id];
-        next_scene_->enter();
+        next_scene_->enter(reset);
     }
 
     fade_alpha_ = 0;
@@ -51,10 +51,9 @@ void SceneSwitcher::update(float dt)
             update_fade_in(dt);
             break;
         default:
+            scene_->update(dt);
             break;
     }
-
-    scene_->update(dt);
 }
 
 void SceneSwitcher::draw(Gfx &gfx)
@@ -136,7 +135,7 @@ bool SceneSwitcher::set_scene(SceneId id)
     }
 
     scene_ = scene_map_[id];
-    scene_->enter();
+    scene_->enter(true);
 
     return true;
 }

@@ -10,9 +10,6 @@ namespace bty {
 class Transformable {
 public:
     virtual ~Transformable() = default;
-    Transformable() = default;
-    Transformable(Transformable &&other) = default;
-    Transformable(const Transformable &other) = default;
 
     void move(glm::vec2 d);
     void move(float dx, float dy);

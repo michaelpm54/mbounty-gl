@@ -178,9 +178,15 @@ trained in the art
     return success;
 }
 
-void Game::enter()
+void Game::enter(bool reset)
 {
-    setup_game();
+    if (reset) {
+        setup_game();
+    }
+    else {
+        auto &state = scene_switcher_->state();
+        mob_entities_[state.continent].erase(mob_entities_[state.continent].begin() + state.enemy_index);
+    }
 }
 
 void Game::update_camera()
@@ -517,7 +523,7 @@ void Game::key(int key, int scancode, int action, int mods)
                                 lose_state_++;
                             }
                             else {
-                                scene_switcher_->fade_to(SceneId::Intro);
+                                scene_switcher_->fade_to(SceneId::Intro, true);
                             }
                             break;
                         case GLFW_KEY_BACKSPACE:
@@ -887,9 +893,6 @@ void Game::update(float dt)
                 auto &ent = mob_entities_[continent][i];
                 auto &ent_pos = ent.get_position();
 
-                ent.animate(dt);
-                ent.set_flip(hero_pos.x < ent_pos.x);
-
                 float distance_x = std::abs(hero_pos.x - ent_pos.x);
                 float distance_y = std::abs(hero_pos.y - ent_pos.y);
 
@@ -898,9 +901,21 @@ void Game::update(float dt)
                 if (distance_x > 3.0f) {
                     dir.x = hero_pos.x > ent_pos.x ? 1.0f : -1.0f;
                 }
+
                 if (distance_y > 3.0f) {
                     dir.y = hero_pos.y > ent_pos.y ? 1.0f : -1.0f;
                 }
+
+                if (distance_x < 5.0f && distance_y < 5.0f) {
+                    scene_switcher_->state().enemy_army = mob_armies_[continent][i];
+                    scene_switcher_->state().enemy_counts = mob_counts_[continent][i];
+                    scene_switcher_->state().enemy_index = i;
+                    scene_switcher_->fade_to(SceneId::Battle, true);
+                    return;
+                }
+
+                ent.animate(dt);
+                ent.set_flip(hero_pos.x < ent_pos.x);
 
                 float speed = 70.0f;
                 float vel = speed * dt;
@@ -1755,6 +1770,8 @@ void Game::gen_tiles()
 
                     mob_entities_[continent].push_back(Entity(texture, glm::vec2 {0.0f, 0.0f}));
                     mob_entities_[continent].back().move_to_tile({x, y, Tile_Grass});
+                    mob_armies_[continent].push_back(mob_army);
+                    mob_counts_[continent].push_back(mob_counts);
 
                     tiles[x + y * 64] = Tile_Grass;
                 }

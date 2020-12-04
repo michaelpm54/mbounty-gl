@@ -1,5 +1,5 @@
-#ifndef BTY_INTRO_INTRO_HPP_
-#define BTY_INTRO_INTRO_HPP_
+#ifndef BTY_BATTLE_BATTLE_HPP_
+#define BTY_BATTLE_BATTLE_HPP_
 
 #include "gfx/dialog.hpp"
 #include "gfx/font.hpp"
@@ -14,9 +14,9 @@ class Gfx;
 class SceneSwitcher;
 }    // namespace bty
 
-class Intro : public bty::Scene {
+class Battle : public bty::Scene {
 public:
-    Intro(bty::SceneSwitcher &scene_switcher);
+    Battle(bty::SceneSwitcher &scene_switcher);
     bool load(bty::Assets &assets) override;
     void draw(bty::Gfx &gfx) override;
     void key(int key, int scancode, int action, int mods) override;
@@ -25,21 +25,15 @@ public:
     void enter(bool reset) override;
 
 private:
-    enum class IntroState {
-        ChoosingHero,
-        ChoosingDifficulty,
+    enum class BattleState {
+        Moving,
     };
 
-    bty::SceneSwitcher *scene_switcher_;
-    IntroState state_ {IntroState::ChoosingHero};
-    int hero_ {0};
     bool loaded_ {false};
-    bty::Font font_;
-    bty::Sprite bg_;
-    bty::TextBox name_box_;
-    bty::Dialog diff_box_;
-    bty::TextBox help_box_;
+    bty::SceneSwitcher *scene_switcher_;
+    BattleState state_ {BattleState::Moving};
+    bty::Text text_;
     glm::mat4 camera_ {1.0f};
 };
 
-#endif    // BTY_INTRO_INTRO_HPP_
+#endif    // BTY_INTRO_BATTLE_HPP_

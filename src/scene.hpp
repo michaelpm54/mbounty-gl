@@ -13,7 +13,7 @@ public:
     virtual bool load(Assets &assets) = 0;
     virtual void draw(Gfx &gfx) = 0;
     virtual void key(int key, int scancode, int action, int mods) = 0;
-    virtual void enter() = 0;
+    virtual void enter(bool reset) = 0;
     virtual bool loaded() = 0;
     virtual void update(float dt) = 0;
 

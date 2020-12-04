@@ -1,6 +1,7 @@
 #ifndef BTY_GAME_GAME_HPP_
 #define BTY_GAME_GAME_HPP_
 
+#include <deque>
 #include <queue>
 #include <random>
 
@@ -23,6 +24,7 @@
 #include "gfx/textbox.hpp"
 #include "scene.hpp"
 
+
 namespace bty {
 class Assets;
 class Gfx;
@@ -37,7 +39,7 @@ public:
     void key(int key, int scancode, int action, int mods) override;
     bool loaded() override;
     void update(float dt) override;
-    void enter() override;
+    void enter(bool reset) override;
 
 private:
     enum class GameState {
@@ -171,11 +173,11 @@ private:
 
     std::array<const bty::Texture *, 25> unit_textures_;
 
-    std::array<std::vector<int>, 4> mob_x_;
-    std::array<std::vector<int>, 4> mob_y_;
-    std::array<std::vector<std::array<int, 5>>, 4> mob_armies_;
-    std::array<std::vector<std::array<int, 5>>, 4> mob_counts_;
-    std::array<std::vector<Entity>, 4> mob_entities_;
+    std::array<std::deque<int>, 4> mob_x_;
+    std::array<std::deque<int>, 4> mob_y_;
+    std::array<std::deque<std::array<int, 5>>, 4> mob_armies_;
+    std::array<std::deque<std::array<int, 5>>, 4> mob_counts_;
+    std::array<std::deque<Entity>, 4> mob_entities_;
 
     bty::TextBox untrained_in_magic_;
     bty::TextBox bridge_prompt_;

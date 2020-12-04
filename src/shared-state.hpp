@@ -31,6 +31,9 @@ struct SharedState {
     bool boat_rented {false};
     std::array<bool, 17> known_villains;
     int known_spells {0};
+    std::array<int, 5> enemy_army;
+    std::array<int, 5> enemy_counts;
+    int enemy_index;
 };
 
 #endif    // BTY_SHARED_STATE_HPP_

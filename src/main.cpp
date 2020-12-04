@@ -13,6 +13,7 @@
 #include "engine.hpp"
 #include "game/game.hpp"
 #include "intro/intro.hpp"
+#include "battle/battle.hpp"
 #include "scene-id.hpp"
 #include "scene-switcher.hpp"
 #include "window.hpp"
@@ -68,9 +69,11 @@ int main(int argc, char *argv[])
 
         Intro intro(scene_switcher);
         Game game(scene_switcher);
+        Battle battle(scene_switcher);
 
         scene_switcher.add_scene(SceneId::Intro, intro);
         scene_switcher.add_scene(SceneId::Game, game);
+        scene_switcher.add_scene(SceneId::Battle, battle);
 
         if (scene_switcher.set_scene(SceneId::Game))
             engine.run();

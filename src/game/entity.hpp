@@ -23,8 +23,9 @@ public:
         bool out_of_bounds {false};
     };
 
-    using bty::Sprite::Sprite;
-
+    Entity() = default;
+    Entity(const Entity &) = default;
+    Entity(const bty::Texture *texture, const glm::vec2 &position);
     Entity::CollisionManifold move(float dx, float dy, Map &map, int continent);
     void set_tile_info(const Tile &tile);
     void move_to_tile(const Tile &tile);
