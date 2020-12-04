@@ -200,6 +200,7 @@ void Game::draw(bty::Gfx &gfx)
 
     const auto &hero_tile = hero_.get_tile();
     int continent = scene_switcher_->state().continent;
+
     switch (state_) {
         case GameState::Unpaused:
             map_.draw(game_camera_, continent);
@@ -1560,6 +1561,15 @@ int unit_id_gen(int continent)
 void Game::gen_tiles()
 {
     map_.reset();
+
+    /* Clear mobs */
+    for (int i = 0; i < 4; i++) {
+        mob_entities_[i].clear();
+        mob_x_[i].clear();
+        mob_y_[i].clear();
+        mob_armies_[i].clear();
+        mob_counts_[i].clear();
+    }
 
     static constexpr int kNumShopsPerContinent[4] = {
         6,
