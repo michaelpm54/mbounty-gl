@@ -8,7 +8,6 @@
 #include "scene.hpp"
 #include "window.hpp"
 
-
 namespace bty {
 
 SceneSwitcher::SceneSwitcher(Window *window, Assets &assets)

@@ -9,4 +9,4 @@ enum MoveFlags {
     MOVE_FLAGS_DOWN = 1 << 3,
 };
 
-#endif // BTY_GAME_MOVE_FLAGS_HPP_
+#endif    // BTY_GAME_MOVE_FLAGS_HPP_

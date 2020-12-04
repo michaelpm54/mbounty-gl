@@ -5,7 +5,6 @@
 #include "gfx/dialog.hpp"
 #include "gfx/sprite.hpp"
 
-
 struct SharedState;
 struct Tile;
 

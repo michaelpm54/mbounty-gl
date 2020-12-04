@@ -1,23 +1,24 @@
 #include "game/town.hpp"
 
-#include <spdlog/spdlog.h>
 #include <GLFW/glfw3.h>
+#include <spdlog/spdlog.h>
 
-#include "shared-state.hpp"
 #include "assets.hpp"
-#include "gfx/gfx.hpp"
 #include "game/map.hpp"
+#include "gfx/gfx.hpp"
+#include "shared-state.hpp"
 
-void Town::load(bty::Assets &assets, bty::BoxColor color, SharedState &state) {
+void Town::load(bty::Assets &assets, bty::BoxColor color, SharedState &state)
+{
     state_ = &state;
-    
+
     dialog_.create(1, 18, 30, 9, color, assets);
-    dialog_.add_line(1, 1, ""); // Town name
-    dialog_.add_line(22, 2, ""); // Gold
+    dialog_.add_line(1, 1, "");     // Town name
+    dialog_.add_line(22, 2, "");    // Gold
     dialog_.add_option(3, 3, "Get contract");
-    dialog_.add_option(3, 4, ""); // Rent boat
+    dialog_.add_option(3, 4, "");    // Rent boat
     dialog_.add_option(3, 5, "Gather information");
-    dialog_.add_option(3, 6, ""); // Spell
+    dialog_.add_option(3, 6, "");    // Spell
     dialog_.add_option(3, 7, "Buy siege weapons (3000)");
 
     unit_.set_position(56, 104);
@@ -30,7 +31,8 @@ void Town::load(bty::Assets &assets, bty::BoxColor color, SharedState &state) {
     gather_information_.add_line(1, 1, "");
 }
 
-void Town::draw(bty::Gfx &gfx, glm::mat4 &camera) {
+void Town::draw(bty::Gfx &gfx, glm::mat4 &camera)
+{
     gfx.draw_sprite(bg_, camera);
     if (show_gather_information_) {
         gather_information_.draw(gfx, camera);
@@ -41,7 +43,8 @@ void Town::draw(bty::Gfx &gfx, glm::mat4 &camera) {
     gfx.draw_sprite(unit_, camera);
 }
 
-void Town::view(int town, const Tile &tile, int continent, int unit_id, int spell, const CastleOccupation &occ) {
+void Town::view(int town, const Tile &tile, int continent, int unit_id, int spell, const CastleOccupation &occ)
+{
     town_ = town;
 
     unit_.set_texture(unit_textures_[unit_id]);
@@ -98,22 +101,28 @@ void Town::view(int town, const Tile &tile, int continent, int unit_id, int spel
     std::string occupier = occ.occupier == -1 ? "no one" : ("\n" + std::string(kVillains[occ.occupier][0]));
 
     gather_information_.set_line(0, fmt::format(
-R"raw(Castle {}{}is under {}'s rule.
-{})raw", kCastleInfo[occ.index].name, occ.occupier == -1 ? "\n" : " ", occupier, army));
+                                        R"raw(Castle {}{}is under {}'s rule.
+{})raw",
+                                        kCastleInfo[occ.index].name,
+                                        occ.occupier == -1 ? "\n" : " ",
+                                        occupier,
+                                        army));
 
     dialog_.set_option(3, fmt::format("{} spell ({})", kSpellNames[spell], kSpellCosts[spell]));
-    
+
     current_info_contract_ = occ.occupier;
 
     dialog_.set_option_visibility(4, !state_->siege);
 }
 
-void Town::update(float dt) {
+void Town::update(float dt)
+{
     dialog_.animate(dt);
     unit_.animate(dt);
 }
 
-int Town::key(int key) {
+int Town::key(int key)
+{
     switch (key) {
         case GLFW_KEY_DOWN:
             dialog_.next();
@@ -160,15 +169,18 @@ int Town::key(int key) {
     return -1;
 }
 
-int Town::get_town() const {
+int Town::get_town() const
+{
     return town_;
 }
 
-void Town::update_gold() {
+void Town::update_gold()
+{
     dialog_.set_line(1, fmt::format("GP={}", bty::number_with_ks(state_->gold)));
 }
 
-void Town::set_color(bty::BoxColor color) {
+void Town::set_color(bty::BoxColor color)
+{
     dialog_.set_color(color);
     gather_information_.set_color(color);
 }

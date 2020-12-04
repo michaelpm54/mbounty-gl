@@ -1,18 +1,19 @@
 #include "game/kings-castle.hpp"
 
-#include <spdlog/spdlog.h>
 #include <GLFW/glfw3.h>
+#include <spdlog/spdlog.h>
 
-#include "shared-state.hpp"
 #include "assets.hpp"
 #include "gfx/gfx.hpp"
+#include "shared-state.hpp"
 
-void KingsCastle::load(bty::Assets &assets, bty::BoxColor color, SharedState &state) {
+void KingsCastle::load(bty::Assets &assets, bty::BoxColor color, SharedState &state)
+{
     state_ = &state;
-    
+
     dialog_.create(1, 18, 30, 9, color, assets);
     dialog_.add_line(1, 1, "Castle of King Maximus");
-    dialog_.add_line(22, 2, ""); // Gold
+    dialog_.add_line(22, 2, "");    // Gold
     dialog_.add_option(3, 4, "Recruit soldiers");
     dialog_.add_option(3, 5, "Audience with the King");
 
@@ -28,13 +29,17 @@ void KingsCastle::load(bty::Assets &assets, bty::BoxColor color, SharedState &st
     recruit_.set_line_visible(4, false);
     to_buy_ = recruit_.add_line(25, 7, "");
     recruit_.set_line_visible(5, false);
-    
+
     unit_.set_position(56, 104);
     bg_.set_texture(assets.get_texture("bg/castle.png"));
     bg_.set_position(8, 24);
 
     static constexpr int kKingsCastleUnits[5] = {
-        Militias, Archers, Pikemen, Cavalries, Knights,
+        Militias,
+        Archers,
+        Pikemen,
+        Cavalries,
+        Knights,
     };
 
     for (int i = 0; i < 5; i++) {
@@ -42,7 +47,8 @@ void KingsCastle::load(bty::Assets &assets, bty::BoxColor color, SharedState &st
     }
 }
 
-void KingsCastle::draw(bty::Gfx &gfx, glm::mat4 &camera) {
+void KingsCastle::draw(bty::Gfx &gfx, glm::mat4 &camera)
+{
     gfx.draw_sprite(bg_, camera);
     if (show_recruit_) {
         recruit_.draw(gfx, camera);
@@ -53,7 +59,8 @@ void KingsCastle::draw(bty::Gfx &gfx, glm::mat4 &camera) {
     gfx.draw_sprite(unit_, camera);
 }
 
-void KingsCastle::view() {
+void KingsCastle::view()
+{
     added_while_holding_ = 0;
     add_amt_ = 1;
     increasing_amt_ = false;
@@ -85,7 +92,8 @@ void KingsCastle::view() {
             recruit_.add_option(3, 7, "Knights  n/a");
             recruit_.set_option_disabled(4, true);
             break;
-        case 2: [[fallthrough]];
+        case 2:
+            [[fallthrough]];
         case 3:
             recruit_.add_option(3, 3, "Militia   50");
             recruit_.add_option(3, 4, "Archers  250");
@@ -98,7 +106,8 @@ void KingsCastle::view() {
     }
 }
 
-void KingsCastle::update(float dt) {
+void KingsCastle::update(float dt)
+{
     dialog_.animate(dt);
     unit_.animate(dt);
 
@@ -126,17 +135,20 @@ void KingsCastle::update(float dt) {
     }
 }
 
-int KingsCastle::key(int key, int action) {
+int KingsCastle::key(int key, int action)
+{
     switch (action) {
         case GLFW_RELEASE:
             switch (key) {
-                case GLFW_KEY_RIGHT: [[fallthrough]];
+                case GLFW_KEY_RIGHT:
+                    [[fallthrough]];
                 case GLFW_KEY_UP:
                     increasing_amt_ = false;
                     add_amt_ = 0;
                     added_while_holding_ = 0;
                     break;
-                case GLFW_KEY_LEFT: [[fallthrough]];
+                case GLFW_KEY_LEFT:
+                    [[fallthrough]];
                 case GLFW_KEY_DOWN:
                     decreasing_amt_ = false;
                     add_amt_ = 0;
@@ -222,19 +234,22 @@ int KingsCastle::key(int key, int action) {
         default:
             break;
     }
-    
+
     return -1;
 }
 
-void KingsCastle::update_gold() {
+void KingsCastle::update_gold()
+{
     recruit_.set_line(1, fmt::format("GP={}", bty::number_with_ks(state_->gold)));
 }
 
-void KingsCastle::set_color(bty::BoxColor color) {
+void KingsCastle::set_color(bty::BoxColor color)
+{
     dialog_.set_color(color);
 }
 
-void KingsCastle::recruit_opt() {
+void KingsCastle::recruit_opt()
+{
     if (!show_recruit_amount_) {
         show_recruit_amount_ = true;
         recruit_.set_line_visible(2, false);
@@ -246,12 +261,17 @@ void KingsCastle::recruit_opt() {
     }
     else {
         static constexpr int kKingsCastleUnits[5] = {
-            Militias, Archers, Pikemen, Cavalries, Knights,
+            Militias,
+            Archers,
+            Pikemen,
+            Cavalries,
+            Knights,
         };
     }
 }
 
-void KingsCastle::main_opt() {
+void KingsCastle::main_opt()
+{
     switch (dialog_.get_selection()) {
         case 0:
             show_recruit_ = true;

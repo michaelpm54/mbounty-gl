@@ -7,8 +7,8 @@
 #include "gfx/font.hpp"
 #include "gfx/rect.hpp"
 #include "gfx/shader.hpp"
-#include "gfx/text.hpp"
 #include "gfx/sprite.hpp"
+#include "gfx/text.hpp"
 
 namespace bty {
 
@@ -37,7 +37,7 @@ void Gfx::clear()
 void Gfx::draw_sprite(Sprite &sprite, glm::mat4 &camera)
 {
     const Texture *texture = sprite.get_texture();
-    
+
     if (texture) {
         if (texture->num_frames_x > 1 || texture->num_frames_y > 1) {
             glProgramUniformMatrix4fv(sprite_shader_, locations_[Locations::SpriteTransform], 1, GL_FALSE, glm::value_ptr(sprite.get_transform()));
@@ -55,8 +55,8 @@ void Gfx::draw_sprite(Sprite &sprite, glm::mat4 &camera)
             glProgramUniform1i(sprite_single_texture_shader_, locations_[Locations::SpriteSingleTextureFlip], static_cast<int>(sprite.get_flip()));
             glProgramUniform1i(sprite_single_texture_shader_, locations_[Locations::SpriteSingleTextureRepeat], static_cast<int>(sprite.get_repeat()));
             if (sprite.get_repeat()) {
-                const auto size { sprite.get_size() };
-                glm::vec2 scale = { size.x / texture->width, size.y / texture->height };
+                const auto size {sprite.get_size()};
+                glm::vec2 scale = {size.x / texture->width, size.y / texture->height};
                 glProgramUniform2fv(sprite_single_texture_shader_, locations_[Locations::SpriteSingleTextureSize], 1, glm::value_ptr(scale));
             }
             glUseProgram(sprite_single_texture_shader_);
@@ -129,7 +129,8 @@ void Gfx::get_uniform_locations()
     }
 }
 
-void Gfx::load_shaders() {
+void Gfx::load_shaders()
+{
     sprite_shader_ = load_shader("data/shaders/sprite.glsl.vert", "data/shaders/sprite.glsl.frag");
     if (sprite_shader_ == GL_NONE) {
         spdlog::warn("Gfx::load_shaders: Failed to load sprite shader");
@@ -144,21 +145,23 @@ void Gfx::load_shaders() {
     if (rect_shader_ == GL_NONE) {
         spdlog::warn("Gfx::load_shaders: Failed to load rect shader");
     }
-    
+
     text_shader_ = load_shader("data/shaders/text.glsl.vert", "data/shaders/text.glsl.frag");
     if (text_shader_ == GL_NONE) {
         spdlog::warn("Gfx::load_shaders: Failed to load text shader");
     }
 }
 
-void Gfx::set_initial_gl_state() {
+void Gfx::set_initial_gl_state()
+{
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    glClearColor(0.0f, 163/255.0f, 166/255.0f, 1.0f);
+    glClearColor(0.0f, 163 / 255.0f, 166 / 255.0f, 1.0f);
 }
 
-void Gfx::create_geometry() {
+void Gfx::create_geometry()
+{
     GLuint quad_vbo;
     glGenBuffers(1, &quad_vbo);
 

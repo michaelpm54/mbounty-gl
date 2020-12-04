@@ -7,7 +7,8 @@
 
 namespace bty {
 
-Assets::Assets() {
+Assets::Assets()
+{
     border_.resize(8);
     for (int i = 0; i < 8; i++) {
         border_[i] = get_texture(fmt::format("border-normal/box{}.png", i));
@@ -23,11 +24,13 @@ Assets::~Assets()
     }
 }
 
-const std::vector<const Texture *> &Assets::get_border() const {
+const std::vector<const Texture *> &Assets::get_border() const
+{
     return border_;
 }
 
-const Font &Assets::get_font() const {
+const Font &Assets::get_font() const
+{
     return font_;
 }
 
@@ -45,7 +48,8 @@ Texture *Assets::get_texture(const std::string &path, glm::ivec2 num_frames)
     return get_single_texture(texture_path);
 }
 
-Texture *Assets::get_texture_array(const std::string &path, glm::ivec2 num_frames) {
+Texture *Assets::get_texture_array(const std::string &path, glm::ivec2 num_frames)
+{
     int c;
     int w;
     int h;
@@ -78,14 +82,16 @@ Texture *Assets::get_texture_array(const std::string &path, glm::ivec2 num_frame
         for (int j = 0; j < num_frames.y; j++) {
             glTextureSubImage3D(
                 tex,
-                0, 0, 0,
+                0,
+                0,
+                0,
                 num_frames.x * j + i,
-                frame_width, frame_height,
+                frame_width,
+                frame_height,
                 1,
                 format,
                 GL_UNSIGNED_BYTE,
-                data + ((j * frame_height * w) + (i * frame_width)) * c
-            );
+                data + ((j * frame_height * w) + (i * frame_width)) * c);
         }
     }
 
@@ -104,7 +110,8 @@ Texture *Assets::get_texture_array(const std::string &path, glm::ivec2 num_frame
     return &textures_[path];
 }
 
-Texture *Assets::get_single_texture(const std::string &path) {
+Texture *Assets::get_single_texture(const std::string &path)
+{
     int c;
     int w;
     int h;

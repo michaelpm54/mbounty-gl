@@ -3,9 +3,9 @@
 
 #include <chrono>
 
+#include "gfx/rect.hpp"
 #include "scene-id.hpp"
 #include "shared-state.hpp"
-#include "gfx/rect.hpp"
 #include "window.hpp"
 
 namespace bty {
@@ -38,18 +38,18 @@ private:
     };
 
     glm::mat4 camera_ {1.0f};
-    bty::Assets *assets_{nullptr};
-    std::unordered_map<SceneId, Scene*> scene_map_;
+    bty::Assets *assets_ {nullptr};
+    std::unordered_map<SceneId, Scene *> scene_map_;
     SharedState shared_state_;
-    SwitchState state_{SwitchState::None};
-    Scene *scene_{nullptr};
-    Scene *next_scene_{nullptr};
+    SwitchState state_ {SwitchState::None};
+    Scene *scene_ {nullptr};
+    Scene *next_scene_ {nullptr};
     Rect fade_rect_;
-    float fade_elapsed_{0};
-    float fade_alpha_{0};
-    Window *window_{nullptr};
+    float fade_elapsed_ {0};
+    float fade_alpha_ {0};
+    Window *window_ {nullptr};
 };
 
-}
+}    // namespace bty
 
-#endif // BTY_SCENE_SWITCHER_HPP_
+#endif    // BTY_SCENE_SWITCHER_HPP_

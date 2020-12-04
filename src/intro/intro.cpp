@@ -7,10 +7,9 @@
 
 #include "assets.hpp"
 #include "bounty.hpp"
+#include "gfx/gfx.hpp"
 #include "scene-switcher.hpp"
 #include "shared-state.hpp"
-
-#include "gfx/gfx.hpp"
 
 Intro::Intro(bty::SceneSwitcher &scene_switcher)
     : scene_switcher_(&scene_switcher)
@@ -39,12 +38,12 @@ bool Intro::load(bty::Assets &assets)
     diff_box_.add_line(21, 1, "Score");
 
     static const std::string difficulties[4][3] =
-	{
-		{"Easy", "900", "x.5"},
-		{"Normal", "600", " x1"},
-		{"Hard", "400", " x2"},
-		{"Impossible?", "200", " x4"},
-	};
+        {
+            {"Easy", "900", "x.5"},
+            {"Normal", "600", " x1"},
+            {"Hard", "400", " x2"},
+            {"Impossible?", "200", " x4"},
+        };
 
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 3; j++) {
@@ -79,11 +78,9 @@ void Intro::key(int key, int scancode, int action, int mods)
     (void)scancode;
     (void)mods;
 
-    switch (action)
-    {
+    switch (action) {
         case GLFW_PRESS:
-            switch (key)
-            {
+            switch (key) {
                 case GLFW_KEY_LEFT:
                     if (state_ == IntroState::ChoosingHero) {
                         hero_--;

@@ -11,7 +11,7 @@ class Assets;
 class Font;
 class Gfx;
 struct Texture;
-}
+}    // namespace bty
 
 struct SharedState;
 
@@ -21,20 +21,20 @@ public:
     ~ViewContinent();
     void load(bty::Assets &assets, bty::BoxColor color);
     void draw(bty::Gfx &gfx, glm::mat4 &camera);
-    void view(int x, int y, int continent, const unsigned char * const map);
+    void view(int x, int y, int continent, const unsigned char *const map);
     void update(float dt);
     void set_color(bty::BoxColor color);
 
 private:
     bty::TextBox box_;
-    bty::Text *continent_{nullptr};
-    bty::Text *coordinates_{nullptr};
+    bty::Text *continent_ {nullptr};
+    bty::Text *coordinates_ {nullptr};
     bty::Sprite map_;
     bty::Texture map_texture_;
-    float dot_timer_{0.0f};
-    float dot_alpha_{0};
-    int x_{0};
-    int y_{0};
+    float dot_timer_ {0.0f};
+    float dot_alpha_ {0};
+    int x_ {0};
+    int y_ {0};
 };
 
-#endif // BTY_GAME_VIEW_CONTINENT_HPP_
+#endif    // BTY_GAME_VIEW_CONTINENT_HPP_

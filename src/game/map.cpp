@@ -1,12 +1,12 @@
 #include "game/map.hpp"
 
-#include "assets.hpp"
-#include "gfx/texture.hpp"
-#include "gfx/shader.hpp"
+#include <spdlog/spdlog.h>
 
 #include <glm/gtc/type_ptr.hpp>
 
-#include <spdlog/spdlog.h>
+#include "assets.hpp"
+#include "gfx/shader.hpp"
+#include "gfx/texture.hpp"
 
 struct Vertex {
     glm::vec2 pos;
@@ -20,7 +20,8 @@ Map::~Map()
     glDeleteProgram(program_);
 }
 
-void Map::load(bty::Assets &assets) {
+void Map::load(bty::Assets &assets)
+{
     for (int i = 0; i < 10; i++) {
         tilesets_[i] = assets.get_texture(fmt::format("tilesets/tileset{}.png", i));
     }
@@ -70,7 +71,8 @@ void Map::load(bty::Assets &assets) {
     }
 }
 
-void Map::draw(glm::mat4 &camera, int continent) {
+void Map::draw(glm::mat4 &camera, int continent)
+{
     glProgramUniformMatrix4fv(program_, camera_loc_, 1, GL_FALSE, glm::value_ptr(camera));
     glProgramUniform1i(program_, texture_loc_, 0);
 
@@ -82,7 +84,8 @@ void Map::draw(glm::mat4 &camera, int continent) {
     glUseProgram(GL_NONE);
 }
 
-void Map::update(float dt) {
+void Map::update(float dt)
+{
     tileset_anim_timer_ += dt;
     if (tileset_anim_timer_ >= 0.18f) {
         tileset_anim_timer_ = 0;
@@ -93,7 +96,7 @@ void Map::update(float dt) {
 Tile Map::get_tile(int tx, int ty, int continent) const
 {
     if (tx < 0 || tx > 63 || ty < 0 || ty > 63) {
-        return {-1,-1,-1};
+        return {-1, -1, -1};
     }
 
     // spdlog::debug("Get tile {} {}", tx, ty);
@@ -119,18 +122,20 @@ Tile Map::get_tile(glm::ivec2 coord, int continent) const
     return get_tile(coord.x, coord.y, continent);
 }
 
-unsigned char *Map::get_data(int continent) {
+unsigned char *Map::get_data(int continent)
+{
     return tiles_[continent].data();
 }
 
-void Map::create_geometry() {
+void Map::create_geometry()
+{
     for (int continent = 0; continent < 4; continent++) {
         float tex_adv_x = 1.0f / (tilesets_[0]->width / 50.0f);
         float tex_adv_y = 1.0f / (tilesets_[0]->height / 42.0f);
 
         float px_offset_x = 1.0f / tilesets_[0]->width;
         float px_offset_y = 1.0f / tilesets_[0]->height;
-        
+
         std::vector<Vertex> vertices(4096 * 6);
 
         auto *vtx = &vertices[0];
@@ -151,12 +156,12 @@ void Map::create_geometry() {
                 float va = tile_y * tex_adv_y + px_offset_y;
                 float vb = (tile_y + 1) * tex_adv_y - px_offset_y;
 
-                *vtx++ = { { l, t }, { ua, va } };
-                *vtx++ = { { r, t }, { ub, va } };
-                *vtx++ = { { l, b }, { ua, vb } };
-                *vtx++ = { { r, t }, { ub, va } };
-                *vtx++ = { { r, b }, { ub, vb } };
-                *vtx++ = { { l, b }, { ua, vb } };
+                *vtx++ = {{l, t}, {ua, va}};
+                *vtx++ = {{r, t}, {ub, va}};
+                *vtx++ = {{l, b}, {ua, vb}};
+                *vtx++ = {{r, t}, {ub, va}};
+                *vtx++ = {{r, b}, {ub, vb}};
+                *vtx++ = {{l, b}, {ua, vb}};
             }
         }
 
@@ -164,13 +169,15 @@ void Map::create_geometry() {
     }
 }
 
-void Map::reset() {
+void Map::reset()
+{
     for (int i = 0; i < 4; i++) {
         std::copy(read_only_tiles_[i].begin(), read_only_tiles_[i].end(), tiles_[i].begin());
     }
 }
 
-void Map::erase_tile(const Tile &tile, int continent) {    
+void Map::erase_tile(const Tile &tile, int continent)
+{
     tiles_[continent][tile.tx + tile.ty * 64] = Tile_Grass;
 
     float tex_adv_x = 1.0f / (tilesets_[0]->width / 50.0f);
@@ -193,12 +200,12 @@ void Map::erase_tile(const Tile &tile, int continent) {
     float va = px_offset_y;
     float vb = tex_adv_y - px_offset_y;
 
-    *vtx++ = { { l, t }, { ua, va } };
-    *vtx++ = { { r, t }, { ub, va } };
-    *vtx++ = { { l, b }, { ua, vb } };
-    *vtx++ = { { r, t }, { ub, va } };
-    *vtx++ = { { r, b }, { ub, vb } };
-    *vtx++ = { { l, b }, { ua, vb } };
+    *vtx++ = {{l, t}, {ua, va}};
+    *vtx++ = {{r, t}, {ub, va}};
+    *vtx++ = {{l, b}, {ua, vb}};
+    *vtx++ = {{r, t}, {ub, va}};
+    *vtx++ = {{r, b}, {ub, vb}};
+    *vtx++ = {{l, b}, {ua, vb}};
 
     auto size = 6 * sizeof(Vertex);
     auto offset = (tile.ty + tile.tx * 64) * size;

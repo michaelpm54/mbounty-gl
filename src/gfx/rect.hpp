@@ -18,7 +18,7 @@ public:
     const glm::vec4 &get_color() const;
 
 private:
-    glm::vec4 color_{0.0f};
+    glm::vec4 color_ {0.0f};
 };
 
 }    // namespace bty

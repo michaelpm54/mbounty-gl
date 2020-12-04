@@ -25,12 +25,12 @@ void Font::load_from_texture(const Texture *texture, glm::vec2 glyph_size)
 
         glm::vec2 *uv = &texture_coordinates_[i][0];
 
-            *uv++ = { advance_.x * x,     advance_.y * y     };
-            *uv++ = { advance_.x * (x+1), advance_.y * y     };
-            *uv++ = { advance_.x * x,     advance_.y * (y+1) };
-            *uv++ = { advance_.x * (x+1), advance_.y * y     };
-            *uv++ = { advance_.x * (x+1), advance_.y * (y+1) };
-            *uv++ = { advance_.x * x,     advance_.y * (y+1) };
+        *uv++ = {advance_.x * x, advance_.y * y};
+        *uv++ = {advance_.x * (x + 1), advance_.y * y};
+        *uv++ = {advance_.x * x, advance_.y * (y + 1)};
+        *uv++ = {advance_.x * (x + 1), advance_.y * y};
+        *uv++ = {advance_.x * (x + 1), advance_.y * (y + 1)};
+        *uv++ = {advance_.x * x, advance_.y * (y + 1)};
     }
 }
 
@@ -60,7 +60,7 @@ const Texture *Font::get_texture() const
 
 glm::vec2 Font::get_uv(uint16_t code) const
 {
-    return { advance_.x * (code % columns_), advance_.y * (code / columns_) };
+    return {advance_.x * (code % columns_), advance_.y * (code / columns_)};
 }
 
-}
+}    // namespace bty

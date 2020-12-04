@@ -1,14 +1,13 @@
 #ifndef BTY_ASSETS_HPP_
 #define BTY_ASSETS_HPP_
 
+#include <glm/vec2.hpp>
 #include <string>
 #include <unordered_map>
 
-#include <glm/vec2.hpp>
-
+#include "gfx/font.hpp"
 #include "gfx/gl.hpp"
 #include "gfx/texture.hpp"
-#include "gfx/font.hpp"
 
 namespace bty {
 

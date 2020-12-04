@@ -10,7 +10,7 @@ class Assets;
 class Font;
 class Gfx;
 struct Texture;
-}
+}    // namespace bty
 
 struct SharedState;
 
@@ -22,14 +22,14 @@ public:
     void update(float dt);
 
 private:
-    const bty::Texture *textures_[25]{nullptr};
+    const bty::Texture *textures_[25] {nullptr};
     bty::Sprite sprites_[25];
     bty::Sprite border_[8];
     bool hide_[25];
     int to_hide_[25];
-    float pop_timer_{0};
-    int next_pop_{-1};
-    bool done_{false};
+    float pop_timer_ {0};
+    int next_pop_ {-1};
+    bool done_ {false};
 };
 
-#endif // BTY_GAME_VIEW_PUZZLE_HPP_
+#endif    // BTY_GAME_VIEW_PUZZLE_HPP_

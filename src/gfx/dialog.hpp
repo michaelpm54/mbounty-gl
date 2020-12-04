@@ -13,7 +13,6 @@
 #include "gfx/textbox.hpp"
 #include "gfx/texture.hpp"
 
-
 namespace bty {
 
 class Gfx;

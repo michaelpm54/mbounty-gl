@@ -78,12 +78,12 @@ void Text::set_string(const std::string &string)
 
         auto *vertex = &vertices.data()[i * 6];
 
-        *vertex++ = { { x,   y   }, texture_coords[0] };
-        *vertex++ = { { x+8, y   }, texture_coords[1] };
-        *vertex++ = { { x,   y+8 }, texture_coords[2] };
-        *vertex++ = { { x+8, y   }, texture_coords[3] };
-        *vertex++ = { { x+8, y+8 }, texture_coords[4] };
-        *vertex++ = { { x,   y+8 }, texture_coords[5] };
+        *vertex++ = {{x, y}, texture_coords[0]};
+        *vertex++ = {{x + 8, y}, texture_coords[1]};
+        *vertex++ = {{x, y + 8}, texture_coords[2]};
+        *vertex++ = {{x + 8, y}, texture_coords[3]};
+        *vertex++ = {{x + 8, y + 8}, texture_coords[4]};
+        *vertex++ = {{x, y + 8}, texture_coords[5]};
 
         x += 8;
     }
@@ -103,7 +103,7 @@ void Text::set_string(const std::string &string)
     glBindVertexArray(vao_);
     glBindBuffer(GL_ARRAY_BUFFER, vbo_);
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 4, nullptr);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 4, (const void*)(sizeof(GLfloat) * 2));
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 4, (const void *)(sizeof(GLfloat) * 2));
     glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(1);
     glBindVertexArray(GL_NONE);
@@ -114,20 +114,24 @@ const Font *Text::get_font() const
     return font_;
 }
 
-GLuint Text::get_vao() const{
+GLuint Text::get_vao() const
+{
     return vao_;
 }
 
-GLuint Text::get_num_vertices() const {
+GLuint Text::get_num_vertices() const
+{
     return num_vertices_;
 }
 
-void Text::set_font(const Font &font) {
+void Text::set_font(const Font &font)
+{
     font_ = &font;
 }
 
-const std::string Text::get_string() const {
+const std::string Text::get_string() const
+{
     return string_;
 }
 
-}
+}    // namespace bty

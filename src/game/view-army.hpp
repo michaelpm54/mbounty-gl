@@ -12,7 +12,7 @@ class Assets;
 class Font;
 class Gfx;
 struct Texture;
-}
+}    // namespace bty
 
 struct SharedState;
 
@@ -30,7 +30,7 @@ private:
     std::array<bty::Rect, 5> rects_;
     std::array<bty::Sprite, 5> units_;
     std::array<std::array<bty::Text, 7>, 5> info_;
-    int num_units_{0};
+    int num_units_ {0};
 };
 
-#endif // BTY_GAME_VIEW_ARMY_HPP_
+#endif    // BTY_GAME_VIEW_ARMY_HPP_

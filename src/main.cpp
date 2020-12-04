@@ -7,7 +7,6 @@
 #include "scene-switcher.hpp"
 #include "window.hpp"
 
-
 void APIENTRY glDebugOutput(GLenum source,
                             GLenum type,
                             unsigned int id,

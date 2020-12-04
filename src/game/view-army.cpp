@@ -1,20 +1,21 @@
 #include "game/view-army.hpp"
 
-#include <algorithm>
-
 #include <spdlog/spdlog.h>
 
-#include "gfx/gfx.hpp"
+#include <algorithm>
+
 #include "assets.hpp"
+#include "bounty.hpp"
+#include "gfx/gfx.hpp"
 #include "gfx/texture.hpp"
 #include "shared-state.hpp"
-#include "bounty.hpp"
 
-void ViewArmy::load(bty::Assets &assets, bty::BoxColor color) {
+void ViewArmy::load(bty::Assets &assets, bty::BoxColor color)
+{
     for (int i = 0; i < 24; i++) {
         auto name = kUnits[i].name_plural;
-        std::transform(name.begin(), name.end(), name.begin(),
-            [](unsigned char c){ return std::tolower(c);
+        std::transform(name.begin(), name.end(), name.begin(), [](unsigned char c) {
+            return std::tolower(c);
         });
         unit_textures_[i] = assets.get_texture(fmt::format("units/{}.png", name), {2, 2});
     }
@@ -36,17 +37,18 @@ void ViewArmy::load(bty::Assets &assets, bty::BoxColor color) {
 
         float x = 64;
         float y = 32 + i * 40;
-        info_[i][0].set_position(x,       y);
+        info_[i][0].set_position(x, y);
         info_[i][1].set_position(x + 120, y);
-        info_[i][2].set_position(x,       y + 8);
-        info_[i][3].set_position(x + 56,  y + 8);
+        info_[i][2].set_position(x, y + 8);
+        info_[i][3].set_position(x + 56, y + 8);
         info_[i][4].set_position(x + 120, y + 8);
-        info_[i][5].set_position(x,       y + 16);
+        info_[i][5].set_position(x, y + 16);
         info_[i][6].set_position(x + 120, y + 16);
     }
 }
 
-void ViewArmy::draw(bty::Gfx &gfx, glm::mat4 &camera) {
+void ViewArmy::draw(bty::Gfx &gfx, glm::mat4 &camera)
+{
     gfx.draw_sprite(frame_, camera);
     for (int i = 0; i < 5; i++) {
         gfx.draw_rect(rects_[i], camera);
@@ -59,7 +61,8 @@ void ViewArmy::draw(bty::Gfx &gfx, glm::mat4 &camera) {
     }
 }
 
-void ViewArmy::view(const SharedState &state) {
+void ViewArmy::view(const SharedState &state)
+{
     num_units_ = 0;
 
     for (int i = 0; i < 5; i++) {
@@ -67,7 +70,7 @@ void ViewArmy::view(const SharedState &state) {
             num_units_++;
         }
     }
-    
+
     assert(num_units_ < 5);
     for (int i = 0; i < num_units_; i++) {
         int unit_id = state.army[i];
@@ -98,13 +101,15 @@ void ViewArmy::view(const SharedState &state) {
     }
 }
 
-void ViewArmy::update(float dt) {
+void ViewArmy::update(float dt)
+{
     for (int i = 0; i < num_units_; i++) {
         units_[i].animate(dt);
     }
 }
 
-void ViewArmy::set_color(bty::BoxColor color) {
+void ViewArmy::set_color(bty::BoxColor color)
+{
     for (int i = 0; i < 5; i++) {
         rects_[i].set_color(color);
     }

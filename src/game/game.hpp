@@ -22,7 +22,6 @@
 #include "gfx/textbox.hpp"
 #include "scene.hpp"
 
-
 namespace bty {
 class Assets;
 class Gfx;

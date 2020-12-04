@@ -25,13 +25,13 @@ public:
     const Font *get_font() const;
 
 private:
-    const Font *font_{nullptr};
-    GLuint vbo_{GL_NONE};
-    GLuint vao_{GL_NONE};
-    GLuint num_vertices_{0};
+    const Font *font_ {nullptr};
+    GLuint vbo_ {GL_NONE};
+    GLuint vao_ {GL_NONE};
+    GLuint num_vertices_ {0};
     std::string string_;
 };
 
-}
+}    // namespace bty
 
-#endif // BTY_GFX_TEXT_HPP_
+#endif    // BTY_GFX_TEXT_HPP_

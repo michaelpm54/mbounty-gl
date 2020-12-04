@@ -2,9 +2,8 @@
 #define BTY_GFX_FONT_HPP_
 
 #include <array>
-#include <vector>
-
 #include <glm/vec2.hpp>
+#include <vector>
 
 #include "gfx/texture.hpp"
 
@@ -20,14 +19,14 @@ public:
     glm::vec2 get_uv(uint16_t code) const;
 
 private:
-    const Texture *texture_{nullptr};
-    int columns_{0};
-    int rows_{0};
-    glm::vec2 glyph_size_{0.0f};
-    glm::vec2 advance_{0.0f};
+    const Texture *texture_ {nullptr};
+    int columns_ {0};
+    int rows_ {0};
+    glm::vec2 glyph_size_ {0.0f};
+    glm::vec2 advance_ {0.0f};
     std::vector<std::array<glm::vec2, 6>> texture_coordinates_;
 };
 
-}
+}    // namespace bty
 
-#endif // BTY_GFX_FONT_HPP_
+#endif    // BTY_GFX_FONT_HPP_

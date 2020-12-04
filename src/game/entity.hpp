@@ -3,15 +3,14 @@
 
 #include <vector>
 
+#include "game/map.hpp"
 #include "gfx/rect.hpp"
 #include "gfx/sprite.hpp"
-
-#include "game/map.hpp"
 
 namespace bty {
 class Gfx;
 class Rect;
-}
+}    // namespace bty
 
 class Entity : public bty::Sprite {
 public:
@@ -21,7 +20,7 @@ public:
         bool changed_tile;
         Tile new_tile;
         std::vector<Tile> collided_tiles;
-        bool out_of_bounds{false};
+        bool out_of_bounds {false};
     };
 
     Entity::CollisionManifold move(float dx, float dy, Map &map, int continent);
@@ -37,12 +36,12 @@ protected:
     virtual bool can_move(int id);
 
 protected:
-    Tile tile_{-1,-1,-1};
+    Tile tile_ {-1, -1, -1};
 
 private:
     bty::Rect collision_rect_;
-    bool debug_{false};
+    bool debug_ {false};
     std::vector<bty::Rect> collided_rects_;
 };
 
-#endif // BTY_GAME_ENTITY_HPP_
+#endif    // BTY_GAME_ENTITY_HPP_

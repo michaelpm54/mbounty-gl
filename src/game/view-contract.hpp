@@ -11,7 +11,7 @@ class Assets;
 class Font;
 class Gfx;
 struct Texture;
-}
+}    // namespace bty
 
 struct SharedState;
 
@@ -25,9 +25,9 @@ public:
 private:
     bty::TextBox box_;
     bty::Text no_contract_text_;
-    bool no_contract_{false};
-    bty::Sprite *contract_sprite_{nullptr};
+    bool no_contract_ {false};
+    bty::Sprite *contract_sprite_ {nullptr};
     bty::Text info_;
 };
 
-#endif // BTY_GAME_VIEW_CONTRACT_HPP_
+#endif    // BTY_GAME_VIEW_CONTRACT_HPP_

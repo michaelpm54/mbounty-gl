@@ -1,9 +1,9 @@
 #ifndef BTY_GAME_TOWN_HPP_
 #define BTY_GAME_TOWN_HPP_
 
-#include "gfx/sprite.hpp"
-#include "gfx/dialog.hpp"
 #include "bounty.hpp"
+#include "gfx/dialog.hpp"
+#include "gfx/sprite.hpp"
 
 struct SharedState;
 struct Tile;
@@ -11,7 +11,7 @@ struct Tile;
 namespace bty {
 class Gfx;
 struct Texture;
-}
+}    // namespace bty
 
 struct CastleOccupation {
     int index;
@@ -38,9 +38,9 @@ private:
     bty::Dialog dialog_;
     const bty::Texture *unit_textures_[25];
     bty::TextBox gather_information_;
-    bool show_gather_information_{false};
-    int current_info_contract_{-1};
-    int town_{-1};
+    bool show_gather_information_ {false};
+    int current_info_contract_ {-1};
+    int town_ {-1};
 };
 
-#endif // BTY_GAME_TOWN_HPP_
+#endif    // BTY_GAME_TOWN_HPP_

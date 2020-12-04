@@ -2,13 +2,14 @@
 
 #include <spdlog/spdlog.h>
 
-#include "gfx/gfx.hpp"
 #include "assets.hpp"
+#include "bounty.hpp"
+#include "gfx/gfx.hpp"
 #include "gfx/texture.hpp"
 #include "shared-state.hpp"
-#include "bounty.hpp"
 
-void ViewCharacter::load(bty::Assets &assets, bty::BoxColor color, int hero_id) {
+void ViewCharacter::load(bty::Assets &assets, bty::BoxColor color, int hero_id)
+{
     frame_.set_texture(assets.get_texture("frame/character.png"));
     frame_.set_position(0, 16);
 
@@ -50,7 +51,8 @@ void ViewCharacter::load(bty::Assets &assets, bty::BoxColor color, int hero_id) 
     }
 }
 
-void ViewCharacter::draw(bty::Gfx &gfx, glm::mat4 &camera) {
+void ViewCharacter::draw(bty::Gfx &gfx, glm::mat4 &camera)
+{
     gfx.draw_sprite(frame_, camera);
     gfx.draw_sprite(portrait_, camera);
     gfx.draw_rect(rect_, camera);
@@ -62,7 +64,8 @@ void ViewCharacter::draw(bty::Gfx &gfx, glm::mat4 &camera) {
     }
 }
 
-void ViewCharacter::view(const SharedState &state) {
+void ViewCharacter::view(const SharedState &state)
+{
     info_[0].set_string(kHeroNames[state.hero_id][state.hero_rank]);
     info_[1].set_string(fmt::format("Leadership {:>13}", state.leadership));
     info_[2].set_string(fmt::format("Commission/Week {:>8}", state.commission));
@@ -84,6 +87,7 @@ void ViewCharacter::view(const SharedState &state) {
     }
 }
 
-void ViewCharacter::set_color(bty::BoxColor color) {
+void ViewCharacter::set_color(bty::BoxColor color)
+{
     rect_.set_color(color);
 }

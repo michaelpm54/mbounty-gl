@@ -7,4 +7,4 @@ enum class SceneId {
     Battle,
 };
 
-#endif // BTY_SCENEID_HPP_
+#endif    // BTY_SCENEID_HPP_

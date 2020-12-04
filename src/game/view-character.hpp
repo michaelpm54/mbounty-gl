@@ -10,7 +10,7 @@ class Assets;
 class Font;
 class Gfx;
 struct Texture;
-}
+}    // namespace bty
 
 struct SharedState;
 
@@ -28,7 +28,7 @@ private:
     bty::Text info_[11];
     const bty::Texture *portraits_[4];
     bty::Sprite map_sprites_[4];
-    int found_maps_{0};
+    int found_maps_ {0};
 };
 
-#endif // BTY_GAME_VIEW_CHARACTER_HPP_
+#endif    // BTY_GAME_VIEW_CHARACTER_HPP_

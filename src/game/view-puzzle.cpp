@@ -1,16 +1,17 @@
 #include "game/view-puzzle.hpp"
 
-#include <algorithm>
-
 #include <spdlog/spdlog.h>
 
-#include "gfx/gfx.hpp"
+#include <algorithm>
+
 #include "assets.hpp"
+#include "bounty.hpp"
+#include "gfx/gfx.hpp"
 #include "gfx/texture.hpp"
 #include "shared-state.hpp"
-#include "bounty.hpp"
 
-void ViewPuzzle::load(bty::Assets &assets) {
+void ViewPuzzle::load(bty::Assets &assets)
+{
     for (int i = 0; i < 17; i++) {
         textures_[kPuzzleVillainPositions[i]] = assets.get_texture(fmt::format("villains/{}.png", i));
     }
@@ -24,7 +25,7 @@ void ViewPuzzle::load(bty::Assets &assets) {
             sprites_[n++].set_position(18 + x * 44, 40 + y * 32);
         }
     }
-    
+
     float x = 8;
     float y = 24;
     float width = 5 * 44;
@@ -36,28 +37,29 @@ void ViewPuzzle::load(bty::Assets &assets) {
     border_[5].set_texture(assets.get_texture(fmt::format("border-puzzle/{}.png", 9)));
 
     // top bottom
-	border_[1].set_size(width, 16);
-	border_[5].set_size(width, 16);
+    border_[1].set_size(width, 16);
+    border_[5].set_size(width, 16);
     border_[1].set_repeat(true);
     border_[5].set_repeat(true);
 
-	// left right
-	border_[3].set_size(10, height);
-	border_[7].set_size(10, height);
+    // left right
+    border_[3].set_size(10, height);
+    border_[7].set_size(10, height);
     border_[3].set_repeat(true);
     border_[7].set_repeat(true);
 
     border_[0].set_position({x, y});
-    border_[1].set_position({x+10, y});
-    border_[2].set_position({x+10 + width, y});
-    border_[3].set_position({x+10 + width, y+16});
-    border_[4].set_position({x+10 + width, y+16+height});
-    border_[5].set_position({x+10, y+16+height});
-    border_[6].set_position({x, y+16 + height});
-    border_[7].set_position({x, y+16});
+    border_[1].set_position({x + 10, y});
+    border_[2].set_position({x + 10 + width, y});
+    border_[3].set_position({x + 10 + width, y + 16});
+    border_[4].set_position({x + 10 + width, y + 16 + height});
+    border_[5].set_position({x + 10, y + 16 + height});
+    border_[6].set_position({x, y + 16 + height});
+    border_[7].set_position({x, y + 16});
 }
 
-void ViewPuzzle::draw(bty::Gfx &gfx, glm::mat4 &camera) {
+void ViewPuzzle::draw(bty::Gfx &gfx, glm::mat4 &camera)
+{
     for (int i = 0; i < 8; i++) {
         gfx.draw_sprite(border_[i], camera);
     }
@@ -68,7 +70,8 @@ void ViewPuzzle::draw(bty::Gfx &gfx, glm::mat4 &camera) {
     }
 }
 
-void ViewPuzzle::view(bool *villains, bool *artifacts) {
+void ViewPuzzle::view(bool *villains, bool *artifacts)
+{
     for (int i = 0; i < 25; i++) {
         to_hide_[i] = -1;
     }
@@ -96,7 +99,8 @@ void ViewPuzzle::view(bool *villains, bool *artifacts) {
     }
 }
 
-void ViewPuzzle::update(float dt) {
+void ViewPuzzle::update(float dt)
+{
     if (!done_) {
         pop_timer_ -= dt;
         if (pop_timer_ <= 0) {

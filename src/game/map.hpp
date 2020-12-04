@@ -7,7 +7,6 @@
 
 #include "gfx/gl.hpp"
 
-
 namespace bty {
 class Assets;
 struct Texture;

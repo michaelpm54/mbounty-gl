@@ -20,7 +20,7 @@ Engine::Engine(Window &window, SceneSwitcher &scene_switcher)
 
 void Engine::run()
 {
-    float dt = 1.0f/60.0f;
+    float dt = 1.0f / 60.0f;
     while (run_) {
         window_events(window_);
         scene_switcher_->update(dt);

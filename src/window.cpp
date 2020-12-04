@@ -86,15 +86,15 @@ void window_swap(Window *window)
 
 int window_width(Window *window)
 {
-    int w,h;
-    glfwGetWindowSize(window->handle, &w,&h);
+    int w, h;
+    glfwGetWindowSize(window->handle, &w, &h);
     return w;
 }
 
 int window_height(Window *window)
 {
-    int w,h;
-    glfwGetWindowSize(window->handle, &w,&h);
+    int w, h;
+    glfwGetWindowSize(window->handle, &w, &h);
     return h;
 }
 

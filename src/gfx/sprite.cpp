@@ -17,7 +17,7 @@ void Sprite::set_texture(const Texture *texture)
     }
 
     texture_ = texture;
-    
+
     set_size(texture->frame_width, texture->frame_height);
 
     if (texture->num_frames_x && texture->num_frames_y) {
@@ -30,14 +30,16 @@ const Texture *Sprite::get_texture() const
     return texture_;
 }
 
-void Sprite::load_animation() {
+void Sprite::load_animation()
+{
     animation_.exists = true;
     animation_.total_frames = texture_->num_frames_x * texture_->num_frames_y;
     animation_.time_per_frame = 0.15f;
     animation_.current_frame = rand() % animation_.total_frames;
 }
 
-void Sprite::animate(float dt) {
+void Sprite::animate(float dt)
+{
     if (!animation_.exists) {
         return;
     }
@@ -49,26 +51,31 @@ void Sprite::animate(float dt) {
     }
 }
 
-int Sprite::get_frame() const {
+int Sprite::get_frame() const
+{
     return animation_.current_frame;
 }
 
-void Sprite::set_flip(bool val) {
+void Sprite::set_flip(bool val)
+{
     flip_ = val;
 }
 
-bool Sprite::get_flip() const {
+bool Sprite::get_flip() const
+{
     return flip_;
 }
 
-void Sprite::set_repeat(bool val) {
+void Sprite::set_repeat(bool val)
+{
     if (texture_ && (texture_->num_frames_x > 1 || texture_->num_frames_y > 1)) {
         spdlog::warn("Repeat is set for a sprite with multiple frames. This is not implemented.");
     }
     repeat_ = val;
 }
 
-bool Sprite::get_repeat() const {
+bool Sprite::get_repeat() const
+{
     return repeat_;
 }
 

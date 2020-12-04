@@ -6,7 +6,7 @@
 namespace bty {
 class Assets;
 struct Texture;
-}
+}    // namespace bty
 
 enum class Mount {
     Fly,
@@ -26,12 +26,12 @@ private:
     void update_texture();
 
 private:
-    bool moving_{false};
-    Mount mount_{Mount::Walk};
+    bool moving_ {false};
+    Mount mount_ {Mount::Walk};
     const bty::Texture *tex_walk_moving_;
     const bty::Texture *tex_walk_stationary_;
     const bty::Texture *tex_boat_moving_;
     const bty::Texture *tex_boat_stationary_;
 };
 
-#endif // BTY_GAME_HERO_HPP_
+#endif    // BTY_GAME_HERO_HPP_

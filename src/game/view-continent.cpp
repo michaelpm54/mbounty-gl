@@ -4,23 +4,25 @@
 
 #include <glm/trigonometric.hpp>
 
-#include "gfx/gfx.hpp"
 #include "assets.hpp"
-#include "gfx/texture.hpp"
-#include "shared-state.hpp"
 #include "bounty.hpp"
 #include "game/map.hpp"
+#include "gfx/gfx.hpp"
+#include "gfx/texture.hpp"
+#include "shared-state.hpp"
 
 ViewContinent::ViewContinent()
     : map_texture_({64, 64, GL_NONE, 1, 1, 64, 64})
 {
 }
 
-ViewContinent::~ViewContinent() {
+ViewContinent::~ViewContinent()
+{
     glDeleteTextures(1, &map_texture_.handle);
 }
 
-void ViewContinent::load(bty::Assets &assets, bty::BoxColor color) {
+void ViewContinent::load(bty::Assets &assets, bty::BoxColor color)
+{
     box_.create(6, 4, 20, 22, color, assets);
     continent_ = box_.add_line(5, 1, "");
     coordinates_ = box_.add_line(1, 20, "");
@@ -37,20 +39,22 @@ void ViewContinent::load(bty::Assets &assets, bty::BoxColor color) {
     map_.set_size(128, 128);
 }
 
-void ViewContinent::draw(bty::Gfx &gfx, glm::mat4 &camera) {
+void ViewContinent::draw(bty::Gfx &gfx, glm::mat4 &camera)
+{
     box_.draw(gfx, camera);
     gfx.draw_sprite(map_, camera);
 }
 
-void ViewContinent::view(int x, int y, int continent, const unsigned char * const map) {
+void ViewContinent::view(int x, int y, int continent, const unsigned char *const map)
+{
     x_ = x;
     y_ = y;
     dot_timer_ = 0;
 
     continent_->set_string(kContinents[continent]);
-    coordinates_->set_string(fmt::format("X={:>2} Position Y={:>2}", x, 63-y));
+    coordinates_->set_string(fmt::format("X={:>2} Position Y={:>2}", x, 63 - y));
 
-    std::vector<unsigned char> pixels(64*64*4);
+    std::vector<unsigned char> pixels(64 * 64 * 4);
     unsigned char *p = pixels.data();
 
     /* ARGB */
@@ -65,28 +69,28 @@ void ViewContinent::view(int x, int y, int continent, const unsigned char * cons
     for (int i = 0; i < 4096; i++) {
         int id = map[i];
         if (id == 0xFF) {
-            std::memcpy(p+i*4, &black, 4);
+            std::memcpy(p + i * 4, &black, 4);
         }
         else if (id <= Tile_GrassInFrontOfCastle) {
-            std::memcpy(p+i*4, &green, 4);
+            std::memcpy(p + i * 4, &green, 4);
         }
         else if (id >= Tile_WaterIRT && id <= Tile_Water) {
-            std::memcpy(p+i*4, &cyan, 4);
+            std::memcpy(p + i * 4, &cyan, 4);
         }
         else if (id >= Tile_TreeERB && id <= Tile_Tree) {
-            std::memcpy(p+i*4, &dark_green, 4);
+            std::memcpy(p + i * 4, &dark_green, 4);
         }
         else if (id >= Tile_SandELT && id <= Tile_Sand) {
-            std::memcpy(p+i*4, &yellow, 4);
+            std::memcpy(p + i * 4, &yellow, 4);
         }
         else if (id >= Tile_RockELT && id <= Tile_Rock) {
-            std::memcpy(p+i*4, &brown, 4);
+            std::memcpy(p + i * 4, &brown, 4);
         }
         else if (id >= Tile_CastleLT && id <= Tile_CastleRB) {
-            std::memcpy(p+i*4, &grey, 4);
+            std::memcpy(p + i * 4, &grey, 4);
         }
         else {
-            std::memcpy(p+i*4, &dark_green, 4);
+            std::memcpy(p + i * 4, &dark_green, 4);
         }
     }
 
@@ -94,30 +98,36 @@ void ViewContinent::view(int x, int y, int continent, const unsigned char * cons
 
     glTextureSubImage2D(
         map_texture_.handle,
-        0, 0, 0,
-        64, 64,
+        0,
+        0,
+        0,
+        64,
+        64,
         GL_BGRA,
         GL_UNSIGNED_INT_8_8_8_8_REV,
-        pixels.data()
-    );
+        pixels.data());
 }
 
-void ViewContinent::update(float dt) {
+void ViewContinent::update(float dt)
+{
     dot_timer_ += dt;
     dot_alpha_ = glm::abs(glm::cos(dot_timer_ * 4));
 
     uint32_t pixel = 0xFF000000 | (static_cast<uint32_t>(0xFF * dot_alpha_) << 16);
-    
+
     glTextureSubImage2D(
         map_texture_.handle,
-        0, x_, y_,
-        1, 1,
+        0,
+        x_,
+        y_,
+        1,
+        1,
         GL_BGRA,
         GL_UNSIGNED_INT_8_8_8_8_REV,
-        &pixel
-    );
+        &pixel);
 }
 
-void ViewContinent::set_color(bty::BoxColor color) {
+void ViewContinent::set_color(bty::BoxColor color)
+{
     box_.set_color(color);
 }

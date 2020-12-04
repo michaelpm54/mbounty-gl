@@ -3,12 +3,13 @@
 #include <spdlog/spdlog.h>
 
 #include "assets.hpp"
-#include "gfx/gfx.hpp"
-#include "gfx/font.hpp"
-#include "shared-state.hpp"
 #include "bounty.hpp"
+#include "gfx/font.hpp"
+#include "gfx/gfx.hpp"
+#include "shared-state.hpp"
 
-void Hud::load(bty::Assets &assets, SharedState &state) {
+void Hud::load(bty::Assets &assets, SharedState &state)
+{
     state_ = &state;
 
     blank_frame_ = assets.get_texture("frame/game-empty.png");
@@ -26,7 +27,7 @@ void Hud::load(bty::Assets &assets, SharedState &state) {
     days_.create(26, 1, "", *font_);
 
     contract_textures_.resize(18);
-    for (int i = 0, max = static_cast<int>(contract_textures_.size()-1); i < max; i++) {
+    for (int i = 0, max = static_cast<int>(contract_textures_.size() - 1); i < max; i++) {
         contract_textures_[i] = assets.get_texture(fmt::format("villains/{}.png", i), {4, 1});
     }
     contract_textures_.back() = assets.get_texture("villains/empty.png");
@@ -70,18 +71,19 @@ void Hud::load(bty::Assets &assets, SharedState &state) {
         gold_[i].set_position(264, 208 - i * 2);
     }
     for (int i = 0; i < 10; i++) {
-        gold_[10+i].set_texture(silver_tex);
-        gold_[10+i].set_position(280, 208 - i * 2);
+        gold_[10 + i].set_texture(silver_tex);
+        gold_[10 + i].set_position(280, 208 - i * 2);
     }
     for (int i = 0; i < 10; i++) {
-        gold_[20+i].set_texture(copper_tex);
-        gold_[20+i].set_position(296, 208 - i * 2);
+        gold_[20 + i].set_texture(copper_tex);
+        gold_[20 + i].set_position(296, 208 - i * 2);
     }
 
     update_state();
 }
 
-void Hud::draw(bty::Gfx &gfx, glm::mat4 &camera) {
+void Hud::draw(bty::Gfx &gfx, glm::mat4 &camera)
+{
     gfx.draw_sprite(frame_, camera);
     gfx.draw_rect(top_bar_, camera);
     gfx.draw_text(name_, camera);
@@ -100,14 +102,15 @@ void Hud::draw(bty::Gfx &gfx, glm::mat4 &camera) {
         gfx.draw_sprite(gold_[i], camera);
     }
     for (int i = 0; i < num_silver_coins_; i++) {
-        gfx.draw_sprite(gold_[10+i], camera);
+        gfx.draw_sprite(gold_[10 + i], camera);
     }
     for (int i = 0; i < num_copper_coins_; i++) {
-        gfx.draw_sprite(gold_[20+i], camera);
+        gfx.draw_sprite(gold_[20 + i], camera);
     }
 }
 
-void Hud::update_state() {
+void Hud::update_state()
+{
     contract_.set_texture(contract_textures_[state_->contract]);
     name_.set_string(kHeroNames[state_->hero_id][state_->hero_rank]);
     days_.set_string(fmt::format("Days Left:{}", state_->days));
@@ -130,29 +133,35 @@ void Hud::update_state() {
     num_copper_coins_ = num_copper > 10 ? 10 : num_copper;
 }
 
-void Hud::update(float dt) {
+void Hud::update(float dt)
+{
     contract_.animate(dt);
     siege_.animate(dt);
     magic_.animate(dt);
 }
 
-void Hud::set_title(const std::string &msg) {
+void Hud::set_title(const std::string &msg)
+{
     name_.set_string(msg);
     days_.set_string("");
 }
 
-bty::Sprite *Hud::get_contract() {
+bty::Sprite *Hud::get_contract()
+{
     return &contract_;
 }
 
-void Hud::set_blank_frame() {
+void Hud::set_blank_frame()
+{
     frame_.set_texture(blank_frame_);
 }
 
-void Hud::set_hud_frame() {
+void Hud::set_hud_frame()
+{
     frame_.set_texture(hud_frame_);
 }
 
-void Hud::set_color(bty::BoxColor color) {
+void Hud::set_color(bty::BoxColor color)
+{
     top_bar_.set_color(color);
 }
