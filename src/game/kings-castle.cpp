@@ -1,15 +1,17 @@
 #include "game/kings-castle.hpp"
 
-#include <GLFW/glfw3.h>
 #include <spdlog/spdlog.h>
 
 #include "assets.hpp"
+#include "game/hud.hpp"
 #include "gfx/gfx.hpp"
+#include "glfw.hpp"
 #include "shared-state.hpp"
 
-void KingsCastle::load(bty::Assets &assets, bty::BoxColor color, SharedState &state)
+void KingsCastle::load(bty::Assets &assets, bty::BoxColor color, SharedState &state, Hud &hud)
 {
     state_ = &state;
+    hud_ = &hud;
 
     dialog_.create(1, 18, 30, 9, color, assets);
     dialog_.add_line(1, 1, "Castle of King Maximus");
@@ -25,9 +27,9 @@ void KingsCastle::load(bty::Assets &assets, bty::BoxColor color, SharedState &st
 
     recruit_.add_line(17, 3, "You may get\nup to\n\nRecruit how\nmany?");
     recruit_.set_line_visible(3, false);
-    amount_ = recruit_.add_line(23, 4, "");
+    may_get_ = recruit_.add_line(23, 4, "");
     recruit_.set_line_visible(4, false);
-    to_buy_ = recruit_.add_line(25, 7, "");
+    how_many_ = recruit_.add_line(25, 7, "");
     recruit_.set_line_visible(5, false);
 
     unit_.set_position(56, 104);
@@ -67,7 +69,7 @@ void KingsCastle::view()
     decreasing_amt_ = false;
     current_amt_ = 0;
 
-    to_buy_->set_string("  0");
+    how_many_->set_string("  0");
 
     update_gold();
     unit_.set_texture(unit_textures_[rand() % 5]);
@@ -135,7 +137,7 @@ void KingsCastle::update(float dt)
         if (current_amt_ > max_amt_) {
             current_amt_ = max_amt_;
         }
-        to_buy_->set_string(fmt::format("{:>3}", current_amt_));
+        how_many_->set_string(fmt::format("{:>3}", current_amt_));
     }
 }
 
@@ -220,7 +222,7 @@ int KingsCastle::key(int key, int action)
                             add_amt_ = 0;
                             update_timer_ = 0;
                             show_recruit_amount_ = false;
-                            to_buy_->set_string("  0");
+                            how_many_->set_string("  0");
                             recruit_.set_line_visible(2, true);
                             recruit_.set_line_visible(3, false);
                             recruit_.set_line_visible(4, false);
@@ -254,20 +256,20 @@ void KingsCastle::set_color(bty::BoxColor color)
 
 void KingsCastle::recruit_opt()
 {
+    static constexpr int kKingsCastleUnits[5] = {
+        Militias,
+        Archers,
+        Pikemen,
+        Cavalries,
+        Knights,
+    };
+
     if (!show_recruit_amount_) {
         show_recruit_amount_ = true;
         recruit_.set_line_visible(2, false);
         recruit_.set_line_visible(3, true);
         recruit_.set_line_visible(4, true);
         recruit_.set_line_visible(5, true);
-
-        static constexpr int kKingsCastleUnits[5] = {
-            Militias,
-            Archers,
-            Pikemen,
-            Cavalries,
-            Knights,
-        };
 
         int id = kKingsCastleUnits[recruit_.get_selection()];
         int potential_amount = state_->leadership / kUnits[id].hp;
@@ -280,11 +282,54 @@ void KingsCastle::recruit_opt()
             }
         }
 
+        spdlog::debug("Existing amount: {}", existing_amount);
+
         max_amt_ = potential_amount - existing_amount;
+        max_amt_ = std::min(max_amt_, state_->gold / kUnits[id].recruit_cost);
 
-        amount_->set_string(fmt::format("{}.", max_amt_));
+        may_get_->set_string(fmt::format("{}.", max_amt_));
 
-        return;
+        if (kUnits[id].recruit_cost > state_->gold) {
+            hud_->set_title("    You do not have enough gold!");
+        }
+
+        current_amt_ = std::min(max_amt_, current_amt_);
+
+        how_many_->set_string(fmt::format("{:>3}", current_amt_));
+    }
+    else {
+        if (current_amt_ > 0) {
+            int id = kKingsCastleUnits[recruit_.get_selection()];
+
+            int cost = current_amt_ * kUnits[id].recruit_cost;
+            state_->gold -= cost;
+            hud_->update_state();
+            update_gold();
+            show_recruit_amount_ = false;
+            recruit_.set_line_visible(2, true);
+            recruit_.set_line_visible(3, false);
+            recruit_.set_line_visible(4, false);
+            recruit_.set_line_visible(5, false);
+
+            bool found = false;
+            for (int i = 0; i < 5; i++) {
+                if (state_->army[i] == id) {
+                    state_->army_counts[i] += current_amt_;
+                    found = true;
+                    break;
+                }
+            }
+
+            if (!found) {
+                for (int i = 0; i < 5; i++) {
+                    if (state_->army[i] == -1) {
+                        state_->army[i] = id;
+                        state_->army_counts[i] = current_amt_;
+                        break;
+                    }
+                }
+            }
+        }
     }
 }
 

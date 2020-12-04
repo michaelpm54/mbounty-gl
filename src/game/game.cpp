@@ -1,6 +1,5 @@
 #include "game/game.hpp"
 
-#include <GLFW/glfw3.h>
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
@@ -10,6 +9,7 @@
 
 #include "assets.hpp"
 #include "gfx/gfx.hpp"
+#include "glfw.hpp"
 #include "scene-switcher.hpp"
 #include "shared-state.hpp"
 
@@ -153,7 +153,7 @@ charts describing passage to)raw");
     sail_dialog_.add_line(3, 1, "Sail to which continent?");
 
     town_.load(assets, color, state);
-    kings_castle_.load(assets, color, state);
+    kings_castle_.load(assets, color, state, hud_);
 
     loaded_ = true;
     return success;

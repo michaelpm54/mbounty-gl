@@ -7,6 +7,7 @@
 
 struct SharedState;
 struct Tile;
+class Hud;
 
 namespace bty {
 class Gfx;
@@ -15,7 +16,7 @@ struct Texture;
 
 class KingsCastle {
 public:
-    void load(bty::Assets &assets, bty::BoxColor color, SharedState &state);
+    void load(bty::Assets &assets, bty::BoxColor color, SharedState &state, Hud &hud_);
     void draw(bty::Gfx &gfx, glm::mat4 &camera);
     void view();
     void update(float dt);
@@ -28,6 +29,7 @@ private:
     void main_opt();
 
 private:
+    Hud *hud_;
     SharedState *state_;
     bty::Sprite bg_;
     bty::Sprite unit_;
@@ -39,8 +41,8 @@ private:
     bool show_audience_ {false};
     bool show_recruit_amount_ {false};
 
-    bty::Text *amount_ {nullptr};
-    bty::Text *to_buy_ {nullptr};
+    bty::Text *may_get_ {nullptr};
+    bty::Text *how_many_ {nullptr};
 
     bool increasing_amt_ {false};
     bool decreasing_amt_ {false};
