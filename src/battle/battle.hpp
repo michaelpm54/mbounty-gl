@@ -16,6 +16,8 @@ class Gfx;
 class SceneSwitcher;
 }    // namespace bty
 
+struct Unit;
+
 class Battle : public bty::Scene {
 public:
     Battle(bty::SceneSwitcher &scene_switcher);
@@ -29,6 +31,13 @@ public:
     void confirm();
     void move_confirm();
     void move_cursor(int dir);
+    void status();
+    void status_move(const Unit &unit);
+    void next_unit();
+    void update_cursor();
+    void update_current();
+    void reset_moves();
+    void reset_waits();
 
 private:
     enum class BattleState {
@@ -43,12 +52,19 @@ private:
     bty::Sprite frame_;
     bty::Rect bar_;
     bty::Sprite cursor_;
+    bty::Sprite current_;
+    std::array<std::array<glm::ivec2, 6>, 2> positions_;
     std::array<std::array<bty::Text, 6>, 2> hp_;
     std::array<int, 2> army_sizes_;
     std::array<std::array<bty::Sprite, 6>, 2> sprites_;
     std::array<const bty::Texture *, 25> unit_textures_;
     int cx_ {0};
     int cy_ {0};
+    bty::Text status_;
+    std::array<std::array<int, 6>, 2> armies_;
+    glm::ivec2 active_ {0, 0};
+    std::array<std::array<int, 6>, 2> moves_left_;
+    std::array<std::array<int, 6>, 2> waits_used_;
 };
 
 #endif    // BTY_INTRO_BATTLE_HPP_

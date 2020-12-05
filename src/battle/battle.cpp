@@ -11,6 +11,14 @@
 #include "scene-switcher.hpp"
 #include "shared-state.hpp"
 
+enum StatusId {
+    ATTACK_MOVE,
+};
+
+static constexpr char *const kStatuses[] = {
+    "{} attack or move {}",
+};
+
 Battle::Battle(bty::SceneSwitcher &scene_switcher)
     : scene_switcher_(&scene_switcher)
 {
@@ -21,7 +29,7 @@ bool Battle::load(bty::Assets &assets)
     camera_ = glm::ortho(0.0f, 320.0f, 224.0f, 0.0f, -1.0f, 1.0f);
 
     auto &state = scene_switcher_->state();
-
+    auto &font = assets.get_font();
     auto color = bty::get_box_color(state.difficulty_level);
 
     bg_.set_texture(assets.get_texture("battle/encounter.png"));
@@ -31,12 +39,13 @@ bool Battle::load(bty::Assets &assets)
     bar_.set_size(304, 9);
     bar_.set_position(8, 7);
     cursor_.set_texture(assets.get_texture("battle/selection.png", {4, 1}));
+    current_.set_texture(assets.get_texture("battle/active-unit.png", {5, 2}));
+    status_.set_font(font);
+    status_.set_position(8, 8);
 
     for (int i = 0; i < UnitId::UnitCount; i++) {
         unit_textures_[i] = assets.get_texture(fmt::format("units/{}.png", i), {2, 2});
     }
-
-    auto &font = assets.get_font();
 
     for (int i = 0; i < 2; i++) {
         for (int j = 0; j < 6; j++) {
@@ -53,6 +62,9 @@ void Battle::draw(bty::Gfx &gfx)
     gfx.draw_sprite(bg_, camera_);
     gfx.draw_sprite(frame_, camera_);
     gfx.draw_rect(bar_, camera_);
+    gfx.draw_text(status_, camera_);
+
+    gfx.draw_sprite(current_, camera_);
 
     for (int i = 0; i < 2; i++) {
         for (int j = 0; j < army_sizes_[i]; j++) {
@@ -112,6 +124,7 @@ void Battle::update(float dt)
         }
     }
     cursor_.animate(dt);
+    current_.animate(dt);
 }
 
 void Battle::enter(bool reset)
@@ -141,9 +154,11 @@ void Battle::enter(bool reset)
     for (int i = 0; i < 6; i++) {
         if (i < 5 && state.army[i] != -1) {
             army_sizes_[0]++;
+            armies_[0][i] = state.army[i];
         }
         if (state.enemy_army[i] != -1) {
             army_sizes_[1]++;
+            armies_[1][i] = state.enemy_army[i];
         }
     }
 
@@ -244,12 +259,22 @@ void Battle::enter(bool reset)
         for (int j = 0; j < army_sizes_[i]; j++) {
             hp_[i][j].set_position(sprites_[i][j].get_position() + glm::vec2(24.0f, 26.0f));
             hp_[i][j].set_string(std::to_string(100));
+
+            const auto &unit = kUnits[armies_[i][j]];
+
+            moves_left_[i][j] = unit.initial_moves;
+            waits_used_[i][j] = 0;
         }
     }
 
+    reset_moves();
+    reset_waits();
+
     cx_ = kStartingPositionX[0][type][0];
     cy_ = kStartingPositionY[0][type][0];
-    cursor_.set_position(16.0f + cx_ * 48.0f, 24.0f + cy_ * 40.0f);
+    update_cursor();
+    update_current();
+    status();
 }
 
 void Battle::move_unit_to(int team, int unit, int x, int y)
@@ -271,6 +296,7 @@ void Battle::move_unit_to(int team, int unit, int x, int y)
     float y_ = 24.0f + y * 40.0f;
     sprites_[team][unit].set_position(x_, y_);
     hp_[team][unit].set_position(x_ + 24.0f, y_ + 26.0f);
+    positions_[team][unit] = {x, y};
 }
 
 void Battle::move_cursor(int dir)
@@ -315,9 +341,105 @@ void Battle::confirm()
         default:
             break;
     }
+    status();
 }
 
 void Battle::move_confirm()
 {
-    move_unit_to(0, 0, cx_, cy_);
+    move_unit_to(active_.x, active_.y, cx_, cy_);
+
+    moves_left_[active_.x][active_.y]--;
+    if (moves_left_[active_.x][active_.y] == 0) {
+        next_unit();
+    }
+
+    update_current();
+}
+
+void Battle::next_unit()
+{
+    if (active_.y == army_sizes_[active_.x] - 1) {
+        bool loop_back_for_waits {false};
+
+        for (int i = 0; i < army_sizes_[active_.x]; i++) {
+            int index = (i + 1 + active_.y) % army_sizes_[active_.x];
+            if (waits_used_[active_.x][index] < 2) {
+                loop_back_for_waits;
+                active_.y = index;
+                break;
+            }
+        }
+
+        if (!loop_back_for_waits) {
+            active_.x = (active_.x + 1) % 2;
+            for (int i = 0; i < army_sizes_[active_.x]; i++) {
+                if (armies_[active_.x][i] != -1) {
+                    active_.y = i;
+                    reset_moves();
+                    reset_waits();
+                    break;
+                }
+            }
+        }
+    }
+    else {
+        for (int i = 0; i < army_sizes_[active_.x]; i++) {
+            int index = (i + 1 + active_.y) % army_sizes_[active_.x];
+            if (waits_used_[active_.x][index] < 2) {
+                active_.y = index;
+                break;
+            }
+        }
+    }
+    cx_ = positions_[active_.x][active_.y].x;
+    cy_ = positions_[active_.x][active_.y].y;
+    update_cursor();
+    update_current();
+    status();
+}
+
+void Battle::status()
+{
+    const auto &unit = kUnits[armies_[active_.x][active_.y]];
+    switch (state_) {
+        case BattleState::Moving:
+            status_move(unit);
+            break;
+        default:
+            break;
+    }
+}
+
+void Battle::status_move(const Unit &unit)
+{
+    status_.set_string(fmt::format(kStatuses[ATTACK_MOVE], unit.name_plural, moves_left_[active_.x][active_.y]));
+}
+
+void Battle::update_cursor()
+{
+    cursor_.set_position(16.0f + cx_ * 48.0f, 24.0f + cy_ * 40.0f);
+}
+
+void Battle::update_current()
+{
+    current_.set_position(16.0f + positions_[active_.x][active_.y].x * 48.0f, 24.0f + positions_[active_.x][active_.y].y * 40.0f);
+}
+
+void Battle::reset_moves()
+{
+    for (int i = 0; i < 2; i++) {
+        for (int j = 0; j < army_sizes_[i]; j++) {
+            const auto &unit = kUnits[armies_[i][j]];
+            moves_left_[i][j] = unit.initial_moves;
+        }
+    }
+}
+
+void Battle::reset_waits()
+{
+    for (int i = 0; i < 2; i++) {
+        for (int j = 0; j < army_sizes_[i]; j++) {
+            waits_used_[i][j] = 0;
+        }
+    }
 }
