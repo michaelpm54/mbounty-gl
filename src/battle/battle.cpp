@@ -15,12 +15,14 @@ enum StatusId {
     ATTACK_MOVE,
     WAIT,
     FLY,
+    ERR_OCCUPIED,
 };
 
 static constexpr char *const kStatuses[] = {
     "{} attack or move {}",
     "{} wait",
     "{} fly",
+    " You can't land on an occupied area!",
 };
 
 Battle::Battle(bty::SceneSwitcher &scene_switcher)
@@ -421,7 +423,6 @@ void Battle::confirm()
         default:
             break;
     }
-    status();
 }
 
 void Battle::land()
@@ -440,11 +441,21 @@ void Battle::move_confirm()
         return;
     }
 
+    for (int i = 0; i < army_sizes_[active_.x]; i++) {
+        if (glm::ivec2 {cx_, cy_} == positions_[active_.x][i]) {
+            status_.set_string(kStatuses[ERR_OCCUPIED]);
+            return;
+        }
+    }
+
     move_unit_to(active_.x, active_.y, cx_, cy_);
 
     moves_left_[active_.x][active_.y]--;
     if (moves_left_[active_.x][active_.y] == 0) {
         next_unit();
+    }
+    else {
+        status();
     }
 }
 
