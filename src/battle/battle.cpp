@@ -601,7 +601,23 @@ void Battle::update_unit_info()
     cursor_distance_y_ = 0;
     const auto &unit = kUnits[armies_[active_.x][active_.y]];
     if ((unit.abilities & AbilityFly) && !flown_this_turn_[active_.x][active_.y]) {
-        set_state(BattleState::Flying);
+        int x = positions_[active_.x][active_.y].x;
+        int y = positions_[active_.x][active_.y].y;
+        bool any_enemy_around;
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                int unit = get_unit(x - 1 + i, y - 1 + j, any_enemy_around);
+                if (any_enemy_around) {
+                    break;
+                }
+            }
+            if (any_enemy_around) {
+                break;
+            }
+        }
+        if (!any_enemy_around) {
+            set_state(BattleState::Flying);
+        }
     }
     else {
         set_state(BattleState::Moving);
