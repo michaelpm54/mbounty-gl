@@ -35,6 +35,7 @@ struct SharedState {
     std::array<int, 6> enemy_counts;
     int enemy_index;
     int followers_killed {0};
+    bool disgrace {false};
 };
 
 #endif    // BTY_SHARED_STATE_HPP_

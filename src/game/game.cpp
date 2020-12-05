@@ -185,7 +185,12 @@ void Game::enter(bool reset)
     }
     else {
         auto &state = scene_switcher_->state();
-        mob_entities_[state.continent].erase(mob_entities_[state.continent].begin() + state.enemy_index);
+        if (state.disgrace) {
+            set_state(GameState::Disgrace);
+        }
+        else {
+            mob_entities_[state.continent].erase(mob_entities_[state.continent].begin() + state.enemy_index);
+        }
     }
 }
 
@@ -1934,6 +1939,9 @@ void Game::dismiss_slot(int slot)
 
 void Game::set_state(GameState state)
 {
+    last_state_ = state_;
+    state_ = state;
+
     switch (state) {
         case GameState::HudMessage:
             break;
@@ -1988,9 +1996,6 @@ void Game::set_state(GameState state)
         default:
             break;
     }
-
-    last_state_ = state_;
-    state_ = state;
 
     clear_movement();
 }

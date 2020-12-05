@@ -39,6 +39,7 @@ private:
         Menu,
         Shooting,
         Magic,
+        GiveUp,
     };
 
     struct UnitState {
@@ -74,6 +75,8 @@ private:
     void damage(int from_team, int from_unit, int to_team, int to_unit, bool is_ranged, bool is_external, int external_damage, bool retaliation);
     void clear_dead_units();
     void update_counts();
+    void menu_confirm();
+    void give_up_confirm();
 
 private:
     bool loaded_ {false};
@@ -118,6 +121,8 @@ private:
     std::array<std::array<UnitState, 6>, 2> unit_states_;
 
     bty::Dialog menu_;
+    bty::Dialog give_up_;
+    BattleState state_before_menu_ {BattleState::Moving};
 };
 
 #endif    // BTY_INTRO_BATTLE_HPP_

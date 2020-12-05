@@ -69,6 +69,14 @@ bool Battle::load(bty::Assets &assets)
     menu_.add_option(3, 7, "Game controls");
     menu_.add_option(3, 9, "Give up");
 
+    give_up_.create(9, 10, 22, 9, color, assets);
+    give_up_.add_line(1, 1, R"raw(   Giving up will
+ forfeit your armies
+and send you back to
+      the King.)raw");
+    give_up_.add_option(4, 6, "Continue battle");
+    give_up_.add_option(4, 7, "Give up");
+
     for (int i = 0; i < UnitId::UnitCount; i++) {
         unit_textures_[i] = assets.get_texture(fmt::format("units/{}.png", i), {2, 2});
     }
@@ -121,6 +129,9 @@ void Battle::draw(bty::Gfx &gfx)
     if (state_ == BattleState::Menu) {
         menu_.draw(gfx, camera_);
     }
+    else if (state_ == BattleState::GiveUp) {
+        give_up_.draw(gfx, camera_);
+    }
 }
 
 void Battle::key(int key, int scancode, int action, int mods)
@@ -140,9 +151,34 @@ void Battle::key(int key, int scancode, int action, int mods)
                             menu_.next();
                             break;
                         case GLFW_KEY_ENTER:
+                            menu_confirm();
                             break;
                         case GLFW_KEY_BACKSPACE:
                             set_state(last_state_);
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case BattleState::GiveUp:
+            switch (action) {
+                case GLFW_PRESS:
+                    switch (key) {
+                        case GLFW_KEY_UP:
+                            give_up_.prev();
+                            break;
+                        case GLFW_KEY_DOWN:
+                            give_up_.next();
+                            break;
+                        case GLFW_KEY_ENTER:
+                            give_up_confirm();
+                            break;
+                        case GLFW_KEY_BACKSPACE:
+                            set_state(state_before_menu_);
                             break;
                         default:
                             break;
@@ -244,6 +280,9 @@ void Battle::update(float dt)
         case BattleState::Menu:
             menu_.animate(dt);
             break;
+        case BattleState::GiveUp:
+            give_up_.animate(dt);
+            break;
         default:
             break;
     }
@@ -271,6 +310,7 @@ void Battle::enter(bool reset)
     auto color = bty::get_box_color(state.difficulty_level);
     bar_.set_color(color);
     menu_.set_color(color);
+    give_up_.set_color(color);
 
     wait_timer_ = 0;
     last_state_ = BattleState::Moving;
@@ -817,6 +857,10 @@ void Battle::set_state(BattleState state)
     bool enemy;
     int unit = get_unit(cx_, cy_, enemy);
 
+    if (state == BattleState::Menu) {
+        state_before_menu_ = state_;
+    }
+
     last_state_ = state_;
     state_ = state;
 
@@ -1046,5 +1090,31 @@ void Battle::update_counts()
 
             counts_[i][j].set_string(std::to_string(unit_states_[i][j].count));
         }
+    }
+}
+
+void Battle::menu_confirm()
+{
+    switch (menu_.get_selection()) {
+        case 6:
+            set_state(BattleState::GiveUp);
+            break;
+        default:
+            break;
+    }
+}
+
+void Battle::give_up_confirm()
+{
+    switch (give_up_.get_selection()) {
+        case 0:
+            set_state(state_before_menu_);
+            break;
+        case 1:
+            scene_switcher_->state().disgrace = true;
+            scene_switcher_->fade_to(SceneId::Game, false);
+            break;
+        default:
+            break;
     }
 }
