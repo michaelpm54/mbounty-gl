@@ -79,6 +79,10 @@ private:
     std::array<std::array<bool, 6>, 2> flown_this_turn_;
     int cursor_distance_x_ {0};
     int cursor_distance_y_ {0};
+    const bty::Texture *move_;
+    const bty::Texture *melee_;
+    const bty::Texture *shoot_;
+    const bty::Texture *magic_;
 };
 
 #endif    // BTY_INTRO_BATTLE_HPP_

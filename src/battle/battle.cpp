@@ -44,10 +44,15 @@ bool Battle::load(bty::Assets &assets)
     bar_.set_color(color);
     bar_.set_size(304, 9);
     bar_.set_position(8, 7);
-    cursor_.set_texture(assets.get_texture("battle/selection.png", {4, 1}));
     current_.set_texture(assets.get_texture("battle/active-unit.png", {5, 2}));
     status_.set_font(font);
     status_.set_position(8, 8);
+
+    move_ = assets.get_texture("battle/selection.png", {4, 1});
+    melee_ = assets.get_texture("battle/melee.png", {4, 1});
+    shoot_ = assets.get_texture("battle/shoot.png", {4, 1});
+    magic_ = shoot_;
+    cursor_.set_texture(move_);
 
     for (int i = 0; i < UnitId::UnitCount; i++) {
         unit_textures_[i] = assets.get_texture(fmt::format("units/{}.png", i), {2, 2});
