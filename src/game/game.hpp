@@ -100,6 +100,7 @@ private:
     void bridge(int direction);
     void bridge_fail();
     void hud_messages(const std::vector<std::string> &messages);
+    void draw_mobs(bty::Gfx &gfx);
 
 private:
     enum WeekPassedCard {

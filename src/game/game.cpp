@@ -215,16 +215,13 @@ void Game::draw(bty::Gfx &gfx)
     switch (state_) {
         case GameState::Unpaused:
             map_.draw(game_camera_, continent);
-            for (auto i = 0u; i < mob_entities_[continent].size(); i++) {
-                if (std::abs(hero_tile.tx - mob_x_[continent][i]) < 4 && std::abs(hero_tile.ty - mob_y_[continent][i]) < 4) {
-                    mob_entities_[continent][i].draw(gfx, game_camera_);
-                }
-            }
+            draw_mobs(gfx);
             hero_.draw(gfx, game_camera_);
             hud_.draw(gfx, camera_);
             break;
         case GameState::Paused:
             map_.draw(game_camera_, continent);
+            draw_mobs(gfx);
             hero_.draw(gfx, game_camera_);
             hud_.draw(gfx, camera_);
             pause_menu_.draw(gfx, camera_);
@@ -245,6 +242,7 @@ void Game::draw(bty::Gfx &gfx)
             break;
         case GameState::UseMagic:
             map_.draw(game_camera_, continent);
+            draw_mobs(gfx);
             hud_.draw(gfx, camera_);
             use_magic_.draw(gfx, camera_);
             break;
@@ -254,6 +252,7 @@ void Game::draw(bty::Gfx &gfx)
             break;
         case GameState::WeekPassed:
             map_.draw(game_camera_, continent);
+            draw_mobs(gfx);
             hero_.draw(gfx, game_camera_);
             hud_.draw(gfx, camera_);
             if (week_passed_card_ == WeekPassedCard::Astrology) {
@@ -274,12 +273,14 @@ void Game::draw(bty::Gfx &gfx)
             break;
         case GameState::Dismiss:
             map_.draw(game_camera_, continent);
+            draw_mobs(gfx);
             hero_.draw(gfx, game_camera_);
             hud_.draw(gfx, camera_);
             dismiss_.draw(gfx, camera_);
             break;
         case GameState::ChestMap:
             map_.draw(game_camera_, continent);
+            draw_mobs(gfx);
             hero_.draw(gfx, game_camera_);
             hud_.draw(gfx, camera_);
             found_map_.draw(gfx, camera_);
@@ -300,11 +301,13 @@ void Game::draw(bty::Gfx &gfx)
             break;
         case GameState::UntrainedInMagic:
             map_.draw(game_camera_, continent);
+            draw_mobs(gfx);
             hud_.draw(gfx, camera_);
             untrained_in_magic_.draw(gfx, camera_);
             break;
         case GameState::Bridge:
             map_.draw(game_camera_, continent);
+            draw_mobs(gfx);
             hero_.draw(gfx, game_camera_);
             hud_.draw(gfx, camera_);
             bridge_prompt_.draw(gfx, camera_);
@@ -2349,4 +2352,16 @@ void Game::hud_messages(const std::vector<std::string> &messages)
     hud_message_queue_.pop();
 
     set_state(GameState::HudMessage);
+}
+
+void Game::draw_mobs(bty::Gfx &gfx)
+{
+    const auto &hero_tile = hero_.get_tile();
+    int continent = scene_switcher_->state().continent;
+
+    for (auto i = 0u; i < mob_entities_[continent].size(); i++) {
+        if (std::abs(hero_tile.tx - mob_x_[continent][i]) < 4 && std::abs(hero_tile.ty - mob_y_[continent][i]) < 4) {
+            mob_entities_[continent][i].draw(gfx, game_camera_);
+        }
+    }
 }
