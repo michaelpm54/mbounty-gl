@@ -36,6 +36,9 @@ private:
         Attack,
         PauseToDisplayDamage,
         Retaliation,
+        Menu,
+        Shooting,
+        Magic,
     };
 
     struct UnitState {
@@ -113,6 +116,8 @@ private:
     int last_kills_ {0};
 
     std::array<std::array<UnitState, 6>, 2> unit_states_;
+
+    bty::Dialog menu_;
 };
 
 #endif    // BTY_INTRO_BATTLE_HPP_

@@ -60,6 +60,15 @@ bool Battle::load(bty::Assets &assets)
     magic_ = shoot_;
     cursor_.set_texture(move_);
 
+    menu_.create(8, 9, 24, 12, color, assets);
+    menu_.add_option(3, 2, "View your army");
+    menu_.add_option(3, 3, "View your character");
+    menu_.add_option(3, 4, "Use magic");
+    menu_.add_option(3, 5, "Pass");
+    menu_.add_option(3, 6, "Wait");
+    menu_.add_option(3, 7, "Game controls");
+    menu_.add_option(3, 9, "Give up");
+
     for (int i = 0; i < UnitId::UnitCount; i++) {
         unit_textures_[i] = assets.get_texture(fmt::format("units/{}.png", i), {2, 2});
     }
@@ -92,7 +101,7 @@ void Battle::draw(bty::Gfx &gfx)
         }
     }
 
-    if (state_ == BattleState::Moving || state_ == BattleState::Flying || state_ == BattleState::Waiting) {
+    if (state_ == BattleState::Moving || state_ == BattleState::Flying || state_ == BattleState::Waiting || state_ == BattleState::Menu || state_ == BattleState::Shooting || state_ == BattleState::Magic) {
         gfx.draw_sprite(cursor_, camera_);
     }
 
@@ -108,6 +117,10 @@ void Battle::draw(bty::Gfx &gfx)
     if (state_ == BattleState::Attack || state_ == BattleState::Retaliation) {
         gfx.draw_sprite(hit_marker_, camera_);
     }
+
+    if (state_ == BattleState::Menu) {
+        menu_.draw(gfx, camera_);
+    }
 }
 
 void Battle::key(int key, int scancode, int action, int mods)
@@ -115,38 +128,61 @@ void Battle::key(int key, int scancode, int action, int mods)
     (void)scancode;
     (void)mods;
 
-    switch (action) {
-        case GLFW_PRESS:
-            switch (state_) {
-                case BattleState::Waiting:
-                    return;
-                case BattleState::PauseToDisplayDamage:
-                    return;
-                case BattleState::Attack:
-                    return;
-                case BattleState::Retaliation:
-                    return;
+    switch (state_) {
+        case BattleState::Menu:
+            switch (action) {
+                case GLFW_PRESS:
+                    switch (key) {
+                        case GLFW_KEY_UP:
+                            menu_.prev();
+                            break;
+                        case GLFW_KEY_DOWN:
+                            menu_.next();
+                            break;
+                        case GLFW_KEY_ENTER:
+                            break;
+                        case GLFW_KEY_BACKSPACE:
+                            set_state(last_state_);
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
                 default:
                     break;
             }
-            switch (key) {
-                case GLFW_KEY_LEFT:
-                    move_cursor(0);
-                    break;
-                case GLFW_KEY_RIGHT:
-                    move_cursor(1);
-                    break;
-                case GLFW_KEY_UP:
-                    move_cursor(2);
-                    break;
-                case GLFW_KEY_DOWN:
-                    move_cursor(3);
-                    break;
-                case GLFW_KEY_ENTER:
-                    confirm();
-                    break;
-                case GLFW_KEY_BACKSPACE:
-                    scene_switcher_->fade_to(SceneId::Game, false);
+            break;
+        case BattleState::Shooting:
+            [[fallthrough]];
+        case BattleState::Flying:
+            [[fallthrough]];
+        case BattleState::Moving:
+            switch (action) {
+                case GLFW_PRESS:
+                    switch (key) {
+                        case GLFW_KEY_LEFT:
+                            move_cursor(0);
+                            break;
+                        case GLFW_KEY_RIGHT:
+                            move_cursor(1);
+                            break;
+                        case GLFW_KEY_UP:
+                            move_cursor(2);
+                            break;
+                        case GLFW_KEY_DOWN:
+                            move_cursor(3);
+                            break;
+                        case GLFW_KEY_ENTER:
+                            confirm();
+                            break;
+                        case GLFW_KEY_SPACE:
+                            [[fallthrough]];
+                        case GLFW_KEY_BACKSPACE:
+                            set_state(BattleState::Menu);
+                            break;
+                        default:
+                            break;
+                    }
                     break;
                 default:
                     break;
@@ -204,6 +240,9 @@ void Battle::update(float dt)
                     }
                 }
             }
+            break;
+        case BattleState::Menu:
+            menu_.animate(dt);
             break;
         default:
             break;
