@@ -33,6 +33,8 @@ private:
         Moving,
         Waiting,
         Flying,
+        Attack,
+        PauseToDisplayDamage,
     };
 
     void move_unit_to(int team, int unit, int x, int y);
@@ -50,6 +52,9 @@ private:
     void reset_waits();
     void set_state(BattleState state);
     void land();
+    void attack();
+    int get_unit(int x, int y, bool &enemy) const;
+    void update_unit_info();
 
 private:
     bool loaded_ {false};
@@ -83,6 +88,8 @@ private:
     const bty::Texture *melee_;
     const bty::Texture *shoot_;
     const bty::Texture *magic_;
+    bty::Sprite hit_marker_;
+    float damage_timer_ {0};
 };
 
 #endif    // BTY_INTRO_BATTLE_HPP_

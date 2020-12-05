@@ -46,13 +46,20 @@ void Sprite::load_animation()
 
 void Sprite::animate(float dt)
 {
-    if (!animation_.exists) {
+    if (!animation_.exists || !animation_.play) {
         return;
     }
 
     animation_.current_time += dt;
     if (animation_.current_time >= animation_.time_per_frame) {
-        animation_.current_frame = (animation_.current_frame + 1) % animation_.total_frames;
+        animation_.current_frame++;
+        if (!animation_.repeat && animation_.current_frame == animation_.total_frames) {
+            animation_.play = false;
+            animation_.done = true;
+            spdlog::debug("Animation done!");
+            return;
+        }
+        animation_.current_frame %= animation_.total_frames;
         animation_.current_time = animation_.current_time - animation_.time_per_frame;
     }
 }
@@ -83,6 +90,42 @@ void Sprite::set_repeat(bool val)
 bool Sprite::get_repeat() const
 {
     return repeat_;
+}
+
+void Sprite::reset_animation()
+{
+    if (!animation_.exists) {
+        return;
+    }
+
+    animation_.current_frame = 0;
+    animation_.current_time = 0;
+    animation_.play = true;
+    animation_.done = false;
+}
+
+void Sprite::set_animation_repeat(bool repeat)
+{
+    if (!animation_.exists) {
+        return;
+    }
+
+    animation_.repeat = repeat;
+}
+
+void Sprite::play_animation()
+{
+    animation_.play = true;
+}
+
+void Sprite::pause_animation()
+{
+    animation_.play = false;
+}
+
+bool Sprite::is_animation_done() const
+{
+    return animation_.done;
 }
 
 }    // namespace bty

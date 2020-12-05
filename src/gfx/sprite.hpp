@@ -16,6 +16,9 @@ struct Animation {
     int total_frames {0};
     float time_per_frame {0.0f};
     float current_time {0.0f};
+    bool repeat {true};
+    bool play {true};
+    bool done {false};
 };
 
 class Sprite : public Transformable {
@@ -31,6 +34,11 @@ public:
     bool get_flip() const;
     void set_repeat(bool val);
     bool get_repeat() const;
+    void reset_animation();
+    void set_animation_repeat(bool repeat);
+    bool is_animation_done() const;
+    void play_animation();
+    void pause_animation();
 
 private:
     void load_animation();

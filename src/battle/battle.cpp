@@ -47,6 +47,8 @@ bool Battle::load(bty::Assets &assets)
     current_.set_texture(assets.get_texture("battle/active-unit.png", {5, 2}));
     status_.set_font(font);
     status_.set_position(8, 8);
+    hit_marker_.set_texture(assets.get_texture("battle/damage-marker.png", {4, 1}));
+    hit_marker_.set_animation_repeat(false);
 
     move_ = assets.get_texture("battle/selection.png", {4, 1});
     melee_ = assets.get_texture("battle/melee.png", {4, 1});
@@ -83,12 +85,18 @@ void Battle::draw(bty::Gfx &gfx)
         }
     }
 
-    gfx.draw_sprite(cursor_, camera_);
+    if (state_ != BattleState::Attack && state_ != BattleState::PauseToDisplayDamage) {
+        gfx.draw_sprite(cursor_, camera_);
+    }
 
     for (int i = 0; i < 2; i++) {
         for (int j = 0; j < army_sizes_[i]; j++) {
             gfx.draw_text(counts_[i][j], camera_);
         }
+    }
+
+    if (state_ == BattleState::Attack) {
+        gfx.draw_sprite(hit_marker_, camera_);
     }
 }
 
@@ -145,6 +153,20 @@ void Battle::update(float dt)
                 next_unit();
             }
             break;
+        case BattleState::Attack:
+            if (hit_marker_.is_animation_done()) {
+                set_state(BattleState::PauseToDisplayDamage);
+            }
+            else {
+                hit_marker_.animate(dt);
+            }
+            break;
+        case BattleState::PauseToDisplayDamage:
+            damage_timer_ += dt;
+            if (damage_timer_ >= 0.6f) {
+                next_unit();
+            }
+            break;
         default:
             break;
     }
@@ -177,7 +199,7 @@ void Battle::enter(bool reset)
         }
     }
 
-    state.army[0] = Peasants;
+    state.army[0] = Demons;
     state.army[1] = Ghosts;
     state.army[2] = Nomads;
     state.army[3] = -1;
@@ -326,6 +348,8 @@ void Battle::enter(bool reset)
 
     reset_moves();
     reset_waits();
+    active_ = {-1, -1};
+    next_unit();
 
     cx_ = kStartingPositionX[0][type][0];
     cy_ = kStartingPositionY[0][type][0];
@@ -413,16 +437,12 @@ void Battle::move_cursor(int dir)
         default:
             break;
     }
+
     cursor_.set_position(16.0f + cx_ * 48.0f, 24.0f + cy_ * 40.0f);
 
     if (state_ == BattleState::Moving) {
-        int enemy_team = (active_.x + 1) % 2;
-        bool enemy = false;
-        for (int i = 0; i < army_sizes_[enemy_team]; i++) {
-            if (glm::ivec2 {cx_, cy_} == positions_[enemy_team][i]) {
-                enemy = true;
-            }
-        }
+        bool enemy;
+        (void)get_unit(cx_, cy_, enemy);
         if (enemy) {
             cursor_.set_texture(melee_);
         }
@@ -448,6 +468,13 @@ void Battle::confirm()
 
 void Battle::land()
 {
+    bool enemy;
+    int unit = get_unit(cx_, cy_, enemy);
+    if (unit != -1) {
+        status_.set_string(kStatuses[ERR_OCCUPIED]);
+        return;
+    }
+
     flown_this_turn_[active_.x][active_.y] = true;
     set_state(BattleState::Moving);
     move_unit_to(active_.x, active_.y, cx_, cy_);
@@ -462,8 +489,14 @@ void Battle::move_confirm()
         return;
     }
 
-    for (int i = 0; i < army_sizes_[active_.x]; i++) {
-        if (glm::ivec2 {cx_, cy_} == positions_[active_.x][i]) {
+    bool enemy;
+    int unit = get_unit(cx_, cy_, enemy);
+    if (enemy) {
+        set_state(BattleState::Attack);
+        return;
+    }
+    else {
+        if (unit != -1) {
             status_.set_string(kStatuses[ERR_OCCUPIED]);
             return;
         }
@@ -482,7 +515,13 @@ void Battle::move_confirm()
 
 void Battle::next_unit()
 {
-    const Unit *unit {nullptr};
+    damage_timer_ = 0;
+
+    if (active_ == glm::ivec2 {-1, -1}) {
+        active_ = {0, 0};
+        update_unit_info();
+        return;
+    }
 
     bool loop_back_for_waits {false};
     bool next_team {false};
@@ -526,24 +565,25 @@ void Battle::next_unit()
         }
     }
 
+    update_unit_info();
+}
+
+void Battle::update_unit_info()
+{
     cx_ = positions_[active_.x][active_.y].x;
     cy_ = positions_[active_.x][active_.y].y;
     update_cursor();
     update_current();
     cursor_distance_x_ = 0;
     cursor_distance_y_ = 0;
-
-    unit = &kUnits[armies_[active_.x][active_.y]];
-
-    if (unit->abilities & AbilityFly && !flown_this_turn_[active_.x][active_.y]) {
+    const auto &unit = kUnits[armies_[active_.x][active_.y]];
+    if ((unit.abilities & AbilityFly) && !flown_this_turn_[active_.x][active_.y]) {
         set_state(BattleState::Flying);
     }
     else {
         set_state(BattleState::Moving);
     }
-
     cursor_.set_texture(move_);
-
     status();
 }
 
@@ -617,10 +657,48 @@ void Battle::set_state(BattleState state)
             break;
         case BattleState::Moving:
             break;
+        case BattleState::Attack:
+            attack();
+            break;
         default:
             break;
     }
 
     last_state_ = state_;
     state_ = state;
+}
+
+void Battle::attack()
+{
+    hit_marker_.reset_animation();
+
+    bool enemy;
+    int from_team = active_.x;
+    int from_unit = active_.y;
+    int to_team = from_team == 1 ? 0 : 1;
+    int to_unit = get_unit(cx_, cy_, enemy);
+
+    hit_marker_.set_position(sprites_[to_team][to_unit].get_position());
+
+    moves_left_[from_team][from_unit] = 0;
+}
+
+int Battle::get_unit(int x, int y, bool &enemy) const
+{
+    const glm::ivec2 pos {x, y};
+
+    enemy = false;
+
+    for (int i = 0; i < 2; i++) {
+        for (int j = 0; j < army_sizes_[i]; j++) {
+            if (pos == positions_[i][j]) {
+                if (i != active_.x) {
+                    enemy = true;
+                }
+                return j;
+            }
+        }
+    }
+
+    return -1;
 }

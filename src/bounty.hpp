@@ -135,7 +135,7 @@ struct Unit {
     int recruit_cost;
     int weekly_cost;
     MoraleGroup morale_group;
-    uint8_t abilities;
+    uint16_t abilities;
 };
 
 extern const Unit kUnits[UnitId::UnitCount];

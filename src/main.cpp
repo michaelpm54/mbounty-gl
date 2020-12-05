@@ -30,6 +30,8 @@ int main(int argc, char *argv[])
 {
     srand(static_cast<unsigned int>(time(nullptr)));
 
+    spdlog::set_level(spdlog::level::debug);
+
     spdlog::info("Running from '{}'", std::filesystem::current_path().string());
 
     std::string base_path {""};
