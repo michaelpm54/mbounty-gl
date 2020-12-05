@@ -24,7 +24,6 @@
 #include "gfx/textbox.hpp"
 #include "scene.hpp"
 
-
 namespace bty {
 class Assets;
 class Gfx;
@@ -175,8 +174,8 @@ private:
 
     std::array<std::deque<int>, 4> mob_x_;
     std::array<std::deque<int>, 4> mob_y_;
-    std::array<std::deque<std::array<int, 5>>, 4> mob_armies_;
-    std::array<std::deque<std::array<int, 5>>, 4> mob_counts_;
+    std::array<std::deque<std::array<int, 6>>, 4> mob_armies_;
+    std::array<std::deque<std::array<int, 6>>, 4> mob_counts_;
     std::array<std::deque<Entity>, 4> mob_entities_;
 
     bty::TextBox untrained_in_magic_;

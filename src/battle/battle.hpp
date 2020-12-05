@@ -25,6 +25,10 @@ public:
     bool loaded() override;
     void update(float dt) override;
     void enter(bool reset) override;
+    void move_unit_to(int team, int unit, int x, int y);
+    void confirm();
+    void move_confirm();
+    void move_cursor(int dir);
 
 private:
     enum class BattleState {
@@ -38,9 +42,13 @@ private:
     bty::Sprite bg_;
     bty::Sprite frame_;
     bty::Rect bar_;
+    bty::Sprite cursor_;
+    std::array<std::array<bty::Text, 6>, 2> hp_;
     std::array<int, 2> army_sizes_;
-    std::array<std::array<bty::Sprite, 5>, 2> sprites_;
+    std::array<std::array<bty::Sprite, 6>, 2> sprites_;
     std::array<const bty::Texture *, 25> unit_textures_;
+    int cx_ {0};
+    int cy_ {0};
 };
 
 #endif    // BTY_INTRO_BATTLE_HPP_

@@ -1749,12 +1749,12 @@ void Game::gen_tiles()
                     mob_x_[continent].push_back(x);
                     mob_y_[continent].push_back(y);
 
-                    std::array<int, 5> mob_army;
-                    std::array<int, 5> mob_counts;
+                    std::array<int, 6> mob_army;
+                    std::array<int, 6> mob_counts;
 
-                    int army_size = std::max(rand() % 5, 2);
+                    int army_size = std::max(rand() % 6, 2);
 
-                    for (int i = 0; i < 5; i++) {
+                    for (int i = 0; i < 6; i++) {
                         mob_army[i] = -1;
                         mob_counts[i] = 0;
                     }
@@ -1849,7 +1849,7 @@ void Game::gen_tiles()
             occ.index = castle;
             occ.occupier = i + kVillainIndices[continent];
 
-            for (int j = 0; j < 5; j++) {
+            for (int j = 0; j < 6; j++) {
                 occ.army[j] = unit_gen(rng_);
                 occ.army_counts[j] = rand() % 100;
             }
