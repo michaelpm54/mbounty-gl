@@ -49,7 +49,7 @@ Window *window_init()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
 
-    window->handle = glfwCreateWindow(320 * 4, 224 * 4, "Bounty", nullptr, nullptr);
+    window->handle = glfwCreateWindow(320 * 3, 224 * 3, "Bounty", nullptr, nullptr);
     if (!window->handle) {
         glfwTerminate();
         return nullptr;

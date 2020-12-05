@@ -27,26 +27,32 @@ public:
     bool loaded() override;
     void update(float dt) override;
     void enter(bool reset) override;
+
+private:
+    enum class BattleState {
+        Moving,
+        Waiting,
+    };
+
     void move_unit_to(int team, int unit, int x, int y);
     void confirm();
     void move_confirm();
     void move_cursor(int dir);
     void status();
     void status_move(const Unit &unit);
+    void status_wait(const Unit &unit);
     void next_unit();
     void update_cursor();
     void update_current();
     void reset_moves();
     void reset_waits();
+    void set_state(BattleState state);
 
 private:
-    enum class BattleState {
-        Moving,
-    };
-
     bool loaded_ {false};
     bty::SceneSwitcher *scene_switcher_;
     BattleState state_ {BattleState::Moving};
+    BattleState last_state_ {BattleState::Moving};
     glm::mat4 camera_ {1.0f};
     bty::Sprite bg_;
     bty::Sprite frame_;
@@ -65,6 +71,7 @@ private:
     glm::ivec2 active_ {0, 0};
     std::array<std::array<int, 6>, 2> moves_left_;
     std::array<std::array<int, 6>, 2> waits_used_;
+    float wait_timer_ {0};
 };
 
 #endif    // BTY_INTRO_BATTLE_HPP_

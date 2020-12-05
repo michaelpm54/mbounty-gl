@@ -13,10 +13,12 @@
 
 enum StatusId {
     ATTACK_MOVE,
+    WAIT,
 };
 
 static constexpr char *const kStatuses[] = {
     "{} attack or move {}",
+    "{} wait",
 };
 
 Battle::Battle(bty::SceneSwitcher &scene_switcher)
@@ -83,6 +85,9 @@ void Battle::key(int key, int scancode, int action, int mods)
 
     switch (action) {
         case GLFW_PRESS:
+            if (state_ == BattleState::Waiting) {
+                break;
+            }
             switch (key) {
                 case GLFW_KEY_LEFT:
                     move_cursor(0);
@@ -118,11 +123,25 @@ bool Battle::loaded()
 
 void Battle::update(float dt)
 {
+    switch (state_) {
+        case BattleState::Waiting:
+            wait_timer_ += dt;
+            if (wait_timer_ >= 1.0f) {
+                wait_timer_ = 0;
+                set_state(BattleState::Moving);
+                next_unit();
+            }
+            break;
+        default:
+            break;
+    }
+
     for (int i = 0; i < 2; i++) {
         for (int j = 0; j < army_sizes_[i]; j++) {
             sprites_[i][j].animate(dt);
         }
     }
+
     cursor_.animate(dt);
     current_.animate(dt);
 }
@@ -132,6 +151,10 @@ void Battle::enter(bool reset)
     if (!reset) {
         return;
     }
+
+    wait_timer_ = 0;
+    last_state_ = BattleState::Moving;
+    state_ = BattleState::Moving;
 
     auto &state = scene_switcher_->state();
 
@@ -346,6 +369,12 @@ void Battle::confirm()
 
 void Battle::move_confirm()
 {
+    if (cx_ == positions_[active_.x][active_.y].x && cy_ == positions_[active_.x][active_.y].y) {
+        waits_used_[active_.x][active_.y]++;
+        set_state(BattleState::Waiting);
+        return;
+    }
+
     move_unit_to(active_.x, active_.y, cx_, cy_);
 
     moves_left_[active_.x][active_.y]--;
@@ -358,39 +387,48 @@ void Battle::move_confirm()
 
 void Battle::next_unit()
 {
-    if (active_.y == army_sizes_[active_.x] - 1) {
-        bool loop_back_for_waits {false};
+    bool loop_back_for_waits {false};
+    bool next_team {false};
 
-        for (int i = 0; i < army_sizes_[active_.x]; i++) {
-            int index = (i + 1 + active_.y) % army_sizes_[active_.x];
-            if (waits_used_[active_.x][index] < 2) {
-                loop_back_for_waits;
-                active_.y = index;
-                break;
-            }
+    /* There was a unit waiting */
+    for (int i = 0; i < army_sizes_[active_.x]; i++) {
+        int index = (i + 1 + active_.y) % army_sizes_[active_.x];
+        if (waits_used_[active_.x][index] < 2 && moves_left_[active_.x][index] > 0) {
+            loop_back_for_waits = true;
+            active_.y = index;
+            break;
         }
-
-        if (!loop_back_for_waits) {
-            active_.x = (active_.x + 1) % 2;
-            for (int i = 0; i < army_sizes_[active_.x]; i++) {
-                if (armies_[active_.x][i] != -1) {
-                    active_.y = i;
-                    reset_moves();
-                    reset_waits();
-                    break;
-                }
+        else {
+            if (waits_used_[active_.x][index] == 2 && moves_left_[active_.x][index] > 0) {
             }
         }
     }
-    else {
+
+    /* Nobody on this team has any moves or waits left */
+    if (!loop_back_for_waits) {
+        active_.x = (active_.x + 1) % 2;
         for (int i = 0; i < army_sizes_[active_.x]; i++) {
-            int index = (i + 1 + active_.y) % army_sizes_[active_.x];
-            if (waits_used_[active_.x][index] < 2) {
-                active_.y = index;
+            if (armies_[active_.x][i] != -1) {
+                active_.y = i;
+                reset_moves();
+                reset_waits();
+                next_team = true;
                 break;
             }
         }
     }
+
+    /* Next unit in team because somebody hasn't moved or waited yet */
+    if (!next_team && !loop_back_for_waits) {
+        for (int i = 0; i < army_sizes_[active_.x]; i++) {
+            int index = (i + 1 + active_.y) % army_sizes_[active_.x];
+            if (waits_used_[active_.x][index] < 2 && moves_left_[active_.x][index] > 0) {
+                active_.y = index;
+                break;
+            }
+        }
+    }
+
     cx_ = positions_[active_.x][active_.y].x;
     cy_ = positions_[active_.x][active_.y].y;
     update_cursor();
@@ -405,6 +443,9 @@ void Battle::status()
         case BattleState::Moving:
             status_move(unit);
             break;
+        case BattleState::Waiting:
+            status_wait(unit);
+            break;
         default:
             break;
     }
@@ -413,6 +454,11 @@ void Battle::status()
 void Battle::status_move(const Unit &unit)
 {
     status_.set_string(fmt::format(kStatuses[ATTACK_MOVE], unit.name_plural, moves_left_[active_.x][active_.y]));
+}
+
+void Battle::status_wait(const Unit &unit)
+{
+    status_.set_string(fmt::format(kStatuses[WAIT], unit.name_plural));
 }
 
 void Battle::update_cursor()
@@ -442,4 +488,19 @@ void Battle::reset_waits()
             waits_used_[i][j] = 0;
         }
     }
+}
+
+void Battle::set_state(BattleState state)
+{
+    switch (state) {
+        case BattleState::Waiting:
+            break;
+        case BattleState::Moving:
+            break;
+        default:
+            break;
+    }
+
+    last_state_ = state_;
+    state_ = state;
 }
