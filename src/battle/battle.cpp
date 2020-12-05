@@ -414,6 +414,22 @@ void Battle::move_cursor(int dir)
             break;
     }
     cursor_.set_position(16.0f + cx_ * 48.0f, 24.0f + cy_ * 40.0f);
+
+    if (state_ == BattleState::Moving) {
+        int enemy_team = (active_.x + 1) % 2;
+        bool enemy = false;
+        for (int i = 0; i < army_sizes_[enemy_team]; i++) {
+            if (glm::ivec2 {cx_, cy_} == positions_[enemy_team][i]) {
+                enemy = true;
+            }
+        }
+        if (enemy) {
+            cursor_.set_texture(melee_);
+        }
+        else {
+            cursor_.set_texture(move_);
+        }
+    }
 }
 
 void Battle::confirm()
@@ -525,6 +541,8 @@ void Battle::next_unit()
     else {
         set_state(BattleState::Moving);
     }
+
+    cursor_.set_texture(move_);
 
     status();
 }
