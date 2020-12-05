@@ -35,6 +35,7 @@ private:
         Flying,
         Attack,
         PauseToDisplayDamage,
+        Retaliation,
     };
 
     void move_unit_to(int team, int unit, int x, int y);
@@ -45,6 +46,8 @@ private:
     void status_move(const Unit &unit);
     void status_wait(const Unit &unit);
     void status_fly(const Unit &unit);
+    void status_attack(const Unit &unit);
+    void status_retaliation(const Unit &unit);
     void next_unit();
     void update_cursor();
     void update_current();
@@ -52,7 +55,7 @@ private:
     void reset_waits();
     void set_state(BattleState state);
     void land();
-    void attack();
+    void attack(int from_team, int from_unit, int to_team, int to_unit);
     int get_unit(int x, int y, bool &enemy) const;
     void update_unit_info();
 
@@ -82,6 +85,7 @@ private:
     std::array<std::array<int, 6>, 2> moves_left_;
     std::array<std::array<int, 6>, 2> waits_used_;
     std::array<std::array<bool, 6>, 2> flown_this_turn_;
+    std::array<std::array<bool, 6>, 2> retaliated_this_turn_;
     int cursor_distance_x_ {0};
     int cursor_distance_y_ {0};
     const bty::Texture *move_;
@@ -90,6 +94,11 @@ private:
     const bty::Texture *magic_;
     bty::Sprite hit_marker_;
     float damage_timer_ {0};
+
+    int last_attacking_team_ {-1};
+    int last_attacking_unit_ {-1};
+    int last_attacked_team_ {-1};
+    int last_attacked_unit_ {-1};
 };
 
 #endif    // BTY_INTRO_BATTLE_HPP_

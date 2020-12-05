@@ -16,6 +16,8 @@ enum StatusId {
     WAIT,
     FLY,
     ERR_OCCUPIED,
+    ATTACK,
+    RETALIATION,
 };
 
 static constexpr char *const kStatuses[] = {
@@ -23,6 +25,8 @@ static constexpr char *const kStatuses[] = {
     "{} wait",
     "{} fly",
     " You can't land on an occupied area!",
+    "{} attack {}, {} die",
+    "{} retaliate, killing {}",
 };
 
 Battle::Battle(bty::SceneSwitcher &scene_switcher)
@@ -85,7 +89,7 @@ void Battle::draw(bty::Gfx &gfx)
         }
     }
 
-    if (state_ != BattleState::Attack && state_ != BattleState::PauseToDisplayDamage) {
+    if (state_ == BattleState::Moving || state_ == BattleState::Flying || state_ == BattleState::Waiting) {
         gfx.draw_sprite(cursor_, camera_);
     }
 
@@ -95,7 +99,7 @@ void Battle::draw(bty::Gfx &gfx)
         }
     }
 
-    if (state_ == BattleState::Attack) {
+    if (state_ == BattleState::Attack || state_ == BattleState::Retaliation) {
         gfx.draw_sprite(hit_marker_, camera_);
     }
 }
@@ -107,8 +111,17 @@ void Battle::key(int key, int scancode, int action, int mods)
 
     switch (action) {
         case GLFW_PRESS:
-            if (state_ == BattleState::Waiting) {
-                break;
+            switch (state_) {
+                case BattleState::Waiting:
+                    return;
+                case BattleState::PauseToDisplayDamage:
+                    return;
+                case BattleState::Attack:
+                    return;
+                case BattleState::Retaliation:
+                    return;
+                default:
+                    break;
             }
             switch (key) {
                 case GLFW_KEY_LEFT:
@@ -148,11 +161,13 @@ void Battle::update(float dt)
     switch (state_) {
         case BattleState::Waiting:
             wait_timer_ += dt;
-            if (wait_timer_ >= 1.0f) {
+            if (wait_timer_ >= 1.2f) {
                 wait_timer_ = 0;
                 next_unit();
             }
             break;
+        case BattleState::Retaliation:
+            [[fallthrough]];
         case BattleState::Attack:
             if (hit_marker_.is_animation_done()) {
                 set_state(BattleState::PauseToDisplayDamage);
@@ -163,8 +178,13 @@ void Battle::update(float dt)
             break;
         case BattleState::PauseToDisplayDamage:
             damage_timer_ += dt;
-            if (damage_timer_ >= 0.6f) {
-                next_unit();
+            if (damage_timer_ >= 1.2f) {
+                if (last_state_ == BattleState::Retaliation) {
+                    next_unit();
+                }
+                else {
+                    set_state(BattleState::Retaliation);
+                }
             }
             break;
         default:
@@ -190,6 +210,10 @@ void Battle::enter(bool reset)
     wait_timer_ = 0;
     last_state_ = BattleState::Moving;
     state_ = BattleState::Moving;
+    last_attacking_team_ = -1;
+    last_attacking_unit_ = -1;
+    last_attacked_team_ = -1;
+    last_attacked_unit_ = -1;
 
     auto &state = scene_switcher_->state();
 
@@ -470,12 +494,15 @@ void Battle::land()
 {
     bool enemy;
     int unit = get_unit(cx_, cy_, enemy);
-    if (unit != -1) {
+    if (unit != -1 && unit != active_.y) {
         status_.set_string(kStatuses[ERR_OCCUPIED]);
         return;
     }
 
-    flown_this_turn_[active_.x][active_.y] = true;
+    /* Don't count landing in place as flying. */
+    if (unit != active_.y) {
+        flown_this_turn_[active_.x][active_.y] = true;
+    }
     set_state(BattleState::Moving);
     move_unit_to(active_.x, active_.y, cx_, cy_);
     status();
@@ -533,10 +560,6 @@ void Battle::next_unit()
             loop_back_for_waits = true;
             active_.y = index;
             break;
-        }
-        else {
-            if (waits_used_[active_.x][index] == 2 && moves_left_[active_.x][index] > 0) {
-            }
         }
     }
 
@@ -600,6 +623,12 @@ void Battle::status()
         case BattleState::Flying:
             status_fly(unit);
             break;
+        case BattleState::Attack:
+            status_attack(unit);
+            break;
+        case BattleState::Retaliation:
+            status_retaliation(unit);
+            break;
         default:
             break;
     }
@@ -620,6 +649,18 @@ void Battle::status_fly(const Unit &unit)
     status_.set_string(fmt::format(kStatuses[FLY], unit.name_plural));
 }
 
+void Battle::status_attack(const Unit &unit)
+{
+    const Unit &target = kUnits[armies_[last_attacked_team_][last_attacked_unit_]];
+    status_.set_string(fmt::format(kStatuses[ATTACK], unit.name_plural, target.name_plural, 4));
+}
+
+void Battle::status_retaliation(const Unit &unit)
+{
+    const Unit &target = kUnits[armies_[last_attacking_team_][last_attacking_unit_]];
+    status_.set_string(fmt::format(kStatuses[RETALIATION], target.name_plural, 7));
+}
+
 void Battle::update_cursor()
 {
     cursor_.set_position(16.0f + cx_ * 48.0f, 24.0f + cy_ * 40.0f);
@@ -637,6 +678,7 @@ void Battle::reset_moves()
             const auto &unit = kUnits[armies_[i][j]];
             moves_left_[i][j] = unit.initial_moves;
             flown_this_turn_[i][j] = false;
+            retaliated_this_turn_[i][j] = false;
         }
     }
 }
@@ -652,33 +694,48 @@ void Battle::reset_waits()
 
 void Battle::set_state(BattleState state)
 {
+    bool enemy;
+    int unit = get_unit(cx_, cy_, enemy);
+
+    last_state_ = state_;
+    state_ = state;
+
     switch (state) {
         case BattleState::Waiting:
+            status();
             break;
         case BattleState::Moving:
             break;
         case BattleState::Attack:
-            attack();
+            attack(active_.x, active_.y, active_.x == 1 ? 0 : 1, unit);
+            status();
+            break;
+        case BattleState::Retaliation:
+            if (!retaliated_this_turn_[last_attacked_team_][last_attacked_unit_]) {
+                attack(last_attacked_team_, last_attacked_unit_, last_attacking_team_, last_attacking_unit_);
+                retaliated_this_turn_[last_attacked_team_][last_attacked_unit_] = true;
+                status();
+            }
+            else {
+                next_unit();
+            }
             break;
         default:
             break;
     }
-
-    last_state_ = state_;
-    state_ = state;
 }
 
-void Battle::attack()
+void Battle::attack(int from_team, int from_unit, int to_team, int to_unit)
 {
+    damage_timer_ = 0;
+
     hit_marker_.reset_animation();
-
-    bool enemy;
-    int from_team = active_.x;
-    int from_unit = active_.y;
-    int to_team = from_team == 1 ? 0 : 1;
-    int to_unit = get_unit(cx_, cy_, enemy);
-
     hit_marker_.set_position(sprites_[to_team][to_unit].get_position());
+
+    last_attacking_team_ = from_team;
+    last_attacking_unit_ = from_unit;
+    last_attacked_team_ = to_team;
+    last_attacked_unit_ = to_unit;
 
     moves_left_[from_team][from_unit] = 0;
 }

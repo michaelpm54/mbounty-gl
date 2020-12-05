@@ -56,7 +56,6 @@ void Sprite::animate(float dt)
         if (!animation_.repeat && animation_.current_frame == animation_.total_frames) {
             animation_.play = false;
             animation_.done = true;
-            spdlog::debug("Animation done!");
             return;
         }
         animation_.current_frame %= animation_.total_frames;
