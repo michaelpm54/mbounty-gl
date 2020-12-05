@@ -755,7 +755,7 @@ const Unit kUnits[UnitId::UnitCount] =
             15,
             1,
             kMoraleGroupC,
-            {"Fly"},
+            AbilityFly,
         },
         {
             "Militia",
@@ -803,7 +803,7 @@ const Unit kUnits[UnitId::UnitCount] =
             50,
             4,
             kMoraleGroupE,
-            {"Undead"},
+            AbilityUndead,
         },
         {
             "Zombie",
@@ -819,7 +819,7 @@ const Unit kUnits[UnitId::UnitCount] =
             50,
             5,
             kMoraleGroupE,
-            {"Undead"},
+            AbilityUndead,
         },
         {
             "Gnome",
@@ -947,7 +947,7 @@ const Unit kUnits[UnitId::UnitCount] =
             400,
             40,
             kMoraleGroupE,
-            {"Absorb", "Undead"},
+            AbilityAbsorb | AbilityUndead,
         },
         {
             "Knight",
@@ -1011,7 +1011,7 @@ const Unit kUnits[UnitId::UnitCount] =
             1000,
             100,
             kMoraleGroupD,
-            {"Regen"},
+            AbilityRegen,
         },
         {
             "Cavalry",
@@ -1043,7 +1043,7 @@ const Unit kUnits[UnitId::UnitCount] =
             700,
             70,
             kMoraleGroupC,
-            {"Magic"},
+            AbilityMagic,
         },
         {
             "Archmage",
@@ -1059,7 +1059,7 @@ const Unit kUnits[UnitId::UnitCount] =
             1200,
             120,
             kMoraleGroupC,
-            {"Fly", "Magic"},
+            AbilityFly | AbilityMagic,
         },
         {
             "Vampire",
@@ -1075,7 +1075,7 @@ const Unit kUnits[UnitId::UnitCount] =
             1500,
             150,
             kMoraleGroupE,
-            {"Leech", "Fly", "Undead"},
+            AbilityLeech | AbilityFly | AbilityUndead,
         },
         {
             "Giant",
@@ -1107,7 +1107,7 @@ const Unit kUnits[UnitId::UnitCount] =
             3000,
             300,
             kMoraleGroupE,
-            {"Fly", "Scythe"},
+            AbilityFly | AbilityScythe,
         },
         {
             "Dragon",
@@ -1123,6 +1123,6 @@ const Unit kUnits[UnitId::UnitCount] =
             5000,
             500,
             kMoraleGroupD,
-            {"Fly", "Immune"},
+            AbilityFly | AbilityImmune,
         },
 };

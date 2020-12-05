@@ -32,6 +32,7 @@ private:
     enum class BattleState {
         Moving,
         Waiting,
+        Flying,
     };
 
     void move_unit_to(int team, int unit, int x, int y);
@@ -41,12 +42,14 @@ private:
     void status();
     void status_move(const Unit &unit);
     void status_wait(const Unit &unit);
+    void status_fly(const Unit &unit);
     void next_unit();
     void update_cursor();
     void update_current();
     void reset_moves();
     void reset_waits();
     void set_state(BattleState state);
+    void land();
 
 private:
     bool loaded_ {false};
@@ -73,6 +76,9 @@ private:
     std::array<std::array<int, 6>, 2> army_counts_;
     std::array<std::array<int, 6>, 2> moves_left_;
     std::array<std::array<int, 6>, 2> waits_used_;
+    std::array<std::array<bool, 6>, 2> flown_this_turn_;
+    int cursor_distance_x_ {0};
+    int cursor_distance_y_ {0};
 };
 
 #endif    // BTY_INTRO_BATTLE_HPP_

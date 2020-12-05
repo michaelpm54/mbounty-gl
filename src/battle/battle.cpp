@@ -14,11 +14,13 @@
 enum StatusId {
     ATTACK_MOVE,
     WAIT,
+    FLY,
 };
 
 static constexpr char *const kStatuses[] = {
     "{} attack or move {}",
     "{} wait",
+    "{} fly",
 };
 
 Battle::Battle(bty::SceneSwitcher &scene_switcher)
@@ -133,7 +135,6 @@ void Battle::update(float dt)
             wait_timer_ += dt;
             if (wait_timer_ >= 1.0f) {
                 wait_timer_ = 0;
-                set_state(BattleState::Moving);
                 next_unit();
             }
             break;
@@ -346,6 +347,9 @@ void Battle::move_unit_to(int team, int unit, int x, int y)
     sprites_[team][unit].set_position(x_, y_);
     counts_[team][unit].set_position(x_ + 24.0f, y_ + 26.0f);
     positions_[team][unit] = {x, y};
+    cursor_distance_x_ = 0;
+    cursor_distance_y_ = 0;
+    update_current();
 }
 
 void Battle::move_cursor(int dir)
@@ -355,25 +359,49 @@ void Battle::move_cursor(int dir)
             if (cx_ == 0) {
                 return;
             }
-            cx_--;
+            if (state_ == BattleState::Flying) {
+                cx_--;
+            }
+            else if (state_ == BattleState::Moving && cursor_distance_x_ > -1) {
+                cx_--;
+                cursor_distance_x_--;
+            }
             break;
         case 1:    // right
             if (cx_ == 5) {
                 return;
             }
-            cx_++;
+            if (state_ == BattleState::Flying) {
+                cx_++;
+            }
+            else if (state_ == BattleState::Moving && cursor_distance_x_ < 1) {
+                cx_++;
+                cursor_distance_x_++;
+            }
             break;
         case 2:    // up
             if (cy_ == 0) {
                 return;
             }
-            cy_--;
+            if (state_ == BattleState::Flying) {
+                cy_--;
+            }
+            else if (state_ == BattleState::Moving && cursor_distance_y_ > -1) {
+                cy_--;
+                cursor_distance_y_--;
+            }
             break;
         case 3:    // down
             if (cy_ == 4) {
                 return;
             }
-            cy_++;
+            if (state_ == BattleState::Flying) {
+                cy_++;
+            }
+            else if (state_ == BattleState::Moving && cursor_distance_y_ < 1) {
+                cy_++;
+                cursor_distance_y_++;
+            }
             break;
         default:
             break;
@@ -384,12 +412,23 @@ void Battle::move_cursor(int dir)
 void Battle::confirm()
 {
     switch (state_) {
+        case BattleState::Flying:
+            land();
+            break;
         case BattleState::Moving:
             move_confirm();
             break;
         default:
             break;
     }
+    status();
+}
+
+void Battle::land()
+{
+    flown_this_turn_[active_.x][active_.y] = true;
+    set_state(BattleState::Moving);
+    move_unit_to(active_.x, active_.y, cx_, cy_);
     status();
 }
 
@@ -407,12 +446,12 @@ void Battle::move_confirm()
     if (moves_left_[active_.x][active_.y] == 0) {
         next_unit();
     }
-
-    update_current();
 }
 
 void Battle::next_unit()
 {
+    const Unit *unit {nullptr};
+
     bool loop_back_for_waits {false};
     bool next_team {false};
 
@@ -459,6 +498,18 @@ void Battle::next_unit()
     cy_ = positions_[active_.x][active_.y].y;
     update_cursor();
     update_current();
+    cursor_distance_x_ = 0;
+    cursor_distance_y_ = 0;
+
+    unit = &kUnits[armies_[active_.x][active_.y]];
+
+    if (unit->abilities & AbilityFly && !flown_this_turn_[active_.x][active_.y]) {
+        set_state(BattleState::Flying);
+    }
+    else {
+        set_state(BattleState::Moving);
+    }
+
     status();
 }
 
@@ -471,6 +522,9 @@ void Battle::status()
             break;
         case BattleState::Waiting:
             status_wait(unit);
+            break;
+        case BattleState::Flying:
+            status_fly(unit);
             break;
         default:
             break;
@@ -485,6 +539,11 @@ void Battle::status_move(const Unit &unit)
 void Battle::status_wait(const Unit &unit)
 {
     status_.set_string(fmt::format(kStatuses[WAIT], unit.name_plural));
+}
+
+void Battle::status_fly(const Unit &unit)
+{
+    status_.set_string(fmt::format(kStatuses[FLY], unit.name_plural));
 }
 
 void Battle::update_cursor()
@@ -503,6 +562,7 @@ void Battle::reset_moves()
         for (int j = 0; j < army_sizes_[i]; j++) {
             const auto &unit = kUnits[armies_[i][j]];
             moves_left_[i][j] = unit.initial_moves;
+            flown_this_turn_[i][j] = false;
         }
     }
 }

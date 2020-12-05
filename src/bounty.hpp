@@ -3,7 +3,6 @@
 
 #include <glm/vec4.hpp>
 #include <string>
-#include <vector>
 
 struct TownInfo {
     std::string name;
@@ -111,6 +110,17 @@ int constexpr kMoraleGroupE = 4;
 
 using MoraleGroup = int;
 
+enum Ability {
+    AbilityFly = 1 << 0,
+    AbilityScythe = 1 << 1,
+    AbilityLeech = 1 << 2,
+    AbilityUndead = 1 << 3,
+    AbilityAbsorb = 1 << 4,
+    AbilityImmune = 1 << 5,
+    AbilityRegen = 1 << 6,
+    AbilityMagic = 1 << 7,
+};
+
 struct Unit {
     std::string name_singular;
     std::string name_plural;
@@ -125,7 +135,7 @@ struct Unit {
     int recruit_cost;
     int weekly_cost;
     MoraleGroup morale_group;
-    std::vector<std::string> abilities;
+    uint8_t abilities;
 };
 
 extern const Unit kUnits[UnitId::UnitCount];
