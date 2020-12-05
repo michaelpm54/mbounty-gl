@@ -4,6 +4,7 @@
 #include <array>
 
 #include "game/view-army.hpp"
+#include "game/view-character.hpp"
 #include "gfx/dialog.hpp"
 #include "gfx/font.hpp"
 #include "gfx/sprite.hpp"
@@ -42,6 +43,7 @@ private:
         Magic,
         GiveUp,
         ViewArmy,
+        ViewCharacter,
     };
 
     struct UnitState {
@@ -128,6 +130,7 @@ private:
     BattleState state_before_menu_ {BattleState::Moving};
 
     ViewArmy view_army_;
+    ViewCharacter view_character_;
 };
 
 #endif    // BTY_INTRO_BATTLE_HPP_

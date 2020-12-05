@@ -75,7 +75,7 @@ void ViewCharacter::view(const SharedState &state)
     info_[6].set_string(fmt::format("Villains caught {:>8}", 0));
     info_[7].set_string(fmt::format("Artifacts found {:>8}", 0));
     info_[8].set_string(fmt::format("Castles garrisoned {:>5}", 0));
-    info_[9].set_string(fmt::format("Followers killed {:>7}", 0));
+    info_[9].set_string(fmt::format("Followers killed {:>7}", state.followers_killed));
     info_[10].set_string(fmt::format("Current score {:>10}", 0));
     portrait_.set_texture(portraits_[state.hero_id]);
 

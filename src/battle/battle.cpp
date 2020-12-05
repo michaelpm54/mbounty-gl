@@ -78,6 +78,7 @@ and send you back to
     give_up_.add_option(4, 7, "Give up");
 
     view_army_.load(assets, color);
+    view_character_.load(assets, color, state.hero_id);
 
     for (int i = 0; i < UnitId::UnitCount; i++) {
         unit_textures_[i] = assets.get_texture(fmt::format("units/{}.png", i), {2, 2});
@@ -100,6 +101,13 @@ void Battle::draw(bty::Gfx &gfx)
         gfx.draw_rect(bar_, camera_);
         gfx.draw_text(status_, camera_);
         view_army_.draw(gfx, camera_);
+        return;
+    }
+    else if (state_ == BattleState::ViewCharacter) {
+        gfx.draw_sprite(frame_, camera_);
+        gfx.draw_rect(bar_, camera_);
+        gfx.draw_text(status_, camera_);
+        view_character_.draw(gfx, camera_);
         return;
     }
 
@@ -198,6 +206,8 @@ void Battle::key(int key, int scancode, int action, int mods)
                     break;
             }
             break;
+        case BattleState::ViewCharacter:
+            [[fallthrough]];
         case BattleState::ViewArmy:
             switch (action) {
                 case GLFW_PRESS:
@@ -910,6 +920,9 @@ void Battle::set_state(BattleState state)
         case BattleState::ViewArmy:
             view_army();
             break;
+        case BattleState::ViewCharacter:
+            view_character_.view(scene_switcher_->state());
+            break;
         default:
             break;
     }
@@ -1075,10 +1088,6 @@ void Battle::damage(int from_team, int from_unit, int to_team, int to_unit, bool
         final_damage = unit_state_b.turn_count * unit_state_b.hp;
     }
 
-    if (from_team == 0) {
-        scene_switcher_->state().followers_killed += kills;
-    }
-
     if (!is_external) {
         /* Difference between leech and absorb is, leech can only get back to the original
 			count. Absorb has no limit. */
@@ -1095,6 +1104,10 @@ void Battle::damage(int from_team, int from_unit, int to_team, int to_unit, bool
     }
 
     last_kills_ = std::min(kills, unit_state_b.turn_count);
+
+    if (from_team == 0) {
+        scene_switcher_->state().followers_killed += last_kills_;
+    }
 }
 
 /* It's convenient to do this after any status messages are
@@ -1132,6 +1145,9 @@ void Battle::menu_confirm()
     switch (menu_.get_selection()) {
         case 0:
             set_state(BattleState::ViewArmy);
+            break;
+        case 1:
+            set_state(BattleState::ViewCharacter);
             break;
         case 6:
             set_state(BattleState::GiveUp);
