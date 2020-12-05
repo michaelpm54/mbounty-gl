@@ -1367,6 +1367,7 @@ void Game::setup_game()
     }
 
     /* Set starting stats */
+    state.contract = 17;
     state.gold = kStartingGold[state.hero_id];
     state.commission = kRankCommission[state.hero_id][0];
     state.leadership = kRankLeadership[state.hero_id][0];
