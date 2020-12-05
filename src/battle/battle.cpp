@@ -84,7 +84,10 @@ void Battle::draw(bty::Gfx &gfx)
     gfx.draw_sprite(current_, camera_);
 
     for (int i = 0; i < 2; i++) {
-        for (int j = 0; j < army_sizes_[i]; j++) {
+        for (int j = 0; j < 6; j++) {
+            if (armies_[i][j] == -1) {
+                continue;
+            }
             gfx.draw_sprite(sprites_[i][j], camera_);
         }
     }
@@ -94,7 +97,10 @@ void Battle::draw(bty::Gfx &gfx)
     }
 
     for (int i = 0; i < 2; i++) {
-        for (int j = 0; j < army_sizes_[i]; j++) {
+        for (int j = 0; j < 6; j++) {
+            if (armies_[i][j] == -1) {
+                continue;
+            }
             gfx.draw_text(counts_[i][j], camera_);
         }
     }
@@ -180,10 +186,22 @@ void Battle::update(float dt)
             damage_timer_ += dt;
             if (damage_timer_ >= 1.2f) {
                 if (last_state_ == BattleState::Retaliation) {
+                    clear_dead_units();
+                    update_counts();
                     next_unit();
                 }
                 else {
-                    set_state(BattleState::Retaliation);
+                    if (!retaliated_this_turn_[last_attacked_team_][last_attacked_unit_]) {
+                        retaliated_this_turn_[last_attacked_team_][last_attacked_unit_] = true;
+                        attack(last_attacked_team_, last_attacked_unit_, last_attacking_team_, last_attacking_unit_);
+                        set_state(BattleState::Retaliation);
+                        status();
+                    }
+                    else {
+                        clear_dead_units();
+                        update_counts();
+                        next_unit();
+                    }
                 }
             }
             break;
@@ -192,7 +210,10 @@ void Battle::update(float dt)
     }
 
     for (int i = 0; i < 2; i++) {
-        for (int j = 0; j < army_sizes_[i]; j++) {
+        for (int j = 0; j < 6; j++) {
+            if (armies_[i][j] == -1) {
+                continue;
+            }
             sprites_[i][j].animate(dt);
         }
     }
@@ -217,9 +238,19 @@ void Battle::enter(bool reset)
 
     auto &state = scene_switcher_->state();
 
+    /* Initialise states */
     for (int i = 0; i < 2; i++) {
         for (int j = 0; j < 6; j++) {
-            army_counts_[i][j] = 0;
+            armies_[i][j] = -1;
+
+            auto &us = unit_states_[i][j];
+            us.start_count = 0;
+            us.turn_count = 0;
+            us.count = 0;
+            us.ammo = 0;
+            us.hp = 0;
+            us.injury = 0;
+            us.out_of_control = false;
         }
     }
 
@@ -249,19 +280,26 @@ void Battle::enter(bool reset)
     state.enemy_counts[4] = 50;
     state.enemy_counts[5] = 60;
 
-    army_sizes_[0] = 0;
-    army_sizes_[1] = 0;
+    int *armies[] = {state.army, state.enemy_army.data()};
+    int *counts[] = {state.army_counts, state.enemy_counts.data()};
 
-    for (int i = 0; i < 6; i++) {
-        if (i < 5 && state.army[i] != -1) {
-            army_sizes_[0]++;
-            armies_[0][i] = state.army[i];
-            army_counts_[0][i] = state.army_counts[i];
-        }
-        if (state.enemy_army[i] != -1) {
-            army_sizes_[1]++;
-            armies_[1][i] = state.enemy_army[i];
-            army_counts_[1][i] = state.enemy_counts[i];
+    /* Set armies from shared state. */
+    for (int i = 0; i < 2; i++) {
+        for (int j = 0; j < 6; j++) {
+            /* Hero has no 6th unit. */
+            if (i == 0 && j == 5) {
+                continue;
+            }
+            armies_[i][j] = armies[i][j];
+            const auto &unit = kUnits[armies[i][j]];
+            auto &us = unit_states_[i][j];
+            us.start_count = counts[i][j];
+            us.turn_count = counts[i][j];
+            us.count = counts[i][j];
+            us.hp = unit.hp;
+            us.injury = 0;
+            us.ammo = unit.initial_ammo;
+            us.out_of_control = (us.hp * us.count) > state.leadership;
         }
     }
 
@@ -347,24 +385,25 @@ void Battle::enter(bool reset)
 
     int type = 0;    // encounter
 
-    for (int i = 0; i < army_sizes_[0]; i++) {
-        move_unit_to(0, i, kStartingPositionX[0][type][i], kStartingPositionY[0][type][i]);
-        sprites_[0][i].set_texture(unit_textures_[state.army[i]]);
-    }
-
-    for (int i = 0; i < army_sizes_[1]; i++) {
-        move_unit_to(1, i, kStartingPositionX[1][type][i], kStartingPositionY[1][type][i]);
-        sprites_[1][i].set_texture(unit_textures_[state.enemy_army[i]]);
-        sprites_[1][i].set_flip(true);
-    }
-
     for (int i = 0; i < 2; i++) {
-        for (int j = 0; j < army_sizes_[i]; j++) {
+        for (int j = 0; j < 6; j++) {
+            if (armies_[i][j] == -1) {
+                continue;
+            }
+
+            /* Set sprites */
+            move_unit_to(i, j, kStartingPositionX[i][type][j], kStartingPositionY[i][type][j]);
+            sprites_[i][j].set_texture(unit_textures_[armies_[i][j]]);
+            if (i == 1) {
+                sprites_[i][j].set_flip(true);
+            }
+
+            /* Set counts */
             counts_[i][j].set_position(sprites_[i][j].get_position() + glm::vec2(24.0f, 26.0f));
-            counts_[i][j].set_string(std::to_string(army_counts_[i][j]));
+            counts_[i][j].set_string(std::to_string(unit_states_[i][j].count));
 
+            /* Set states */
             const auto &unit = kUnits[armies_[i][j]];
-
             moves_left_[i][j] = unit.initial_moves;
             waits_used_[i][j] = 0;
         }
@@ -390,10 +429,6 @@ void Battle::move_unit_to(int team, int unit, int x, int y)
     }
     if (unit < 0 || unit > 4) {
         spdlog::warn("Battle::move_unit_to: Unit {} is invalid", unit);
-        return;
-    }
-    if (unit > army_sizes_[team]) {
-        spdlog::warn("Battle::move_unit_to: No unit {} in team {}", unit, team);
         return;
     }
 
@@ -554,8 +589,13 @@ void Battle::next_unit()
     bool next_team {false};
 
     /* There was a unit waiting */
-    for (int i = 0; i < army_sizes_[active_.x]; i++) {
-        int index = (i + 1 + active_.y) % army_sizes_[active_.x];
+    for (int i = 0; i < 6; i++) {
+        int index = (i + 1 + active_.y) % 6;
+
+        if (armies_[active_.x][index] == -1) {
+            continue;
+        }
+
         if (waits_used_[active_.x][index] < 2 && moves_left_[active_.x][index] > 0) {
             loop_back_for_waits = true;
             active_.y = index;
@@ -565,22 +605,26 @@ void Battle::next_unit()
 
     /* Nobody on this team has any moves or waits left */
     if (!loop_back_for_waits) {
-        active_.x = (active_.x + 1) % 2;
-        for (int i = 0; i < army_sizes_[active_.x]; i++) {
-            if (armies_[active_.x][i] != -1) {
-                active_.y = i;
-                reset_moves();
-                reset_waits();
-                next_team = true;
-                break;
+        active_.x = active_.x == 1 ? 0 : 1;
+        for (int i = 0; i < 6; i++) {
+            if (armies_[active_.x][i] == -1) {
+                continue;
             }
+            active_.y = i;
+            reset_moves();
+            reset_waits();
+            next_team = true;
+            break;
         }
     }
 
     /* Next unit in team because somebody hasn't moved or waited yet */
     if (!next_team && !loop_back_for_waits) {
-        for (int i = 0; i < army_sizes_[active_.x]; i++) {
-            int index = (i + 1 + active_.y) % army_sizes_[active_.x];
+        for (int i = 0; i < 6; i++) {
+            if (armies_[active_.x][i] == -1) {
+                continue;
+            }
+            int index = (i + 1 + active_.y) % 6;
             if (waits_used_[active_.x][index] < 2 && moves_left_[active_.x][index] > 0) {
                 active_.y = index;
                 break;
@@ -617,6 +661,9 @@ void Battle::update_unit_info()
         }
         if (!any_enemy_around) {
             set_state(BattleState::Flying);
+        }
+        else {
+            set_state(BattleState::Moving);
         }
     }
     else {
@@ -668,13 +715,13 @@ void Battle::status_fly(const Unit &unit)
 void Battle::status_attack(const Unit &unit)
 {
     const Unit &target = kUnits[armies_[last_attacked_team_][last_attacked_unit_]];
-    status_.set_string(fmt::format(kStatuses[ATTACK], unit.name_plural, target.name_plural, 4));
+    status_.set_string(fmt::format(kStatuses[ATTACK], unit.name_plural, target.name_plural, last_kills_));
 }
 
 void Battle::status_retaliation(const Unit &unit)
 {
     const Unit &target = kUnits[armies_[last_attacking_team_][last_attacking_unit_]];
-    status_.set_string(fmt::format(kStatuses[RETALIATION], target.name_plural, 7));
+    status_.set_string(fmt::format(kStatuses[RETALIATION], target.name_plural, last_kills_));
 }
 
 void Battle::update_cursor()
@@ -689,12 +736,24 @@ void Battle::update_current()
 
 void Battle::reset_moves()
 {
+    const int leadership = scene_switcher_->state().leadership;
     for (int i = 0; i < 2; i++) {
-        for (int j = 0; j < army_sizes_[i]; j++) {
+        for (int j = 0; j < 6; j++) {
+            if (armies_[i][j] == -1) {
+                continue;
+            }
+
             const auto &unit = kUnits[armies_[i][j]];
             moves_left_[i][j] = unit.initial_moves;
             flown_this_turn_[i][j] = false;
             retaliated_this_turn_[i][j] = false;
+
+            auto &us = unit_states_[i][j];
+            us.turn_count = us.count;
+            us.hp = unit.hp;
+            us.injury = 0;
+            us.ammo = unit.initial_ammo;
+            us.out_of_control = (us.hp * us.count) > leadership;
         }
     }
 }
@@ -702,7 +761,10 @@ void Battle::reset_moves()
 void Battle::reset_waits()
 {
     for (int i = 0; i < 2; i++) {
-        for (int j = 0; j < army_sizes_[i]; j++) {
+        for (int j = 0; j < 6; j++) {
+            if (armies_[i][j] == -1) {
+                continue;
+            }
             waits_used_[i][j] = 0;
         }
     }
@@ -727,14 +789,6 @@ void Battle::set_state(BattleState state)
             status();
             break;
         case BattleState::Retaliation:
-            if (!retaliated_this_turn_[last_attacked_team_][last_attacked_unit_]) {
-                attack(last_attacked_team_, last_attacked_unit_, last_attacking_team_, last_attacking_unit_);
-                retaliated_this_turn_[last_attacked_team_][last_attacked_unit_] = true;
-                status();
-            }
-            else {
-                next_unit();
-            }
             break;
         default:
             break;
@@ -754,6 +808,8 @@ void Battle::attack(int from_team, int from_unit, int to_team, int to_unit)
     last_attacked_unit_ = to_unit;
 
     moves_left_[from_team][from_unit] = 0;
+
+    damage(from_team, from_unit, to_team, to_unit, false, false, 0, from_team != active_.x);
 }
 
 int Battle::get_unit(int x, int y, bool &enemy) const
@@ -763,7 +819,10 @@ int Battle::get_unit(int x, int y, bool &enemy) const
     enemy = false;
 
     for (int i = 0; i < 2; i++) {
-        for (int j = 0; j < army_sizes_[i]; j++) {
+        for (int j = 0; j < 6; j++) {
+            if (armies_[i][j] == -1) {
+                continue;
+            }
             if (pos == positions_[i][j]) {
                 if (i != active_.x) {
                     enemy = true;
@@ -774,4 +833,176 @@ int Battle::get_unit(int x, int y, bool &enemy) const
     }
 
     return -1;
+}
+
+int units_killed(int dmg, int hp)
+{
+    return dmg / hp;
+}
+
+int damage_remainder(int dmg, int hp)
+{
+    return dmg % hp;
+}
+
+float morale_modifier()
+{
+    return 1.0f;
+}
+
+void Battle::damage(int from_team, int from_unit, int to_team, int to_unit, bool is_ranged, bool is_external, int external_damage, bool retaliation)
+{
+    bool has_sword = scene_switcher_->state().artifacts_found[ArtiSwordOfProwess];
+    bool has_shield = scene_switcher_->state().artifacts_found[ArtiShieldOfProtection];
+
+    const int unit_id_a = armies_[from_team][from_unit];
+    const int unit_id_b = armies_[to_team][to_unit];
+
+    const auto &unit_a {kUnits[unit_id_a]};
+    const auto &unit_b {kUnits[unit_id_b]};
+
+    auto &unit_state_a = unit_states_[from_team][from_unit];
+    auto &unit_state_b = unit_states_[to_team][to_unit];
+
+    if (!retaliation) {
+        unit_state_a.turn_count = unit_state_a.count;
+        unit_state_b.turn_count = unit_state_b.count;
+    }
+
+    bool cancel_attack = false;
+
+    bool retaliate = false;
+    if (!retaliation && !is_ranged && !is_external)
+        retaliate = true;
+
+    int scythe_kills = 0;
+    int final_damage = 0;
+    int dmg = 0;
+
+    if (is_external) {
+        //magic-vs-unit
+        final_damage = external_damage;
+    }
+    else {
+        //unit-vs-unit
+        if (unit_a.abilities & AbilityScythe) {
+            if (((rand() % 100) + 1) > 89) {    // 10% chance
+                                                // ceil
+                scythe_kills = (unit_state_b.count + 2 - 1) / 2;
+            }
+        }
+
+        if (is_ranged) {
+            --unit_state_a.ammo;
+            if (unit_id_a == UnitId::Druids) {
+                if (unit_b.abilities & AbilityImmune)
+                    cancel_attack = true;
+                else
+                    dmg = 10;
+            }
+            if (unit_id_a == UnitId::Archmages) {
+                if (unit_b.abilities & AbilityImmune)
+                    cancel_attack = true;
+                else
+                    dmg = 25;
+            }
+            else
+                dmg = (rand() % unit_a.ranged_damage_max) + unit_a.ranged_damage_min;
+        }
+        else
+            dmg = (rand() % unit_a.melee_damage_max) + unit_a.melee_damage_min;
+
+        int total = dmg * unit_state_a.turn_count;
+        int skill_diff = unit_a.skill_level + 5 - unit_b.skill_level;
+        final_damage = (total * skill_diff) / 10;
+
+        if (from_team == 0) {
+            if (!unit_state_a.out_of_control) {
+                final_damage = static_cast<int>(morale_modifier() * static_cast<float>(final_damage));
+            }
+        }
+
+        if (from_team == 0 && has_sword)
+            final_damage = static_cast<int>(1.5f * static_cast<float>(final_damage));
+
+        if (to_team == 0 && has_shield) {
+            final_damage /= 4;
+            final_damage *= 3;
+            //almost same as multiplying 0.75, but more brutal, as div by 4 can yield 0
+        }
+    }
+
+    final_damage += unit_state_b.injury;
+    final_damage += unit_state_b.hp * scythe_kills;
+
+    spdlog::debug("Damage: {}/{}", final_damage, unit_state_b.hp);
+
+    int kills = units_killed(final_damage, unit_state_b.hp);
+    int injury = damage_remainder(static_cast<int>(final_damage), unit_state_b.hp);
+
+    spdlog::debug("Killed {} and dealt {} injury", kills, injury);
+
+    unit_state_b.injury = injury;
+
+    if (kills < unit_state_b.count) {
+        //stack survives
+        unit_state_b.count -= kills;
+    }
+    else {
+        //stack dies
+        unit_state_b.count = 0;
+        positions_[to_team][to_unit] = {-1, -1};
+        final_damage = unit_state_b.turn_count * unit_state_b.hp;
+    }
+
+    if (from_team == 0) {
+        scene_switcher_->state().followers_killed += kills;
+    }
+
+    if (!is_external) {
+        /* Difference between leech and absorb is, leech can only get back to the original
+			count. Absorb has no limit. */
+        if (unit_a.abilities & AbilityAbsorb)
+            unit_state_a.count += static_cast<int>(kills);
+
+        else if (unit_a.abilities & AbilityLeech) {
+            unit_state_a.count += units_killed(final_damage, unit_state_a.hp);
+            if (unit_state_a.count > unit_state_a.start_count) {
+                unit_state_a.count = unit_state_a.start_count;
+                unit_state_a.injury = 0;
+            }
+        }
+    }
+
+    last_kills_ = std::min(kills, unit_state_b.turn_count);
+}
+
+/* It's convenient to do this after any status messages are
+displayed which rely on the unit ID. */
+void Battle::clear_dead_units()
+{
+    spdlog::debug("Clearing dead units");
+    for (int i = 0; i < 2; i++) {
+        for (int j = 0; j < 6; j++) {
+            if (armies_[i][j] == -1) {
+                continue;
+            }
+            if (unit_states_[i][j].count == 0) {
+                armies_[i][j] = -1;
+            }
+        }
+    }
+}
+
+void Battle::update_counts()
+{
+    for (int i = 0; i < 2; i++) {
+        for (int j = 0; j < 6; j++) {
+            if (armies_[i][j] == -1) {
+                continue;
+            }
+
+            counts_[i][j].set_string(std::to_string(unit_states_[i][j].count));
+        }
+    }
 }

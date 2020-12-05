@@ -38,6 +38,16 @@ private:
         Retaliation,
     };
 
+    struct UnitState {
+        int start_count;
+        int turn_count;
+        int count;
+        int hp;
+        int injury;
+        int ammo;
+        bool out_of_control;
+    };
+
     void move_unit_to(int team, int unit, int x, int y);
     void confirm();
     void move_confirm();
@@ -58,6 +68,9 @@ private:
     void attack(int from_team, int from_unit, int to_team, int to_unit);
     int get_unit(int x, int y, bool &enemy) const;
     void update_unit_info();
+    void damage(int from_team, int from_unit, int to_team, int to_unit, bool is_ranged, bool is_external, int external_damage, bool retaliation);
+    void clear_dead_units();
+    void update_counts();
 
 private:
     bool loaded_ {false};
@@ -72,7 +85,6 @@ private:
     bty::Sprite current_;
     std::array<std::array<glm::ivec2, 6>, 2> positions_;
     std::array<std::array<bty::Text, 6>, 2> counts_;
-    std::array<int, 2> army_sizes_;
     std::array<std::array<bty::Sprite, 6>, 2> sprites_;
     std::array<const bty::Texture *, 25> unit_textures_;
     int cx_ {0};
@@ -81,7 +93,6 @@ private:
     glm::ivec2 active_ {0, 0};
     float wait_timer_ {0};
     std::array<std::array<int, 6>, 2> armies_;
-    std::array<std::array<int, 6>, 2> army_counts_;
     std::array<std::array<int, 6>, 2> moves_left_;
     std::array<std::array<int, 6>, 2> waits_used_;
     std::array<std::array<bool, 6>, 2> flown_this_turn_;
@@ -99,6 +110,9 @@ private:
     int last_attacking_unit_ {-1};
     int last_attacked_team_ {-1};
     int last_attacked_unit_ {-1};
+    int last_kills_ {0};
+
+    std::array<std::array<UnitState, 6>, 2> unit_states_;
 };
 
 #endif    // BTY_INTRO_BATTLE_HPP_

@@ -1367,6 +1367,7 @@ void Game::setup_game()
     state.leadership = kRankLeadership[state.hero_id][0];
     state.max_spells = kRankSpells[state.hero_id][0];
     state.spell_power = kRankSpellPower[state.hero_id][0];
+    state.followers_killed = 0;
 
     /* Reset dialogs */
     pause_menu_.set_selection(0);
