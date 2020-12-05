@@ -80,6 +80,36 @@ and send you back to
     view_army_.load(assets, color);
     view_character_.load(assets, color, state.hero_id);
 
+    /* Create "Use magic" menu */
+    use_magic_.create(
+        10,
+        4,
+        20,
+        22,
+        color,
+        assets);
+
+    use_magic_.add_line(1, 1, "Adventuring Spells");
+    magic_spells_[0] = use_magic_.add_option(4, 3, "");
+    magic_spells_[1] = use_magic_.add_option(4, 4, "");
+    magic_spells_[2] = use_magic_.add_option(4, 5, "");
+    magic_spells_[3] = use_magic_.add_option(4, 6, "");
+    magic_spells_[4] = use_magic_.add_option(4, 7, "");
+    magic_spells_[5] = use_magic_.add_option(4, 8, "");
+    magic_spells_[6] = use_magic_.add_option(4, 9, "");
+    use_magic_.add_line(3, 12, "Combat Spells");
+    magic_spells_[7] = use_magic_.add_option(4, 14, "");
+    magic_spells_[8] = use_magic_.add_option(4, 15, "");
+    magic_spells_[9] = use_magic_.add_option(4, 16, "");
+    magic_spells_[10] = use_magic_.add_option(4, 17, "");
+    magic_spells_[11] = use_magic_.add_option(4, 18, "");
+    magic_spells_[12] = use_magic_.add_option(4, 19, "");
+    magic_spells_[13] = use_magic_.add_option(4, 20, "");
+
+    for (int i = 0; i < 7; i++) {
+        use_magic_.set_option_disabled(i, true);
+    }
+
     for (int i = 0; i < UnitId::UnitCount; i++) {
         unit_textures_[i] = assets.get_texture(fmt::format("units/{}.png", i), {2, 2});
     }
@@ -96,6 +126,14 @@ and send you back to
 
 void Battle::draw(bty::Gfx &gfx)
 {
+    bool tmp_msg {false};
+    BattleState tmp_state_;
+    if (state_ == BattleState::TemporaryMessage) {
+        tmp_msg = true;
+        tmp_state_ = state_;
+        state_ = last_state_;
+    }
+
     if (state_ == BattleState::ViewArmy) {
         gfx.draw_sprite(frame_, camera_);
         gfx.draw_rect(bar_, camera_);
@@ -149,6 +187,13 @@ void Battle::draw(bty::Gfx &gfx)
     }
     else if (state_ == BattleState::GiveUp) {
         give_up_.draw(gfx, camera_);
+    }
+    else if (state_ == BattleState::UseMagic) {
+        use_magic_.draw(gfx, camera_);
+    }
+
+    if (tmp_msg) {
+        state_ = tmp_state_;
     }
 }
 
@@ -225,6 +270,30 @@ void Battle::key(int key, int scancode, int action, int mods)
                     break;
             }
             break;
+        case BattleState::UseMagic:
+            switch (action) {
+                case GLFW_PRESS:
+                    switch (key) {
+                        case GLFW_KEY_BACKSPACE:
+                            set_state(state_before_menu_);
+                            break;
+                        case GLFW_KEY_UP:
+                            use_magic_.prev();
+                            break;
+                        case GLFW_KEY_DOWN:
+                            use_magic_.next();
+                            break;
+                        case GLFW_KEY_ENTER:
+                            use_spell(use_magic_.get_selection());
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
         case BattleState::Shooting:
             [[fallthrough]];
         case BattleState::Flying:
@@ -252,6 +321,26 @@ void Battle::key(int key, int scancode, int action, int mods)
                             [[fallthrough]];
                         case GLFW_KEY_BACKSPACE:
                             set_state(BattleState::Menu);
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case BattleState::TemporaryMessage:
+            switch (action) {
+                case GLFW_PRESS:
+                    switch (key) {
+                        case GLFW_KEY_BACKSPACE:
+                            [[fallthrough]];
+                        case GLFW_KEY_SPACE:
+                            [[fallthrough]];
+                        case GLFW_KEY_ENTER:
+                            set_state(state_before_menu_);
+                            status();
                             break;
                         default:
                             break;
@@ -323,6 +412,9 @@ void Battle::update(float dt)
         case BattleState::ViewArmy:
             view_army_.update(dt);
             break;
+        case BattleState::UseMagic:
+            use_magic_.animate(dt);
+            break;
         default:
             break;
     }
@@ -352,6 +444,8 @@ void Battle::enter(bool reset)
     menu_.set_color(color);
     give_up_.set_color(color);
     view_army_.set_color(color);
+    view_character_.set_color(color);
+    use_magic_.set_color(color);
 
     wait_timer_ = 0;
     last_state_ = BattleState::Moving;
@@ -923,6 +1017,9 @@ void Battle::set_state(BattleState state)
         case BattleState::ViewCharacter:
             view_character_.view(scene_switcher_->state());
             break;
+        case BattleState::UseMagic:
+            update_spells();
+            break;
         default:
             break;
     }
@@ -1068,12 +1165,8 @@ void Battle::damage(int from_team, int from_unit, int to_team, int to_unit, bool
     final_damage += unit_state_b.injury;
     final_damage += unit_state_b.hp * scythe_kills;
 
-    spdlog::debug("Damage: {}/{}", final_damage, unit_state_b.hp);
-
     int kills = units_killed(final_damage, unit_state_b.hp);
     int injury = damage_remainder(static_cast<int>(final_damage), unit_state_b.hp);
-
-    spdlog::debug("Killed {} and dealt {} injury", kills, injury);
 
     unit_state_b.injury = injury;
 
@@ -1114,7 +1207,6 @@ void Battle::damage(int from_team, int from_unit, int to_team, int to_unit, bool
 displayed which rely on the unit ID. */
 void Battle::clear_dead_units()
 {
-    spdlog::debug("Clearing dead units");
     for (int i = 0; i < 2; i++) {
         for (int j = 0; j < 6; j++) {
             if (armies_[i][j] == -1) {
@@ -1149,6 +1241,9 @@ void Battle::menu_confirm()
         case 1:
             set_state(BattleState::ViewCharacter);
             break;
+        case 2:
+            set_state(BattleState::UseMagic);
+            break;
         case 6:
             set_state(BattleState::GiveUp);
             break;
@@ -1182,4 +1277,56 @@ void Battle::view_army()
         unit_states_[0][4].count,
     };
     view_army_.view(&armies_[0][0], counts, scene_switcher_->state().army_morales);
+}
+
+void Battle::use_spell(int spell)
+{
+}
+
+void Battle::update_spells()
+{
+    bool no_spells = true;
+    int *spells = scene_switcher_->state().spells;
+
+    for (int i = 7; i < 14; i++) {
+        use_magic_.set_option_disabled(i, spells[i - 7] == 0);
+        if (spells[i - 7] != 0) {
+            no_spells = false;
+        }
+    }
+
+    if (no_spells) {
+        status_.set_string("   You have no Combat spell to cast!");
+        set_state(BattleState::TemporaryMessage);
+    }
+
+    int n = 0;
+
+    magic_spells_[n]->set_string(fmt::format("{} Bridge", spells[7]));
+    n++;
+    magic_spells_[n]->set_string(fmt::format("{} Time Stop", spells[8]));
+    n++;
+    magic_spells_[n]->set_string(fmt::format("{} Find Villain", spells[9]));
+    n++;
+    magic_spells_[n]->set_string(fmt::format("{} Castle Gate", spells[10]));
+    n++;
+    magic_spells_[n]->set_string(fmt::format("{} Town Gate", spells[11]));
+    n++;
+    magic_spells_[n]->set_string(fmt::format("{} Instant Army", spells[12]));
+    n++;
+    magic_spells_[n]->set_string(fmt::format("{} Raise Control", spells[13]));
+    n++;
+    magic_spells_[n]->set_string(fmt::format("{} Clone", spells[0]));
+    n++;
+    magic_spells_[n]->set_string(fmt::format("{} Teleport", spells[1]));
+    n++;
+    magic_spells_[n]->set_string(fmt::format("{} Fireball", spells[2]));
+    n++;
+    magic_spells_[n]->set_string(fmt::format("{} Lightning", spells[3]));
+    n++;
+    magic_spells_[n]->set_string(fmt::format("{} Freeze", spells[4]));
+    n++;
+    magic_spells_[n]->set_string(fmt::format("{} Resurrect", spells[5]));
+    n++;
+    magic_spells_[n]->set_string(fmt::format("{} Turn Undead", spells[6]));
 }

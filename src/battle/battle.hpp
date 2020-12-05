@@ -44,6 +44,8 @@ private:
         GiveUp,
         ViewArmy,
         ViewCharacter,
+        UseMagic,
+        TemporaryMessage,
     };
 
     struct UnitState {
@@ -82,6 +84,8 @@ private:
     void menu_confirm();
     void give_up_confirm();
     void view_army();
+    void use_spell(int spell);
+    void update_spells();
 
 private:
     bool loaded_ {false};
@@ -131,6 +135,8 @@ private:
 
     ViewArmy view_army_;
     ViewCharacter view_character_;
+    bty::Dialog use_magic_;
+    bty::Text *magic_spells_[14] {nullptr};
 };
 
 #endif    // BTY_INTRO_BATTLE_HPP_
