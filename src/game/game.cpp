@@ -914,7 +914,7 @@ void Game::update(float dt)
                     dir.y = hero_pos.y > ent_pos.y ? 1.0f : -1.0f;
                 }
 
-                if (distance_x < 5.0f && distance_y < 5.0f) {
+                if (distance_x < 12.0f && distance_y < 12.0f) {
                     scene_switcher_->state().enemy_army = mob_armies_[continent][i];
                     scene_switcher_->state().enemy_counts = mob_counts_[continent][i];
                     scene_switcher_->state().enemy_index = i;
