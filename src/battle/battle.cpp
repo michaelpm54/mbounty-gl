@@ -51,7 +51,7 @@ bool Battle::load(bty::Assets &assets)
 
     for (int i = 0; i < 2; i++) {
         for (int j = 0; j < 6; j++) {
-            hp_[i][j].set_font(font);
+            counts_[i][j].set_font(font);
         }
     }
 
@@ -71,11 +71,16 @@ void Battle::draw(bty::Gfx &gfx)
     for (int i = 0; i < 2; i++) {
         for (int j = 0; j < army_sizes_[i]; j++) {
             gfx.draw_sprite(sprites_[i][j], camera_);
-            gfx.draw_text(hp_[i][j], camera_);
         }
     }
 
     gfx.draw_sprite(cursor_, camera_);
+
+    for (int i = 0; i < 2; i++) {
+        for (int j = 0; j < army_sizes_[i]; j++) {
+            gfx.draw_text(counts_[i][j], camera_);
+        }
+    }
 }
 
 void Battle::key(int key, int scancode, int action, int mods)
@@ -158,11 +163,23 @@ void Battle::enter(bool reset)
 
     auto &state = scene_switcher_->state();
 
+    for (int i = 0; i < 2; i++) {
+        for (int j = 0; j < 6; j++) {
+            army_counts_[i][j] = 0;
+        }
+    }
+
     state.army[0] = Peasants;
     state.army[1] = Ghosts;
     state.army[2] = Nomads;
     state.army[3] = -1;
     state.army[4] = -1;
+
+    state.army_counts[0] = 50;
+    state.army_counts[1] = 40;
+    state.army_counts[2] = 30;
+    state.army_counts[3] = 20;
+    state.army_counts[4] = 10;
 
     state.enemy_army[0] = Dragons;
     state.enemy_army[1] = Militias;
@@ -171,6 +188,13 @@ void Battle::enter(bool reset)
     state.enemy_army[4] = -1;
     state.enemy_army[5] = -1;
 
+    state.enemy_counts[0] = 10;
+    state.enemy_counts[1] = 20;
+    state.enemy_counts[2] = 30;
+    state.enemy_counts[3] = 40;
+    state.enemy_counts[4] = 50;
+    state.enemy_counts[5] = 60;
+
     army_sizes_[0] = 0;
     army_sizes_[1] = 0;
 
@@ -178,10 +202,12 @@ void Battle::enter(bool reset)
         if (i < 5 && state.army[i] != -1) {
             army_sizes_[0]++;
             armies_[0][i] = state.army[i];
+            army_counts_[0][i] = state.army_counts[i];
         }
         if (state.enemy_army[i] != -1) {
             army_sizes_[1]++;
             armies_[1][i] = state.enemy_army[i];
+            army_counts_[1][i] = state.enemy_counts[i];
         }
     }
 
@@ -280,8 +306,8 @@ void Battle::enter(bool reset)
 
     for (int i = 0; i < 2; i++) {
         for (int j = 0; j < army_sizes_[i]; j++) {
-            hp_[i][j].set_position(sprites_[i][j].get_position() + glm::vec2(24.0f, 26.0f));
-            hp_[i][j].set_string(std::to_string(100));
+            counts_[i][j].set_position(sprites_[i][j].get_position() + glm::vec2(24.0f, 26.0f));
+            counts_[i][j].set_string(std::to_string(army_counts_[i][j]));
 
             const auto &unit = kUnits[armies_[i][j]];
 
@@ -318,7 +344,7 @@ void Battle::move_unit_to(int team, int unit, int x, int y)
     float x_ = 16.0f + x * 48.0f;
     float y_ = 24.0f + y * 40.0f;
     sprites_[team][unit].set_position(x_, y_);
-    hp_[team][unit].set_position(x_ + 24.0f, y_ + 26.0f);
+    counts_[team][unit].set_position(x_ + 24.0f, y_ + 26.0f);
     positions_[team][unit] = {x, y};
 }
 
