@@ -20,7 +20,7 @@ class ViewArmy {
 public:
     void load(bty::Assets &assets, bty::BoxColor color);
     void draw(bty::Gfx &gfx, glm::mat4 &camera);
-    void view(const SharedState &state);
+    void view(int *army, int *counts, int *morales);
     void update(float dt);
     void set_color(bty::BoxColor color);
 

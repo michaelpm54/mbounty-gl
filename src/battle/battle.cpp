@@ -77,6 +77,8 @@ and send you back to
     give_up_.add_option(4, 6, "Continue battle");
     give_up_.add_option(4, 7, "Give up");
 
+    view_army_.load(assets, color);
+
     for (int i = 0; i < UnitId::UnitCount; i++) {
         unit_textures_[i] = assets.get_texture(fmt::format("units/{}.png", i), {2, 2});
     }
@@ -93,6 +95,14 @@ and send you back to
 
 void Battle::draw(bty::Gfx &gfx)
 {
+    if (state_ == BattleState::ViewArmy) {
+        gfx.draw_sprite(frame_, camera_);
+        gfx.draw_rect(bar_, camera_);
+        gfx.draw_text(status_, camera_);
+        view_army_.draw(gfx, camera_);
+        return;
+    }
+
     gfx.draw_sprite(bg_, camera_);
     gfx.draw_sprite(frame_, camera_);
     gfx.draw_rect(bar_, camera_);
@@ -177,6 +187,23 @@ void Battle::key(int key, int scancode, int action, int mods)
                         case GLFW_KEY_ENTER:
                             give_up_confirm();
                             break;
+                        case GLFW_KEY_BACKSPACE:
+                            set_state(state_before_menu_);
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case BattleState::ViewArmy:
+            switch (action) {
+                case GLFW_PRESS:
+                    switch (key) {
+                        case GLFW_KEY_ENTER:
+                            [[fallthrough]];
                         case GLFW_KEY_BACKSPACE:
                             set_state(state_before_menu_);
                             break;
@@ -283,6 +310,9 @@ void Battle::update(float dt)
         case BattleState::GiveUp:
             give_up_.animate(dt);
             break;
+        case BattleState::ViewArmy:
+            view_army_.update(dt);
+            break;
         default:
             break;
     }
@@ -311,6 +341,7 @@ void Battle::enter(bool reset)
     bar_.set_color(color);
     menu_.set_color(color);
     give_up_.set_color(color);
+    view_army_.set_color(color);
 
     wait_timer_ = 0;
     last_state_ = BattleState::Moving;
@@ -876,6 +907,9 @@ void Battle::set_state(BattleState state)
             break;
         case BattleState::Retaliation:
             break;
+        case BattleState::ViewArmy:
+            view_army();
+            break;
         default:
             break;
     }
@@ -1096,6 +1130,9 @@ void Battle::update_counts()
 void Battle::menu_confirm()
 {
     switch (menu_.get_selection()) {
+        case 0:
+            set_state(BattleState::ViewArmy);
+            break;
         case 6:
             set_state(BattleState::GiveUp);
             break;
@@ -1117,4 +1154,16 @@ void Battle::give_up_confirm()
         default:
             break;
     }
+}
+
+void Battle::view_army()
+{
+    int counts[] = {
+        unit_states_[0][0].count,
+        unit_states_[0][1].count,
+        unit_states_[0][2].count,
+        unit_states_[0][3].count,
+        unit_states_[0][4].count,
+    };
+    view_army_.view(&armies_[0][0], counts, scene_switcher_->state().army_morales);
 }

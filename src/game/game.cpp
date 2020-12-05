@@ -1959,7 +1959,7 @@ void Game::set_state(GameState state)
             lose_game();
             break;
         case GameState::ViewArmy:
-            view_army_.view(scene_switcher_->state());
+            view_army();
             break;
         case GameState::ViewCharacter:
             view_character_.view(scene_switcher_->state());
@@ -2364,4 +2364,10 @@ void Game::draw_mobs(bty::Gfx &gfx)
             mob_entities_[continent][i].draw(gfx, game_camera_);
         }
     }
+}
+
+void Game::view_army()
+{
+    auto &state = scene_switcher_->state();
+    view_army_.view(state.army, state.army_counts, state.army_morales);
 }

@@ -101,6 +101,7 @@ private:
     void bridge_fail();
     void hud_messages(const std::vector<std::string> &messages);
     void draw_mobs(bty::Gfx &gfx);
+    void view_army();
 
 private:
     enum WeekPassedCard {

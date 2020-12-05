@@ -57,25 +57,25 @@ void ViewArmy::draw(bty::Gfx &gfx, glm::mat4 &camera)
     }
 }
 
-void ViewArmy::view(const SharedState &state)
+void ViewArmy::view(int *army, int *counts, int *morales)
 {
     num_units_ = 0;
 
     for (int i = 0; i < 5; i++) {
-        if (state.army[i] != -1) {
+        if (army[i] != -1) {
             num_units_++;
         }
     }
 
     assert(num_units_ < 5);
     for (int i = 0; i < num_units_; i++) {
-        int unit_id = state.army[i];
+        int unit_id = army[i];
         const auto &unit = kUnits[unit_id];
         if (unit_id != -1) {
-            int hp = state.army_counts[i] * unit.hp;
-            int min_dmg = state.army_counts[i] * unit.melee_damage_min;
-            int max_dmg = state.army_counts[i] * unit.melee_damage_max;
-            int g_cost = state.army_counts[i] * unit.weekly_cost;
+            int hp = counts[i] * unit.hp;
+            int min_dmg = counts[i] * unit.melee_damage_min;
+            int max_dmg = counts[i] * unit.melee_damage_max;
+            int g_cost = counts[i] * unit.weekly_cost;
 
             static const std::array<std::string, 4> kMoraleStrings = {{
                 "Morale: Low",
@@ -86,12 +86,12 @@ void ViewArmy::view(const SharedState &state)
 
             assert(unit_id < 25);
             units_[i].set_texture(unit_textures_[unit_id]);
-            info_[i][0].set_string(fmt::format("{} {}", state.army_counts[i], unit.name_plural));
+            info_[i][0].set_string(fmt::format("{} {}", counts[i], unit.name_plural));
             info_[i][1].set_string(fmt::format("HitPts: {}", hp));
             info_[i][2].set_string(fmt::format("SL: {}", unit.skill_level));
             info_[i][3].set_string(fmt::format("MV: {}", unit.initial_moves));
             info_[i][4].set_string(fmt::format("Damage: {}-{}", min_dmg, max_dmg));
-            info_[i][5].set_string(fmt::format(kMoraleStrings[state.army_morales[i]]));
+            info_[i][5].set_string(fmt::format(kMoraleStrings[morales[i]]));
             info_[i][6].set_string(fmt::format("G-Cost: {}", g_cost));
         }
     }

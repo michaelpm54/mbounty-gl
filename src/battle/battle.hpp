@@ -3,6 +3,7 @@
 
 #include <array>
 
+#include "game/view-army.hpp"
 #include "gfx/dialog.hpp"
 #include "gfx/font.hpp"
 #include "gfx/sprite.hpp"
@@ -40,6 +41,7 @@ private:
         Shooting,
         Magic,
         GiveUp,
+        ViewArmy,
     };
 
     struct UnitState {
@@ -77,6 +79,7 @@ private:
     void update_counts();
     void menu_confirm();
     void give_up_confirm();
+    void view_army();
 
 private:
     bool loaded_ {false};
@@ -123,6 +126,8 @@ private:
     bty::Dialog menu_;
     bty::Dialog give_up_;
     BattleState state_before_menu_ {BattleState::Moving};
+
+    ViewArmy view_army_;
 };
 
 #endif    // BTY_INTRO_BATTLE_HPP_
