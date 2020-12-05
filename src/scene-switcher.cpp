@@ -147,7 +147,9 @@ SharedState &SceneSwitcher::state()
 
 void SceneSwitcher::key(int key, int scancode, int action, int mods)
 {
-    scene_->key(key, scancode, action, mods);
+    if (state_ == SwitchState::None) {
+        scene_->key(key, scancode, action, mods);
+    }
 }
 
 bool SceneSwitcher::get_key(int key) const
