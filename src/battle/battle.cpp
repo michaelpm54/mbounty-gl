@@ -39,8 +39,8 @@ bool Battle::load(bty::Assets &assets)
     camera_ = glm::ortho(0.0f, 320.0f, 224.0f, 0.0f, -1.0f, 1.0f);
 
     auto &state = scene_switcher_->state();
-    auto &font = assets.get_font();
     auto color = bty::get_box_color(state.difficulty_level);
+    auto &font = assets.get_font();
 
     bg_.set_texture(assets.get_texture("battle/encounter.png"));
     bg_.set_position(8, 24);
@@ -267,6 +267,11 @@ void Battle::enter(bool reset)
         return;
     }
 
+    auto &state = scene_switcher_->state();
+    auto color = bty::get_box_color(state.difficulty_level);
+    bar_.set_color(color);
+    menu_.set_color(color);
+
     wait_timer_ = 0;
     last_state_ = BattleState::Moving;
     state_ = BattleState::Moving;
@@ -274,8 +279,6 @@ void Battle::enter(bool reset)
     last_attacking_unit_ = -1;
     last_attacked_team_ = -1;
     last_attacked_unit_ = -1;
-
-    auto &state = scene_switcher_->state();
 
     /* Initialise states */
     for (int i = 0; i < 2; i++) {

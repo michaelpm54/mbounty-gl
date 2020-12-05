@@ -69,15 +69,15 @@ int main(int argc, char *argv[])
         bty::SceneSwitcher scene_switcher(window, assets);
         bty::Engine engine(*window, assets, scene_switcher);
 
-        // Intro intro(scene_switcher);
-        // Game game(scene_switcher);
+        Intro intro(scene_switcher);
+        Game game(scene_switcher);
         Battle battle(scene_switcher);
 
-        // scene_switcher.add_scene(SceneId::Intro, intro);
-        // scene_switcher.add_scene(SceneId::Game, game);
+        scene_switcher.add_scene(SceneId::Intro, intro);
+        scene_switcher.add_scene(SceneId::Game, game);
         scene_switcher.add_scene(SceneId::Battle, battle);
 
-        if (scene_switcher.set_scene(SceneId::Battle))
+        if (scene_switcher.set_scene(SceneId::Intro))
             engine.run();
     }
 

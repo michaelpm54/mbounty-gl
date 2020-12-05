@@ -1852,7 +1852,7 @@ void Game::gen_tiles()
 
             for (int j = 0; j < 6; j++) {
                 occ.army[j] = unit_gen(rng_);
-                occ.army_counts[j] = rand() % 100;
+                occ.army_counts[j] = (rand() % 100) + 1;
             }
 
             castle_occupations_[castle] = occ;

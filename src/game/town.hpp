@@ -16,8 +16,8 @@ struct Texture;
 struct CastleOccupation {
     int index;
     int occupier;
-    std::array<int, 5> army;
-    std::array<int, 5> army_counts;
+    std::array<int, 6> army;
+    std::array<int, 6> army_counts;
 };
 
 class Town {
