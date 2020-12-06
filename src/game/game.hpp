@@ -1,7 +1,6 @@
 #ifndef BTY_GAME_GAME_HPP_
 #define BTY_GAME_GAME_HPP_
 
-#include <deque>
 #include <queue>
 #include <random>
 
@@ -67,6 +66,14 @@ private:
         int x;
         int y;
         int c;
+    };
+
+    struct Mob {
+        bool dead {false};
+        Entity entity;
+        glm::ivec2 tile;
+        std::array<int, 6> army;
+        std::array<int, 6> counts;
     };
 
     void update_camera();
@@ -174,11 +181,10 @@ private:
 
     std::array<const bty::Texture *, 25> unit_textures_;
 
-    std::array<std::deque<int>, 4> mob_x_;
-    std::array<std::deque<int>, 4> mob_y_;
-    std::array<std::deque<std::array<int, 6>>, 4> mob_armies_;
-    std::array<std::deque<std::array<int, 6>>, 4> mob_counts_;
-    std::array<std::deque<Entity>, 4> mob_entities_;
+    std::array<std::array<glm::ivec2, 40>, 4> mob_tile_;
+    std::array<std::array<std::array<int, 6>, 40>, 4> mob_armies_;
+
+    std::array<std::array<Mob, 40>, 4> mobs_;
 
     bty::TextBox untrained_in_magic_;
     bty::TextBox bridge_prompt_;

@@ -197,12 +197,12 @@ void Game::enter(bool reset)
         if (state.disgrace) {
             set_state(GameState::Disgrace);
             for (int i = 0; i < 6; i++) {
-                mob_armies_[state.continent][state.enemy_index][i] = state.enemy_army[i];
-                mob_counts_[state.continent][state.enemy_index][i] = state.enemy_counts[i];
+                mobs_[state.continent][state.enemy_index].army[i] = state.enemy_army[i];
+                mobs_[state.continent][state.enemy_index].counts[i] = state.enemy_counts[i];
             }
         }
         else {
-            mob_entities_[state.continent].erase(mob_entities_[state.continent].begin() + state.enemy_index);
+            mobs_[state.continent][state.enemy_index].dead = true;
         }
     }
 }
@@ -345,6 +345,8 @@ void Game::key(int key, int scancode, int action, int mods)
     (void)scancode;
     (void)mods;
 
+    auto &state = scene_switcher_->state();
+
     switch (state_) {
         case GameState::Unpaused:
             switch (action) {
@@ -355,8 +357,11 @@ void Game::key(int key, int scancode, int action, int mods)
                             break;
                         case GLFW_KEY_P:
                             hero_.set_debug(!hero_.get_debug());
-                            for (int i = 0; i < mob_entities_[scene_switcher_->state().continent].size(); i++) {
-                                mob_entities_[scene_switcher_->state().continent][i].set_debug(!mob_entities_[scene_switcher_->state().continent][i].get_debug());
+                            for (int i = 0; i < 40; i++) {
+                                if (mobs_[state.continent][i].dead) {
+                                    continue;
+                                }
+                                mobs_[state.continent][i].entity.set_debug(!mobs_[state.continent][i].entity.get_debug());
                             }
                             break;
                         case GLFW_KEY_R:
@@ -924,75 +929,80 @@ void Game::update(float dt)
 
         int continent = scene_switcher_->state().continent;
 
-        for (auto i = 0u; i < mob_entities_[continent].size(); i++) {
-            if (std::abs(hero_tile.tx - mob_x_[continent][i]) < 4 && std::abs(hero_tile.ty - mob_y_[continent][i]) < 4) {
-                auto &ent = mob_entities_[continent][i];
-                auto &ent_pos = ent.get_position();
+        for (int i = 0; i < 40; i++) {
+            auto &mob = mobs_[continent][i];
+            if (mob.dead) {
+                continue;
+            }
 
-                float distance_x = std::abs(hero_pos.x - ent_pos.x);
-                float distance_y = std::abs(hero_pos.y - ent_pos.y);
+            if (std::abs(hero_tile.tx - mob.tile.x) < 4 && std::abs(hero_tile.ty - mob.tile.y) < 4) {
+                auto &mob_pos = mob.entity.get_position();
+
+                float distance_x = std::abs(hero_pos.x - mob_pos.x);
+                float distance_y = std::abs(hero_pos.y - mob_pos.y);
 
                 glm::vec2 dir {0.0f, 0.0f};
 
                 if (distance_x > 3.0f) {
-                    dir.x = hero_pos.x > ent_pos.x ? 1.0f : -1.0f;
+                    dir.x = hero_pos.x > mob_pos.x ? 1.0f : -1.0f;
                 }
 
                 if (distance_y > 3.0f) {
-                    dir.y = hero_pos.y > ent_pos.y ? 1.0f : -1.0f;
+                    dir.y = hero_pos.y > mob_pos.y ? 1.0f : -1.0f;
                 }
 
                 if (distance_x < 12.0f && distance_y < 12.0f) {
-                    scene_switcher_->state().enemy_army = mob_armies_[continent][i];
-                    scene_switcher_->state().enemy_counts = mob_counts_[continent][i];
+                    scene_switcher_->state().enemy_army = mob.army;
+                    scene_switcher_->state().enemy_counts = mob.counts;
                     scene_switcher_->state().enemy_index = i;
                     scene_switcher_->fade_to(SceneId::Battle, true);
                     return;
                 }
 
-                ent.animate(dt);
-                ent.set_flip(hero_pos.x < ent_pos.x);
+                mob.entity.animate(dt);
+                mob.entity.set_flip(hero_pos.x < mob_pos.x);
 
                 float speed = 70.0f;
                 float vel = speed * dt;
                 float dx = dir.x * vel;
                 float dy = dir.y * vel;
 
-                auto manifold = ent.move(dx, dy, map_, scene_switcher_->state().continent);
+                auto manifold = mob.entity.move(dx, dy, map_, scene_switcher_->state().continent);
 
-                ent.set_position(manifold.new_position);
+                mob.entity.set_position(manifold.new_position);
 
-                for (auto j = 0u; j < mob_entities_[continent].size(); j++) {
-                    if (i == j) {
+                for (auto j = 0u; j < 40; j++) {
+                    if (i == j || mobs_[continent][j].dead) {
                         continue;
                     }
 
-                    auto &other_ent = mob_entities_[continent][j];
-                    auto &other_ent_pos = other_ent.get_position();
+                    auto &other_mob = mobs_[continent][j];
+                    auto &other_mob_pos = other_mob.entity.get_position();
 
-                    distance_x = std::abs(ent_pos.x - other_ent_pos.x);
-                    distance_y = std::abs(ent_pos.y - other_ent_pos.y);
+                    distance_x = std::abs(mob_pos.x - other_mob_pos.x);
+                    distance_y = std::abs(mob_pos.y - other_mob_pos.y);
 
                     if (distance_x > 48.0f * 4 || distance_y > 40.0f * 4) {
                         continue;
                     }
 
-                    if (dir.x > 0.5f && other_ent_pos.x > ent_pos.x && distance_x < 12.0f) {
-                        ent.Transformable::move(-dx, 0.0f);
+                    if (dir.x > 0.5f && other_mob_pos.x > mob_pos.x && distance_x < 12.0f) {
+                        mob.entity.Transformable::move(-dx, 0.0f);
                     }
-                    else if (dir.x < -0.5f && other_ent_pos.x < ent_pos.x && distance_x < 12.0f) {
-                        ent.Transformable::move(-dx, 0.0f);
+                    else if (dir.x < -0.5f && other_mob_pos.x < mob_pos.x && distance_x < 12.0f) {
+                        mob.entity.Transformable::move(-dx, 0.0f);
                     }
-                    if (dir.y > 0.5f && other_ent_pos.y > ent_pos.y && distance_y < 8.0f) {
-                        ent.Transformable::move(0.0f, -dy);
+                    if (dir.y > 0.5f && other_mob_pos.y > mob_pos.y && distance_y < 8.0f) {
+                        mob.entity.Transformable::move(0.0f, -dy);
                     }
-                    else if (dir.y < -0.5f && other_ent_pos.y < ent_pos.y && distance_y < 8.0f) {
-                        ent.Transformable::move(0.0f, -dy);
+                    else if (dir.y < -0.5f && other_mob_pos.y < mob_pos.y && distance_y < 8.0f) {
+                        mob.entity.Transformable::move(0.0f, -dy);
                     }
                 }
 
-                mob_x_[continent][i] = ent.get_tile().tx;
-                mob_y_[continent][i] = ent.get_tile().ty;
+                auto tile = mob.entity.get_tile();
+                mob.tile.x = tile.tx;
+                mob.tile.y = tile.ty;
             }
         }
 
@@ -1617,11 +1627,9 @@ void Game::gen_tiles()
 
     /* Clear mobs */
     for (int i = 0; i < 4; i++) {
-        mob_entities_[i].clear();
-        mob_x_[i].clear();
-        mob_y_[i].clear();
-        mob_armies_[i].clear();
-        mob_counts_[i].clear();
+        for (int j = 0; j < 40; j++) {
+            mobs_[i][j].dead = true;
+        }
     }
 
     static constexpr int kNumShopsPerContinent[4] = {
@@ -1728,6 +1736,8 @@ void Game::gen_tiles()
         std::vector<glm::ivec2> random_tiles;
         std::vector<int> castle_indices;
 
+        int num_mobs = 0;
+
         int n = 0;
         for (int y = 0; y < 64; y++) {
             for (int x = 0; x < 64; x++) {
@@ -1784,39 +1794,34 @@ void Game::gen_tiles()
                     }
                 }
                 else if (id == Tile_GenMonster) {
-                    mob_x_[continent].push_back(x);
-                    mob_y_[continent].push_back(y);
-
-                    std::array<int, 6> mob_army;
-                    std::array<int, 6> mob_counts;
+                    auto &mob = mobs_[continent][num_mobs++];
+                    mob.tile = {x, y};
+                    mob.dead = false;
 
                     int army_size = std::max(rand() % 6, 2);
 
                     for (int i = 0; i < 6; i++) {
-                        mob_army[i] = -1;
-                        mob_counts[i] = 0;
+                        mob.army[i] = -1;
+                        mob.counts[i] = 0;
                     }
 
                     for (int i = 0; i < army_size; i++) {
                     regen:
                         int id = unit_id_gen(continent);
                         for (int j = 0; j < army_size; j++) {
-                            if (mob_army[j] == id) {
+                            if (mob.army[j] == id) {
                                 goto regen;
                             }
                         }
-                        mob_army[i] = id;
-                        mob_counts[i] = unit_count_gen(continent, mob_army[i]);
+                        mob.army[i] = id;
+                        mob.counts[i] = unit_count_gen(continent, mob.army[i]);
                     }
 
                     int sprite_index = rand() % army_size;
-                    int unit_sprite_id = mob_army[sprite_index];
-                    const bty::Texture *texture = unit_textures_[unit_sprite_id];
+                    int unit_sprite_id = mob.army[sprite_index];
 
-                    mob_entities_[continent].push_back(Entity(texture, glm::vec2 {0.0f, 0.0f}));
-                    mob_entities_[continent].back().move_to_tile({x, y, Tile_Grass});
-                    mob_armies_[continent].push_back(mob_army);
-                    mob_counts_[continent].push_back(mob_counts);
+                    mob.entity.set_texture(unit_textures_[unit_sprite_id]);
+                    mob.entity.move_to_tile({x, y, Tile_Grass});
 
                     tiles[x + y * 64] = Tile_Grass;
                 }
@@ -2406,9 +2411,12 @@ void Game::draw_mobs(bty::Gfx &gfx)
     const auto &hero_tile = hero_.get_tile();
     int continent = scene_switcher_->state().continent;
 
-    for (auto i = 0u; i < mob_entities_[continent].size(); i++) {
-        if (std::abs(hero_tile.tx - mob_x_[continent][i]) < 4 && std::abs(hero_tile.ty - mob_y_[continent][i]) < 4) {
-            mob_entities_[continent][i].draw(gfx, game_camera_);
+    for (int i = 0; i < 40; i++) {
+        if (mobs_[continent][i].dead) {
+            continue;
+        }
+        if (std::abs(hero_tile.tx - mobs_[continent][i].tile.x) < 4 && std::abs(hero_tile.ty - mobs_[continent][i].tile.y) < 4) {
+            mobs_[continent][i].entity.draw(gfx, game_camera_);
         }
     }
 }
