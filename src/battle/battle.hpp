@@ -46,6 +46,7 @@ private:
         ViewCharacter,
         UseMagic,
         TemporaryMessage,
+        TeleportUsed,
     };
 
     struct UnitState {
@@ -87,6 +88,7 @@ private:
     void use_spell(int spell);
     void update_spells();
     void magic_confirm();
+    void teleport();
 
 private:
     bool loaded_ {false};
@@ -141,6 +143,11 @@ private:
 
     int using_spell_ {-1};
     bool used_spell_this_turn_ {false};
+
+    bool selecting_teleport_location_ {false};
+    int teleport_target_ {-1};
+    int teleport_team_ {-1};
+    float teleport_timer_ {0};
 };
 
 #endif    // BTY_INTRO_BATTLE_HPP_

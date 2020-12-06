@@ -28,6 +28,10 @@ enum StatusId {
     TURN_UNDEAD_NO_EFFECT,
     TURN_UNDEAD_KILLS,
     ONE_SPELL_PER_TURN,
+    SELECT_TELEPORT,
+    SELECT_TELEPORT_LOCATION,
+    INVALID_TELEPORT_DESTINATION,
+    TELEPORT_DONE,
 };
 
 static constexpr char *const kStatuses[] = {
@@ -47,6 +51,10 @@ static constexpr char *const kStatuses[] = {
     "Turn has no effect on {}",
     "Turn undead kills {}",
     "You may only cast one spell per round!",
+    "       Select army to teleport.",
+    " Select new location to teleport army.",
+    "  You must teleport to an empty area!",
+    "{} are teleported",
 };
 
 Battle::Battle(bty::SceneSwitcher &scene_switcher)
@@ -442,6 +450,13 @@ void Battle::update(float dt)
             break;
         case BattleState::UseMagic:
             use_magic_.animate(dt);
+            break;
+        case BattleState::TeleportUsed:
+            teleport_timer_ += dt;
+            if (teleport_timer_ >= 1.2f) {
+                teleport_timer_ = 0;
+                next_unit();
+            }
             break;
         default:
             break;
@@ -1084,6 +1099,9 @@ void Battle::set_state(BattleState state)
         case BattleState::Magic:
             cursor_.set_texture(magic_);
             break;
+        case BattleState::TeleportUsed:
+            teleport();
+            break;
         default:
             break;
     }
@@ -1366,17 +1384,19 @@ void Battle::use_spell(int spell)
 {
     using_spell_ = spell - 7;
 
+    set_state(BattleState::Magic);
+
     switch (using_spell_) {
+        case 1:
+            status_.set_string(kStatuses[SELECT_TELEPORT]);
+            break;
         case 2:    // fireball
-            set_state(BattleState::Magic);
             status_.set_string(kStatuses[SELECT_FIREBALL]);
             break;
         case 3:    // lightning
-            set_state(BattleState::Magic);
             status_.set_string(kStatuses[SELECT_LIGHTNING]);
             break;
         case 6:    // turn undead
-            set_state(BattleState::Magic);
             status_.set_string(kStatuses[SELECT_TURN_UNDEAD]);
             break;
         default:
@@ -1439,6 +1459,23 @@ void Battle::magic_confirm()
     auto [target, enemy] = get_unit(cx_, cy_);
 
     switch (using_spell_) {
+        case 1:    // teleport
+            if (selecting_teleport_location_) {
+                if (target != -1) {
+                    status_.set_string(kStatuses[INVALID_TELEPORT_DESTINATION]);
+                }
+                else {
+                    set_state(BattleState::TeleportUsed);
+                }
+            }
+            else {
+                status_.set_string(kStatuses[SELECT_TELEPORT_LOCATION]);
+                selecting_teleport_location_ = true;
+                cursor_.set_texture(move_);
+                teleport_team_ = enemy ? 1 : 0;
+                teleport_target_ = target;
+            }
+            break;
         case 2:    // fireball
             [[fallthrough]];
         case 3:    // lightning
@@ -1454,4 +1491,11 @@ void Battle::magic_confirm()
         default:
             break;
     }
+}
+
+void Battle::teleport()
+{
+    selecting_teleport_location_ = false;
+    move_unit_to(teleport_team_, teleport_target_, cx_, cy_);
+    status_.set_string(fmt::format(kStatuses[TELEPORT_DONE], kUnits[armies_[teleport_team_][teleport_target_]].name_plural));
 }
