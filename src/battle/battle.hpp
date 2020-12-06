@@ -76,7 +76,7 @@ private:
     void set_state(BattleState state);
     void land();
     void attack(int from_team, int from_unit, int to_team, int to_unit);
-    int get_unit(int x, int y, bool &enemy) const;
+    std::tuple<int, bool> get_unit(int x, int y) const;
     void update_unit_info();
     void damage(int from_team, int from_unit, int to_team, int to_unit, bool is_ranged, bool is_external, int external_damage, bool retaliation);
     void clear_dead_units();
@@ -86,6 +86,7 @@ private:
     void view_army();
     void use_spell(int spell);
     void update_spells();
+    void magic_confirm();
 
 private:
     bool loaded_ {false};
@@ -137,6 +138,8 @@ private:
     ViewCharacter view_character_;
     bty::Dialog use_magic_;
     bty::Text *magic_spells_[14] {nullptr};
+
+    int using_spell_ {-1};
 };
 
 #endif    // BTY_INTRO_BATTLE_HPP_

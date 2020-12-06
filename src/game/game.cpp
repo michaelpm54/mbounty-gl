@@ -770,7 +770,13 @@ void Game::town(const Tile &tile)
         }
     }
 
-    town_.view(town, tile, continent, town_units_[town], town_spells_[town], castle_occupations_[kTownInfo[town].castle]);
+    // TODO
+    int castle_town = town;
+    if (kTownInfo[town].castle == -1) {
+        castle_town = 2;
+    }
+
+    town_.view(town, tile, continent, town_units_[town], town_spells_[town], castle_occupations_[kTownInfo[castle_town].castle]);
     set_state(GameState::Town);
 }
 
@@ -1297,7 +1303,7 @@ void Game::setup_game()
 
     /* Clear spells */
     for (int i = 0; i < 14; i++) {
-        state.spells[i] = 0;
+        state.spells[i] = 2;
     }
     state.known_spells = 0;
 

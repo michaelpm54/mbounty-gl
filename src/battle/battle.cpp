@@ -18,6 +18,10 @@ enum StatusId {
     ERR_OCCUPIED,
     ATTACK,
     RETALIATION,
+    NO_COMBAT_SPELL,
+    SELECT_LIGHTNING,
+    LIGHTNING_KILLS,
+    INVALID_SPELL_TARGET,
 };
 
 static constexpr char *const kStatuses[] = {
@@ -27,6 +31,10 @@ static constexpr char *const kStatuses[] = {
     " You can't land on an occupied area!",
     "{} attack {}, {} die",
     "{} retaliate, killing {}",
+    "   You have no Combat spell to cast!",
+    "  Select enemy army to electricute.",
+    "Lightning kills {} {}",
+    "   You must select an opposing army!",
 };
 
 Battle::Battle(bty::SceneSwitcher &scene_switcher)
@@ -57,7 +65,7 @@ bool Battle::load(bty::Assets &assets)
     move_ = assets.get_texture("battle/selection.png", {4, 1});
     melee_ = assets.get_texture("battle/melee.png", {4, 1});
     shoot_ = assets.get_texture("battle/shoot.png", {4, 1});
-    magic_ = shoot_;
+    magic_ = assets.get_texture("battle/magic.png", {4, 1});
     cursor_.set_texture(move_);
 
     menu_.create(8, 9, 24, 12, color, assets);
@@ -294,6 +302,8 @@ void Battle::key(int key, int scancode, int action, int mods)
                     break;
             }
             break;
+        case BattleState::Magic:
+            [[fallthrough]];
         case BattleState::Shooting:
             [[fallthrough]];
         case BattleState::Flying:
@@ -384,6 +394,12 @@ void Battle::update(float dt)
             damage_timer_ += dt;
             if (damage_timer_ >= 1.2f) {
                 if (last_state_ == BattleState::Retaliation) {
+                    clear_dead_units();
+                    update_counts();
+                    next_unit();
+                }
+                else if (using_spell_ != -1) {
+                    using_spell_ = -1;
                     clear_dead_units();
                     update_counts();
                     next_unit();
@@ -666,7 +682,7 @@ void Battle::move_cursor(int dir)
             if (cx_ == 0) {
                 return;
             }
-            if (state_ == BattleState::Flying) {
+            if (state_ == BattleState::Flying || state_ == BattleState::Magic) {
                 cx_--;
             }
             else if (state_ == BattleState::Moving && cursor_distance_x_ > -1) {
@@ -678,7 +694,7 @@ void Battle::move_cursor(int dir)
             if (cx_ == 5) {
                 return;
             }
-            if (state_ == BattleState::Flying) {
+            if (state_ == BattleState::Flying || state_ == BattleState::Magic) {
                 cx_++;
             }
             else if (state_ == BattleState::Moving && cursor_distance_x_ < 1) {
@@ -690,7 +706,7 @@ void Battle::move_cursor(int dir)
             if (cy_ == 0) {
                 return;
             }
-            if (state_ == BattleState::Flying) {
+            if (state_ == BattleState::Flying || state_ == BattleState::Magic) {
                 cy_--;
             }
             else if (state_ == BattleState::Moving && cursor_distance_y_ > -1) {
@@ -702,7 +718,7 @@ void Battle::move_cursor(int dir)
             if (cy_ == 4) {
                 return;
             }
-            if (state_ == BattleState::Flying) {
+            if (state_ == BattleState::Flying || state_ == BattleState::Magic) {
                 cy_++;
             }
             else if (state_ == BattleState::Moving && cursor_distance_y_ < 1) {
@@ -717,8 +733,8 @@ void Battle::move_cursor(int dir)
     cursor_.set_position(16.0f + cx_ * 48.0f, 24.0f + cy_ * 40.0f);
 
     if (state_ == BattleState::Moving) {
-        bool enemy;
-        (void)get_unit(cx_, cy_, enemy);
+        auto [unit, enemy] = get_unit(cx_, cy_);
+        (void)unit;
         if (enemy) {
             cursor_.set_texture(melee_);
         }
@@ -737,6 +753,9 @@ void Battle::confirm()
         case BattleState::Moving:
             move_confirm();
             break;
+        case BattleState::Magic:
+            magic_confirm();
+            break;
         default:
             break;
     }
@@ -744,8 +763,9 @@ void Battle::confirm()
 
 void Battle::land()
 {
-    bool enemy;
-    int unit = get_unit(cx_, cy_, enemy);
+    auto [unit, enemy] = get_unit(cx_, cy_);
+    (void)enemy;
+
     if (unit != -1 && unit != active_.y) {
         status_.set_string(kStatuses[ERR_OCCUPIED]);
         return;
@@ -768,8 +788,8 @@ void Battle::move_confirm()
         return;
     }
 
-    bool enemy;
-    int unit = get_unit(cx_, cy_, enemy);
+    auto [unit, enemy] = get_unit(cx_, cy_);
+
     if (enemy) {
         set_state(BattleState::Attack);
         return;
@@ -867,8 +887,8 @@ void Battle::update_unit_info()
         bool any_enemy_around;
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
-                int unit = get_unit(x - 1 + i, y - 1 + j, any_enemy_around);
-                if (any_enemy_around) {
+                auto [unit, enemy] = get_unit(x - 1 + i, y - 1 + j);
+                if (any_enemy_around = enemy) {
                     break;
                 }
             }
@@ -932,7 +952,19 @@ void Battle::status_fly(const Unit &unit)
 void Battle::status_attack(const Unit &unit)
 {
     const Unit &target = kUnits[armies_[last_attacked_team_][last_attacked_unit_]];
-    status_.set_string(fmt::format(kStatuses[ATTACK], unit.name_plural, target.name_plural, last_kills_));
+
+    if (last_state_ == BattleState::Magic) {
+        switch (using_spell_) {
+            case 3:
+                status_.set_string(fmt::format(kStatuses[LIGHTNING_KILLS], last_kills_, target.name_plural));
+                break;
+            default:
+                break;
+        }
+    }
+    else {
+        status_.set_string(fmt::format(kStatuses[ATTACK], unit.name_plural, target.name_plural, last_kills_));
+    }
 }
 
 void Battle::status_retaliation(const Unit &unit)
@@ -989,8 +1021,7 @@ void Battle::reset_waits()
 
 void Battle::set_state(BattleState state)
 {
-    bool enemy;
-    int unit = get_unit(cx_, cy_, enemy);
+    auto [unit, enemy] = get_unit(cx_, cy_);
 
     if (state == BattleState::Menu) {
         state_before_menu_ = state_;
@@ -1020,6 +1051,9 @@ void Battle::set_state(BattleState state)
         case BattleState::UseMagic:
             update_spells();
             break;
+        case BattleState::Magic:
+            cursor_.set_texture(magic_);
+            break;
         default:
             break;
     }
@@ -1039,14 +1073,12 @@ void Battle::attack(int from_team, int from_unit, int to_team, int to_unit)
 
     moves_left_[from_team][from_unit] = 0;
 
-    damage(from_team, from_unit, to_team, to_unit, false, false, 0, from_team != active_.x);
+    damage(from_team, from_unit, to_team, to_unit, false, using_spell_ != -1, 10 * scene_switcher_->state().spell_power, from_team != active_.x);
 }
 
-int Battle::get_unit(int x, int y, bool &enemy) const
+std::tuple<int, bool> Battle::get_unit(int x, int y) const
 {
     const glm::ivec2 pos {x, y};
-
-    enemy = false;
 
     for (int i = 0; i < 2; i++) {
         for (int j = 0; j < 6; j++) {
@@ -1055,14 +1087,14 @@ int Battle::get_unit(int x, int y, bool &enemy) const
             }
             if (pos == positions_[i][j]) {
                 if (i != active_.x) {
-                    enemy = true;
+                    return {j, true};
                 }
-                return j;
+                return {j, false};
             }
         }
     }
 
-    return -1;
+    return {-1, false};
 }
 
 int units_killed(int dmg, int hp)
@@ -1281,6 +1313,16 @@ void Battle::view_army()
 
 void Battle::use_spell(int spell)
 {
+    using_spell_ = spell - 7;
+
+    switch (using_spell_) {
+        case 3:    // lightning
+            set_state(BattleState::Magic);
+            status_.set_string(kStatuses[SELECT_LIGHTNING]);
+            break;
+        default:
+            break;
+    }
 }
 
 void Battle::update_spells()
@@ -1296,7 +1338,7 @@ void Battle::update_spells()
     }
 
     if (no_spells) {
-        status_.set_string("   You have no Combat spell to cast!");
+        status_.set_string(kStatuses[NO_COMBAT_SPELL]);
         set_state(BattleState::TemporaryMessage);
     }
 
@@ -1329,4 +1371,22 @@ void Battle::update_spells()
     magic_spells_[n]->set_string(fmt::format("{} Resurrect", spells[5]));
     n++;
     magic_spells_[n]->set_string(fmt::format("{} Turn Undead", spells[6]));
+}
+
+void Battle::magic_confirm()
+{
+    auto [target, enemy] = get_unit(cx_, cy_);
+
+    switch (using_spell_) {
+        case 3:
+            if (!enemy) {
+                status_.set_string(kStatuses[INVALID_SPELL_TARGET]);
+            }
+            else {
+                set_state(BattleState::Attack);
+            }
+            break;
+        default:
+            break;
+    }
 }
