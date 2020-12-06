@@ -1455,6 +1455,8 @@ void Battle::use_spell(int spell)
             break;
     }
 
+    scene_switcher_->state().spells[spell - 7]--;
+
     used_spell_this_turn_ = true;
 }
 
