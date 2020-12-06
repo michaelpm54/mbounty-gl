@@ -24,6 +24,9 @@ enum StatusId {
     INVALID_SPELL_TARGET,
     SELECT_FIREBALL,
     FIREBALL_KILLS,
+    SELECT_TURN_UNDEAD,
+    TURN_UNDEAD_NO_EFFECT,
+    TURN_UNDEAD_KILLS,
 };
 
 static constexpr char *const kStatuses[] = {
@@ -39,6 +42,9 @@ static constexpr char *const kStatuses[] = {
     "   You must select an opposing army!",
     "     Select enemy army to blast.",
     "Fireball kills {} {}",
+    "     Select enemy army to turn.",
+    "Turn has no effect on {}",
+    "Turn undead kills {}",
 };
 
 Battle::Battle(bty::SceneSwitcher &scene_switcher)
@@ -505,7 +511,7 @@ void Battle::enter(bool reset)
 
     state.enemy_army[0] = Dragons;
     state.enemy_army[1] = Militias;
-    state.enemy_army[2] = -1;
+    state.enemy_army[2] = Ghosts;
     state.enemy_army[3] = -1;
     state.enemy_army[4] = -1;
     state.enemy_army[5] = -1;
@@ -965,6 +971,15 @@ void Battle::status_attack(const Unit &unit)
             case 3:
                 status_.set_string(fmt::format(kStatuses[LIGHTNING_KILLS], last_kills_, target.name_plural));
                 break;
+            case 6:
+                if (!(target.abilities & AbilityUndead)) {
+                    status_.set_string(fmt::format(kStatuses[TURN_UNDEAD_NO_EFFECT], target.name_plural));
+                }
+                else {
+                    status_.set_string(fmt::format(kStatuses[TURN_UNDEAD_KILLS], last_kills_, target.name_plural));
+                    break;
+                }
+                break;
             default:
                 break;
         }
@@ -1090,6 +1105,11 @@ void Battle::attack(int from_team, int from_unit, int to_team, int to_unit)
                 break;
             case 3:
                 spell_damage = 10 * spell_power;
+                break;
+            case 6:
+                if (kUnits[armies_[to_team][to_unit]].abilities & AbilityUndead) {
+                    spell_damage = 50 * spell_power;
+                }
                 break;
             default:
                 break;
@@ -1339,13 +1359,17 @@ void Battle::use_spell(int spell)
     using_spell_ = spell - 7;
 
     switch (using_spell_) {
-        case 2:
+        case 2:    // fireball
             set_state(BattleState::Magic);
             status_.set_string(kStatuses[SELECT_FIREBALL]);
             break;
         case 3:    // lightning
             set_state(BattleState::Magic);
             status_.set_string(kStatuses[SELECT_LIGHTNING]);
+            break;
+        case 6:    // turn undead
+            set_state(BattleState::Magic);
+            status_.set_string(kStatuses[SELECT_TURN_UNDEAD]);
             break;
         default:
             break;
@@ -1405,15 +1429,11 @@ void Battle::magic_confirm()
     auto [target, enemy] = get_unit(cx_, cy_);
 
     switch (using_spell_) {
-        case 3:
-            if (!enemy) {
-                status_.set_string(kStatuses[INVALID_SPELL_TARGET]);
-            }
-            else {
-                set_state(BattleState::Attack);
-            }
-            break;
-        case 2:
+        case 2:    // fireball
+            [[fallthrough]];
+        case 3:    // lightning
+            [[fallthrough]];
+        case 6:    // turn undead
             if (!enemy) {
                 status_.set_string(kStatuses[INVALID_SPELL_TARGET]);
             }
