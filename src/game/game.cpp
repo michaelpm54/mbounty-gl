@@ -2183,7 +2183,7 @@ void Game::view_contract()
 
     std::string castle;
 
-    if (state.known_villains[state.contract]) {
+    if (state.contract < 17 && state.known_villains[state.contract]) {
         int castle_id = -1;
         for (int i = 0; i < 26; i++) {
             if (castle_occupations_[i].occupier == state.contract) {
