@@ -46,7 +46,7 @@ enum StatusId {
     RESURRECT_USED,
 };
 
-static constexpr char *const kStatuses[] = {
+static constexpr char const *kStatuses[] = {
     "{} Attack or Move {}",
     "{} Attack, Shoot or Move {}",
     "{} Shoot ({} left)",
