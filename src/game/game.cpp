@@ -203,6 +203,7 @@ void Game::enter(bool reset)
         }
         else {
             mobs_[state.continent][state.enemy_index].dead = true;
+            sort_army();
         }
     }
 }
