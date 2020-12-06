@@ -19,6 +19,7 @@ enum StatusId {
     ATTACK,
     RETALIATION,
     NO_COMBAT_SPELL,
+    NEED_TARGET,
     SELECT_LIGHTNING,
     LIGHTNING_KILLS,
     INVALID_SPELL_TARGET,
@@ -34,8 +35,10 @@ enum StatusId {
     TELEPORT_USED,
     CLONE_SELECT,
     CLONE_MUST_SELECT_FRIENDLY,
-    CLONE_NEED_TARGET,
     CLONE_USED,
+    FREEZE_SELECT,
+    FREEZE_MUST_SELECT_ENEMY,
+    FREEZE_USED,
 };
 
 static constexpr char *const kStatuses[] = {
@@ -46,6 +49,7 @@ static constexpr char *const kStatuses[] = {
     "{} attack {}, {} die",
     "{} retaliate, killing {}",
     "   You have no Combat spell to cast!",
+    "      You must target somebody!",
     "  Select enemy army to electricute.",
     "Lightning kills {} {}",
     "   You must select an opposing army!",
@@ -61,8 +65,10 @@ static constexpr char *const kStatuses[] = {
     "{} are teleported",
     "     Select your army to clone",
     "    You must select your own army!",
-    "      You must target somebody!",
     "{} {} are cloned",
+    "     Select enemy army to freeze.",
+    "   You must select an opposing army!",
+    "{} are frozen",
 };
 
 Battle::Battle(bty::SceneSwitcher &scene_switcher)
@@ -94,7 +100,6 @@ bool Battle::load(bty::Assets &assets)
     melee_ = assets.get_texture("battle/melee.png", {4, 1});
     shoot_ = assets.get_texture("battle/shoot.png", {4, 1});
     magic_ = assets.get_texture("battle/magic.png", {4, 1});
-    cursor_.set_texture(move_);
 
     menu_.create(8, 9, 24, 12, color, assets);
     menu_.add_option(3, 2, "View your army");
@@ -201,7 +206,7 @@ void Battle::draw(bty::Gfx &gfx)
         }
     }
 
-    if (state_ == BattleState::Moving || state_ == BattleState::Flying || state_ == BattleState::Waiting || state_ == BattleState::Menu || state_ == BattleState::Shooting || state_ == BattleState::Magic) {
+    if (state_ == BattleState::Moving || state_ == BattleState::Flying || state_ == BattleState::Waiting || state_ == BattleState::Menu || state_ == BattleState::Shooting || state_ == BattleState::Magic || state_ == BattleState::IsFrozen) {
         gfx.draw_sprite(cursor_, camera_);
     }
 
@@ -430,7 +435,6 @@ void Battle::update(float dt)
                     using_spell_ = -1;
                     clear_dead_units();
                     update_counts();
-                    next_unit();
                 }
                 else {
                     if (!retaliated_this_turn_[last_attacked_team_][last_attacked_unit_]) {
@@ -460,6 +464,14 @@ void Battle::update(float dt)
             use_magic_.animate(dt);
             break;
         case BattleState::Delay:
+            delay_timer_ += dt;
+            if (delay_timer_ >= 1.2f) {
+                delay_timer_ = 0;
+                set_state(state_before_menu_);
+            }
+            set_cursor_position(positions_[active_.x][active_.x].x, positions_[active_.x][active_.x].y);
+            break;
+        case BattleState::IsFrozen:
             delay_timer_ += dt;
             if (delay_timer_ >= 1.2f) {
                 delay_timer_ = 0;
@@ -519,6 +531,7 @@ void Battle::enter(bool reset)
             us.hp = 0;
             us.injury = 0;
             us.out_of_control = false;
+            us.frozen = false;
         }
     }
 
@@ -868,7 +881,7 @@ void Battle::next_unit()
             continue;
         }
 
-        if (waits_used_[active_.x][index] < 2 && moves_left_[active_.x][index] > 0) {
+        if (waits_used_[active_.x][index] < 2 && moves_left_[active_.x][index] > 0 && !unit_states_[active_.x][index].frozen) {
             loop_back_for_waits = true;
             active_.y = index;
             break;
@@ -883,6 +896,9 @@ void Battle::next_unit()
                 continue;
             }
             active_.y = i;
+            if (unit_states_[active_.x][active_.y].frozen) {
+                set_state(BattleState::IsFrozen);
+            }
             reset_moves();
             reset_waits();
             next_team = true;
@@ -899,6 +915,9 @@ void Battle::next_unit()
             int index = (i + 1 + active_.y) % 6;
             if (waits_used_[active_.x][index] < 2 && moves_left_[active_.x][index] > 0) {
                 active_.y = index;
+                if (unit_states_[active_.x][active_.y].frozen) {
+                    set_state(BattleState::IsFrozen);
+                }
                 break;
             }
         }
@@ -941,7 +960,6 @@ void Battle::update_unit_info()
     else {
         set_state(BattleState::Moving);
     }
-    cursor_.set_texture(move_);
     status();
 }
 
@@ -1084,6 +1102,18 @@ void Battle::set_state(BattleState state)
             status();
             break;
         case BattleState::Moving:
+            if (unit_states_[active_.x][active_.y].frozen) {
+                set_state(BattleState::IsFrozen);
+            }
+            cursor_.set_texture(move_);
+            status();
+            break;
+        case BattleState::Flying:
+            if (unit_states_[active_.x][active_.y].frozen) {
+                set_state(BattleState::IsFrozen);
+            }
+            cursor_.set_texture(move_);
+            status();
             break;
         case BattleState::Attack:
             attack(active_.x, active_.y, active_.x == 1 ? 0 : 1, unit);
@@ -1106,6 +1136,10 @@ void Battle::set_state(BattleState state)
             break;
         case BattleState::Magic:
             cursor_.set_texture(magic_);
+            break;
+        case BattleState::IsFrozen:
+            delay_timer_ = 0;
+            status_.set_string(fmt::format(kStatuses[FREEZE_USED], kUnits[armies_[active_.x][active_.y]].name_plural));
             break;
         default:
             break;
@@ -1404,6 +1438,9 @@ void Battle::use_spell(int spell)
         case 3:    // lightning
             status_.set_string(kStatuses[SELECT_LIGHTNING]);
             break;
+        case 4:
+            status_.set_string(kStatuses[FREEZE_SELECT]);
+            break;
         case 6:    // turn undead
             status_.set_string(kStatuses[SELECT_TURN_UNDEAD]);
             break;
@@ -1472,7 +1509,7 @@ void Battle::magic_confirm()
                 status_.set_string(kStatuses[CLONE_MUST_SELECT_FRIENDLY]);
             }
             else if (target == -1) {
-                status_.set_string(kStatuses[CLONE_NEED_TARGET]);
+                status_.set_string(kStatuses[NEED_TARGET]);
             }
             else {
                 clone();
@@ -1501,6 +1538,18 @@ void Battle::magic_confirm()
             [[fallthrough]];
         case 3:    // lightning
             [[fallthrough]];
+        case 4:    // freeze
+            if (target != -1 && !enemy) {
+                status_.set_string(kStatuses[FREEZE_MUST_SELECT_ENEMY]);
+            }
+            else if (target == -1) {
+                status_.set_string(kStatuses[NEED_TARGET]);
+            }
+            else {
+                freeze();
+                set_state(BattleState::Delay);
+            }
+            break;
         case 6:    // turn undead
             if (!enemy) {
                 status_.set_string(kStatuses[INVALID_SPELL_TARGET]);
@@ -1528,4 +1577,20 @@ void Battle::clone()
     unit_states_[0][unit].count += clone_amount;
     status_.set_string(fmt::format(kStatuses[CLONE_USED], clone_amount, kUnits[armies_[0][unit]].name_plural));
     update_counts();
+}
+
+void Battle::freeze()
+{
+    auto [unit, enemy] = get_unit(cx_, cy_);
+    unit_states_[1][unit].frozen = true;
+    status_.set_string(fmt::format(kStatuses[FREEZE_USED], kUnits[armies_[1][unit]].name_plural));
+}
+
+void Battle::set_cursor_position(int x, int y)
+{
+    cx_ = x;
+    cy_ = y;
+    cursor_distance_x_ = 0;
+    cursor_distance_y_ = 0;
+    cursor_.set_position(16.0f + cx_ * 48.0f, 24.0f + cy_ * 40.0f);
 }

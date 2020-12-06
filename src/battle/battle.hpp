@@ -47,6 +47,7 @@ private:
         UseMagic,
         TemporaryMessage,
         Delay,
+        IsFrozen,
     };
 
     struct UnitState {
@@ -57,6 +58,7 @@ private:
         int injury;
         int ammo;
         bool out_of_control;
+        bool frozen;
     };
 
     void move_unit_to(int team, int unit, int x, int y);
@@ -90,6 +92,8 @@ private:
     void magic_confirm();
     void teleport();
     void clone();
+    void freeze();
+    void set_cursor_position(int x, int y);
 
 private:
     bool loaded_ {false};
