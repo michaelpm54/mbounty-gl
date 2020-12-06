@@ -886,7 +886,7 @@ void Battle::land()
 void Battle::move_confirm()
 {
     if (cx_ == positions_[active_.x][active_.y].x && cy_ == positions_[active_.x][active_.y].y) {
-        if (unit_states_[active_.x][active_.y].ammo == 0) {
+        if (unit_states_[active_.x][active_.y].ammo == 0 || any_enemy_around()) {
             waits_used_[active_.x][active_.y]++;
             set_state(BattleState::Waiting);
         }
@@ -918,7 +918,7 @@ void Battle::move_confirm()
         next_unit();
     }
     else {
-        if (unit_states_[active_.x][active_.y].ammo) {
+        if (unit_states_[active_.x][active_.y].ammo && !!any_enemy_around()) {
             status_.set_string(fmt::format(kStatuses[ATTACK_SHOOT_MOVE], kUnits[armies_[active_.x][active_.y]].name_plural, moves_left_[active_.x][active_.y]));
         }
         else {
@@ -967,7 +967,7 @@ void Battle::next_unit()
                 continue;
             }
             active_.y = i;
-            if (unit_states_[active_.x][active_.y].frozen) {
+            if (unit_states_[active_.x][active_.y].frozen && !any_enemy_around()) {
                 set_state(BattleState::IsFrozen);
             }
             reset_moves();
@@ -1007,21 +1007,7 @@ void Battle::update_unit_info()
     cursor_distance_y_ = 0;
     const auto &unit = kUnits[armies_[active_.x][active_.y]];
     if ((unit.abilities & AbilityFly) && !flown_this_turn_[active_.x][active_.y]) {
-        int x = positions_[active_.x][active_.y].x;
-        int y = positions_[active_.x][active_.y].y;
-        bool any_enemy_around;
-        for (int i = 0; i < 3; i++) {
-            for (int j = 0; j < 3; j++) {
-                auto [unit, enemy] = get_unit(x - 1 + i, y - 1 + j);
-                if (any_enemy_around = enemy) {
-                    break;
-                }
-            }
-            if (any_enemy_around) {
-                break;
-            }
-        }
-        if (!any_enemy_around) {
+        if (!any_enemy_around()) {
             set_state(BattleState::Flying);
         }
         else {
@@ -1029,7 +1015,7 @@ void Battle::update_unit_info()
         }
     }
     else {
-        if (unit_states_[active_.x][active_.y].ammo) {
+        if (unit_states_[active_.x][active_.y].ammo && !any_enemy_around()) {
             status_.set_string(fmt::format(kStatuses[ATTACK_SHOOT_MOVE], unit.name_plural, moves_left_[active_.x][active_.y]));
         }
         else {
@@ -1827,4 +1813,20 @@ void Battle::victory()
 
     state.gold += gold_total;
     victory_.set_line(0, fmt::format(kVictoryMessage, kShortHeroNames[state.hero_id], bty::number_with_ks(gold_total)));
+}
+
+bool Battle::any_enemy_around() const
+{
+    int x = positions_[active_.x][active_.y].x;
+    int y = positions_[active_.x][active_.y].y;
+    bool any_enemy_around {false};
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+            auto [unit, enemy] = get_unit(x - 1 + i, y - 1 + j);
+            if (enemy) {
+                return enemy;
+            }
+        }
+    }
+    return false;
 }

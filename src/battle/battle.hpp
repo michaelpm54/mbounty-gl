@@ -99,6 +99,7 @@ private:
     void set_cursor_position(int x, int y);
     bool check_end();
     void victory();
+    bool any_enemy_around() const;
 
 private:
     bool loaded_ {false};
