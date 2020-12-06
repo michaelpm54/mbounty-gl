@@ -48,9 +48,11 @@ private:
         TemporaryMessage,
         Delay,
         IsFrozen,
+        Victory,
     };
 
     struct UnitState {
+        int id;
         int start_count;
         int turn_count;
         int count;
@@ -95,6 +97,8 @@ private:
     void freeze();
     void resurrect();
     void set_cursor_position(int x, int y);
+    bool check_end();
+    void victory();
 
 private:
     bool loaded_ {false};
@@ -155,6 +159,8 @@ private:
     bool was_shooting_ {false};
 
     bool do_retaliate {false};
+
+    bty::TextBox victory_;
 };
 
 #endif    // BTY_INTRO_BATTLE_HPP_

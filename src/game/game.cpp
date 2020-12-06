@@ -196,6 +196,10 @@ void Game::enter(bool reset)
         auto &state = scene_switcher_->state();
         if (state.disgrace) {
             set_state(GameState::Disgrace);
+            for (int i = 0; i < 6; i++) {
+                mob_armies_[state.continent][state.enemy_index][i] = state.enemy_army[i];
+                mob_counts_[state.continent][state.enemy_index][i] = state.enemy_counts[i];
+            }
         }
         else {
             mob_entities_[state.continent].erase(mob_entities_[state.continent].begin() + state.enemy_index);
@@ -1369,7 +1373,7 @@ void Game::setup_game()
     switch (state.hero_id) {
         case 0:
             state.army[0] = Militias;
-            state.army_counts[0] = 20;
+            state.army_counts[0] = 100;
             state.army[1] = Archers;
             state.army_counts[1] = 2;
             break;

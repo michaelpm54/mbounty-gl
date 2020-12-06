@@ -11,6 +11,17 @@
 #include "scene-switcher.hpp"
 #include "shared-state.hpp"
 
+static constexpr char const *kVictoryMessage = {
+    R"raw(          Victory!
+          ________
+   Well done {},
+    you have successfully
+ vanquished yet another foe.
+
+   Spoils of War: {} gold.
+	)raw",
+};
+
 enum StatusId {
     ATTACK_MOVE,
     ATTACK_SHOOT_MOVE,
@@ -171,6 +182,9 @@ and send you back to
     magic_spells_[12] = use_magic_.add_option(4, 19, "");
     magic_spells_[13] = use_magic_.add_option(4, 20, "");
 
+    victory_.create(5, 10, 30, 9, color, assets);
+    victory_.add_line(1, 1, "");
+
     for (int i = 0; i < 7; i++) {
         use_magic_.set_option_disabled(i, true);
     }
@@ -256,6 +270,9 @@ void Battle::draw(bty::Gfx &gfx)
     else if (state_ == BattleState::UseMagic) {
         use_magic_.draw(gfx, camera_);
     }
+    else if (state_ == BattleState::Victory) {
+        victory_.draw(gfx, camera_);
+    }
 
     if (tmp_msg) {
         state_ = tmp_state_;
@@ -272,6 +289,13 @@ void Battle::key(int key, int scancode, int action, int mods)
             switch (action) {
                 case GLFW_PRESS:
                     switch (key) {
+                        case GLFW_KEY_W:
+                            for (int i = 0; i < 6; i++) {
+                                armies_[1][i] = -1;
+                            }
+                            if (check_end())
+                                return;
+                            break;
                         case GLFW_KEY_UP:
                             menu_.prev();
                             break;
@@ -417,6 +441,25 @@ void Battle::key(int key, int scancode, int action, int mods)
                     break;
             }
             break;
+        case BattleState::Victory:
+            switch (action) {
+                case GLFW_PRESS:
+                    switch (key) {
+                        case GLFW_KEY_BACKSPACE:
+                            [[fallthrough]];
+                        case GLFW_KEY_SPACE:
+                            [[fallthrough]];
+                        case GLFW_KEY_ENTER:
+                            scene_switcher_->fade_to(SceneId::Game, false);
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
         default:
             break;
     }
@@ -450,7 +493,7 @@ void Battle::update(float dt)
         case BattleState::PauseToDisplayDamage:
             delay_timer_ += dt;
             if (delay_timer_ >= 1.2f) {
-                if (last_state_ == BattleState::Retaliation) {    // no retaliation on retaliation
+                if (!do_retaliate || retaliated_this_turn_[last_attacked_team_][last_attacked_unit_]) {    // no retaliation on retaliation
                     clear_dead_units();
                     update_counts();
                     next_unit();
@@ -475,6 +518,7 @@ void Battle::update(float dt)
                     set_state(BattleState::Retaliation);
                     status();
                 }
+                check_end();
             }
             break;
         case BattleState::Menu:
@@ -527,6 +571,10 @@ void Battle::enter(bool reset)
         return;
     }
 
+    /* Can happen when the previous battle ended in a draw. */
+    /* The battle immediately ends and the player wins. */
+    check_end();
+
     auto &state = scene_switcher_->state();
     auto color = bty::get_box_color(state.difficulty_level);
     bar_.set_color(color);
@@ -535,6 +583,7 @@ void Battle::enter(bool reset)
     view_army_.set_color(color);
     view_character_.set_color(color);
     use_magic_.set_color(color);
+    victory_.set_color(color);
 
     delay_timer_ = 0;
     last_state_ = BattleState::Moving;
@@ -550,6 +599,7 @@ void Battle::enter(bool reset)
             armies_[i][j] = -1;
 
             auto &us = unit_states_[i][j];
+            us.id = -1;
             us.start_count = 0;
             us.turn_count = 0;
             us.count = 0;
@@ -560,32 +610,6 @@ void Battle::enter(bool reset)
             us.frozen = false;
         }
     }
-
-    state.army[0] = Archers;
-    state.army[1] = Ghosts;
-    state.army[2] = Nomads;
-    state.army[3] = -1;
-    state.army[4] = -1;
-
-    state.army_counts[0] = 50;
-    state.army_counts[1] = 40;
-    state.army_counts[2] = 30;
-    state.army_counts[3] = 20;
-    state.army_counts[4] = 10;
-
-    state.enemy_army[0] = Dragons;
-    state.enemy_army[1] = Militias;
-    state.enemy_army[2] = Ghosts;
-    state.enemy_army[3] = -1;
-    state.enemy_army[4] = -1;
-    state.enemy_army[5] = -1;
-
-    state.enemy_counts[0] = 10;
-    state.enemy_counts[1] = 20;
-    state.enemy_counts[2] = 30;
-    state.enemy_counts[3] = 40;
-    state.enemy_counts[4] = 50;
-    state.enemy_counts[5] = 60;
 
     int *armies[] = {state.army, state.enemy_army.data()};
     int *counts[] = {state.army_counts, state.enemy_counts.data()};
@@ -600,6 +624,7 @@ void Battle::enter(bool reset)
             armies_[i][j] = armies[i][j];
             const auto &unit = kUnits[armies[i][j]];
             auto &us = unit_states_[i][j];
+            us.id = armies[i][j];
             us.start_count = counts[i][j];
             us.turn_count = counts[i][j];
             us.count = counts[i][j];
@@ -888,16 +913,26 @@ void Battle::move_confirm()
     move_unit_to(active_.x, active_.y, cx_, cy_);
 
     moves_left_[active_.x][active_.y]--;
+
     if (moves_left_[active_.x][active_.y] == 0) {
         next_unit();
     }
     else {
-        status();
+        if (unit_states_[active_.x][active_.y].ammo) {
+            status_.set_string(fmt::format(kStatuses[ATTACK_SHOOT_MOVE], kUnits[armies_[active_.x][active_.y]].name_plural, moves_left_[active_.x][active_.y]));
+        }
+        else {
+            status_.set_string(fmt::format(kStatuses[ATTACK_MOVE], kUnits[armies_[active_.x][active_.y]].name_plural, moves_left_[active_.x][active_.y]));
+        }
     }
 }
 
 void Battle::next_unit()
 {
+    if (check_end()) {
+        return;
+    }
+
     delay_timer_ = 0;
 
     if (active_ == glm::ivec2 {-1, -1}) {
@@ -1179,6 +1214,9 @@ void Battle::set_state(BattleState state)
         case BattleState::Shooting:
             cursor_.set_texture(shoot_);
             status_.set_string(fmt::format(kStatuses[SHOOT], kUnits[armies_[active_.x][active_.y]].name_plural, unit_states_[active_.x][active_.y].ammo));
+            break;
+        case BattleState::Victory:
+            victory();
             break;
         default:
             break;
@@ -1731,4 +1769,62 @@ void Battle::shoot_confirm()
             set_state(BattleState::Attack);
         }
     }
+}
+
+bool Battle::check_end()
+{
+    int num_dead[2] = {0, 0};
+    for (int i = 0; i < 2; i++) {
+        for (int j = 0; j < 6; j++) {
+            if (armies_[i][j] == -1) {
+                num_dead[i]++;
+            }
+        }
+    }
+
+    auto &state = scene_switcher_->state();
+
+    if (num_dead[0] >= 5) {
+        state.disgrace = true;
+        for (int i = 0; i < 6; i++) {
+            state.enemy_army[i] = armies_[1][i];
+            state.enemy_counts[i] = unit_states_[1][i].count;
+        }
+        return true;
+    }
+    else if (num_dead[1] == 6) {
+        for (int i = 0; i < 5; i++) {
+            state.army[i] = armies_[0][i];
+            state.army_counts[i] = unit_states_[0][i].count;
+        }
+        set_state(BattleState::Victory);
+        return true;
+    }
+
+    return false;
+}
+
+void Battle::victory()
+{
+    int gold_total = 0;
+    for (int i = 0; i < 6; i++) {
+        auto &us = unit_states_[1][i];
+        gold_total += us.start_count * kUnits[us.id].weekly_cost * 5;
+    }
+
+    int a = gold_total;
+    gold_total += rand() % 10;
+    gold_total += rand() % (a / 8);
+
+    static constexpr char const *kShortHeroNames[] = {
+        "Sir Crimsaun",
+        "Lord Palmer",
+        "Tynnestra",
+        "Moham",
+    };
+
+    auto &state = scene_switcher_->state();
+
+    state.gold += gold_total;
+    victory_.set_line(0, fmt::format(kVictoryMessage, kShortHeroNames[state.hero_id], bty::number_with_ks(gold_total)));
 }
