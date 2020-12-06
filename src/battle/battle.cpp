@@ -501,16 +501,16 @@ void Battle::update(float dt)
                     set_cursor_position(positions_[active_.x][active_.y].x, positions_[active_.x][active_.y].y);
                     update_unit_info();
                 }
-                else if (!do_retaliate || retaliated_this_turn_[last_attacked_team_][last_attacked_unit_]) {    // no retaliation on retaliation
-                    clear_dead_units();
-                    update_counts();
-                    next_unit();
-                }
                 else if (was_shooting_) {    // no retaliation on shooting
                     clear_dead_units();
                     update_counts();
                     next_unit();
                     was_shooting_ = false;
+                }
+                else if (!do_retaliate || retaliated_this_turn_[last_attacked_team_][last_attacked_unit_]) {    // no retaliation on retaliation
+                    clear_dead_units();
+                    update_counts();
+                    next_unit();
                 }
                 else if (do_retaliate && !retaliated_this_turn_[last_attacked_team_][last_attacked_unit_]) {    // retaliate
                     do_retaliate = false;
@@ -1784,7 +1784,7 @@ bool Battle::check_end()
 
     auto &state = scene_switcher_->state();
 
-    if (num_dead[0] >= 5) {
+    if (num_dead[0] == 6) {
         state.disgrace = true;
         for (int i = 0; i < 6; i++) {
             state.enemy_army[i] = armies_[1][i];
