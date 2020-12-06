@@ -27,6 +27,7 @@ enum StatusId {
     SELECT_TURN_UNDEAD,
     TURN_UNDEAD_NO_EFFECT,
     TURN_UNDEAD_KILLS,
+    ONE_SPELL_PER_TURN,
 };
 
 static constexpr char *const kStatuses[] = {
@@ -45,6 +46,7 @@ static constexpr char *const kStatuses[] = {
     "     Select enemy army to turn.",
     "Turn has no effect on {}",
     "Turn undead kills {}",
+    "You may only cast one spell per round!",
 };
 
 Battle::Battle(bty::SceneSwitcher &scene_switcher)
@@ -1027,6 +1029,8 @@ void Battle::reset_moves()
             us.out_of_control = (us.hp * us.count) > leadership;
         }
     }
+
+    used_spell_this_turn_ = false;
 }
 
 void Battle::reset_waits()
@@ -1072,6 +1076,10 @@ void Battle::set_state(BattleState state)
             break;
         case BattleState::UseMagic:
             update_spells();
+            if (used_spell_this_turn_) {
+                status_.set_string(kStatuses[ONE_SPELL_PER_TURN]);
+                set_state(BattleState::TemporaryMessage);
+            }
             break;
         case BattleState::Magic:
             cursor_.set_texture(magic_);
@@ -1374,6 +1382,8 @@ void Battle::use_spell(int spell)
         default:
             break;
     }
+
+    used_spell_this_turn_ = true;
 }
 
 void Battle::update_spells()

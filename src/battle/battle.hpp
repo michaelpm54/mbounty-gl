@@ -140,6 +140,7 @@ private:
     bty::Text *magic_spells_[14] {nullptr};
 
     int using_spell_ {-1};
+    bool used_spell_this_turn_ {false};
 };
 
 #endif    // BTY_INTRO_BATTLE_HPP_
