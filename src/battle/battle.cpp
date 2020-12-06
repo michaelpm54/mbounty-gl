@@ -22,6 +22,8 @@ enum StatusId {
     SELECT_LIGHTNING,
     LIGHTNING_KILLS,
     INVALID_SPELL_TARGET,
+    SELECT_FIREBALL,
+    FIREBALL_KILLS,
 };
 
 static constexpr char *const kStatuses[] = {
@@ -35,6 +37,8 @@ static constexpr char *const kStatuses[] = {
     "  Select enemy army to electricute.",
     "Lightning kills {} {}",
     "   You must select an opposing army!",
+    "     Select enemy army to blast.",
+    "Fireball kills {} {}",
 };
 
 Battle::Battle(bty::SceneSwitcher &scene_switcher)
@@ -955,6 +959,9 @@ void Battle::status_attack(const Unit &unit)
 
     if (last_state_ == BattleState::Magic) {
         switch (using_spell_) {
+            case 2:
+                status_.set_string(fmt::format(kStatuses[FIREBALL_KILLS], last_kills_, target.name_plural));
+                break;
             case 3:
                 status_.set_string(fmt::format(kStatuses[LIGHTNING_KILLS], last_kills_, target.name_plural));
                 break;
@@ -1073,7 +1080,23 @@ void Battle::attack(int from_team, int from_unit, int to_team, int to_unit)
 
     moves_left_[from_team][from_unit] = 0;
 
-    damage(from_team, from_unit, to_team, to_unit, false, using_spell_ != -1, 10 * scene_switcher_->state().spell_power, from_team != active_.x);
+    int spell_damage = 0;
+    int spell_power = scene_switcher_->state().spell_power;
+
+    if (using_spell_ != -1) {
+        switch (using_spell_) {
+            case 2:
+                spell_damage = 25 * spell_power;
+                break;
+            case 3:
+                spell_damage = 10 * spell_power;
+                break;
+            default:
+                break;
+        }
+    }
+
+    damage(from_team, from_unit, to_team, to_unit, false, using_spell_ != -1, spell_damage, from_team != active_.x);
 }
 
 std::tuple<int, bool> Battle::get_unit(int x, int y) const
@@ -1316,6 +1339,10 @@ void Battle::use_spell(int spell)
     using_spell_ = spell - 7;
 
     switch (using_spell_) {
+        case 2:
+            set_state(BattleState::Magic);
+            status_.set_string(kStatuses[SELECT_FIREBALL]);
+            break;
         case 3:    // lightning
             set_state(BattleState::Magic);
             status_.set_string(kStatuses[SELECT_LIGHTNING]);
@@ -1379,6 +1406,14 @@ void Battle::magic_confirm()
 
     switch (using_spell_) {
         case 3:
+            if (!enemy) {
+                status_.set_string(kStatuses[INVALID_SPELL_TARGET]);
+            }
+            else {
+                set_state(BattleState::Attack);
+            }
+            break;
+        case 2:
             if (!enemy) {
                 status_.set_string(kStatuses[INVALID_SPELL_TARGET]);
             }
