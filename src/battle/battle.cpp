@@ -23,6 +23,7 @@ enum StatusId {
     RETALIATION,
     NO_COMBAT_SPELL,
     NEED_TARGET,
+    NEED_ENEMY,
     SELECT_LIGHTNING,
     LIGHTNING_KILLS,
     INVALID_SPELL_TARGET,
@@ -40,10 +41,16 @@ enum StatusId {
     CLONE_MUST_SELECT_FRIENDLY,
     CLONE_USED,
     FREEZE_SELECT,
-    FREEZE_MUST_SELECT_ENEMY,
     FREEZE_USED,
     RESURRECT_SELECT,
     RESURRECT_USED,
+    DRAGON_IMMUNE_CLONE,
+    DRAGON_IMMUNE_TELEPORT,
+    DRAGON_IMMUNE_FIREBALL,
+    DRAGON_IMMUNE_LIGHTNING,
+    DRAGON_IMMUNE_FREEZE,
+    DRAGON_IMMUNE_RESURRECT,
+    DRAGON_IMMUNE_TURN_UNDEAD,
 };
 
 static constexpr char const *kStatuses[] = {
@@ -58,6 +65,7 @@ static constexpr char const *kStatuses[] = {
     "{} retaliate, killing {}",
     "   You have no Combat spell to cast!",
     "      You must target somebody!",
+    "   You must select an opposing army!",
     "  Select enemy army to electricute.",
     "Lightning kills {} {}",
     "   You must select an opposing army!",
@@ -75,10 +83,16 @@ static constexpr char const *kStatuses[] = {
     "    You must select your own army!",
     "{} {} are cloned",
     "     Select enemy army to freeze.",
-    "   You must select an opposing army!",
     "{} are frozen",
     "   Select your army to resurrect.",
     "{} {} are resurrected",
+    "Clone has no effect on Dragons",
+    "Teleport has no effect on Dragons",
+    "Fireball has no effect on Dragons",
+    "Lightning has no effect on Dragons",
+    "Freeze has no effect on Dragons",
+    "Resurrect has no effect on Dragons",
+    "Turn has no effect on Dragons",
 };
 
 Battle::Battle(bty::SceneSwitcher &scene_switcher)
@@ -436,29 +450,30 @@ void Battle::update(float dt)
         case BattleState::PauseToDisplayDamage:
             delay_timer_ += dt;
             if (delay_timer_ >= 1.2f) {
-                if (last_state_ == BattleState::Retaliation) {
+                if (last_state_ == BattleState::Retaliation) {    // no retaliation on retaliation
                     clear_dead_units();
                     update_counts();
                     next_unit();
                 }
-                else if (using_spell_ != -1) {
+                else if (using_spell_ != -1) {    // no retaliation on magic
                     using_spell_ = -1;
                     clear_dead_units();
                     update_counts();
+                    set_state(state_before_menu_);
+                    set_cursor_position(positions_[active_.x][active_.y].x, positions_[active_.x][active_.y].y);
                 }
-                else {
-                    if (!retaliated_this_turn_[last_attacked_team_][last_attacked_unit_] && !was_shooting_) {
-                        retaliated_this_turn_[last_attacked_team_][last_attacked_unit_] = true;
-                        attack(last_attacked_team_, last_attacked_unit_, last_attacking_team_, last_attacking_unit_);
-                        set_state(BattleState::Retaliation);
-                        status();
-                    }
-                    else {
-                        was_shooting_ = false;
-                        clear_dead_units();
-                        update_counts();
-                        next_unit();
-                    }
+                else if (was_shooting_) {    // no retaliation on shooting
+                    clear_dead_units();
+                    update_counts();
+                    next_unit();
+                    was_shooting_ = false;
+                }
+                else if (do_retaliate && !retaliated_this_turn_[last_attacked_team_][last_attacked_unit_]) {    // retaliate
+                    do_retaliate = false;
+                    retaliated_this_turn_[last_attacked_team_][last_attacked_unit_] = true;
+                    attack(last_attacked_team_, last_attacked_unit_, last_attacking_team_, last_attacking_unit_);
+                    set_state(BattleState::Retaliation);
+                    status();
                 }
             }
             break;
@@ -479,8 +494,8 @@ void Battle::update(float dt)
             if (delay_timer_ >= 1.2f) {
                 delay_timer_ = 0;
                 set_state(state_before_menu_);
+                set_cursor_position(positions_[active_.x][active_.y].x, positions_[active_.x][active_.y].y);
             }
-            set_cursor_position(positions_[active_.x][active_.x].x, positions_[active_.x][active_.x].y);
             break;
         case BattleState::IsFrozen:
             delay_timer_ += dt;
@@ -859,6 +874,7 @@ void Battle::move_confirm()
     auto [unit, enemy] = get_unit(cx_, cy_);
 
     if (enemy) {
+        do_retaliate = true;
         set_state(BattleState::Attack);
         return;
     }
@@ -1344,25 +1360,26 @@ void Battle::damage(int from_team, int from_unit, int to_team, int to_unit, bool
         final_damage = unit_state_b.turn_count * unit_state_b.hp;
     }
 
+    last_kills_ = std::min(kills, unit_state_b.turn_count);
+
+    if (from_team == 1) {
+        scene_switcher_->state().followers_killed += last_kills_;
+    }
+
+    /* Leech and absorb */
     if (!is_external) {
         /* Difference between leech and absorb is, leech can only get back to the original
 			count. Absorb has no limit. */
         if (unit_a.abilities & AbilityAbsorb)
-            unit_state_a.count += static_cast<int>(kills);
+            unit_state_a.count += last_kills_;
 
         else if (unit_a.abilities & AbilityLeech) {
-            unit_state_a.count += units_killed(final_damage, unit_state_a.hp);
+            unit_state_a.count += last_kills_;
             if (unit_state_a.count > unit_state_a.start_count) {
                 unit_state_a.count = unit_state_a.start_count;
                 unit_state_a.injury = 0;
             }
         }
-    }
-
-    last_kills_ = std::min(kills, unit_state_b.turn_count);
-
-    if (from_team == 1) {
-        scene_switcher_->state().followers_killed += last_kills_;
     }
 }
 
@@ -1531,17 +1548,26 @@ void Battle::magic_confirm()
 {
     auto [target, enemy] = get_unit(cx_, cy_);
 
+    bool is_immune = target == -1 ? false : (armies_[enemy ? 1 : 0][target] == UnitId::Dragons);
+
     switch (using_spell_) {
         case 0:    // clone
-            if (target != -1 && enemy) {
-                status_.set_string(kStatuses[CLONE_MUST_SELECT_FRIENDLY]);
-            }
-            else if (target == -1) {
+            if (target == -1) {
                 status_.set_string(kStatuses[NEED_TARGET]);
             }
             else {
-                clone();
-                set_state(BattleState::Delay);
+                if (enemy) {
+                    status_.set_string(kStatuses[CLONE_MUST_SELECT_FRIENDLY]);
+                }
+                else {
+                    if (is_immune) {
+                        status_.set_string(kStatuses[DRAGON_IMMUNE_CLONE]);
+                    }
+                    else {
+                        clone();
+                        set_state(BattleState::Delay);
+                    }
+                }
             }
             break;
         case 1:    // teleport
@@ -1554,6 +1580,12 @@ void Battle::magic_confirm()
                     set_state(BattleState::Delay);
                 }
             }
+            else if (target == -1) {
+                status_.set_string(kStatuses[NEED_TARGET]);
+            }
+            else if (is_immune) {
+                status_.set_string(kStatuses[DRAGON_IMMUNE_TELEPORT]);
+            }
             else {
                 status_.set_string(kStatuses[SELECT_TELEPORT_LOCATION]);
                 selecting_teleport_location_ = true;
@@ -1563,15 +1595,42 @@ void Battle::magic_confirm()
             }
             break;
         case 2:    // fireball
-            [[fallthrough]];
-        case 3:    // lightning
-            [[fallthrough]];
-        case 4:    // freeze
             if (target != -1 && !enemy) {
-                status_.set_string(kStatuses[FREEZE_MUST_SELECT_ENEMY]);
+                status_.set_string(kStatuses[NEED_ENEMY]);
             }
             else if (target == -1) {
                 status_.set_string(kStatuses[NEED_TARGET]);
+            }
+            else if (is_immune) {
+                status_.set_string(kStatuses[DRAGON_IMMUNE_FIREBALL]);
+            }
+            else {
+                set_state(BattleState::Attack);
+            }
+            break;
+        case 3:    // lightning
+            if (target != -1 && !enemy) {
+                status_.set_string(kStatuses[NEED_ENEMY]);
+            }
+            else if (target == -1) {
+                status_.set_string(kStatuses[NEED_TARGET]);
+            }
+            else if (is_immune) {
+                status_.set_string(kStatuses[DRAGON_IMMUNE_LIGHTNING]);
+            }
+            else {
+                set_state(BattleState::Attack);
+            }
+            break;
+        case 4:    // freeze
+            if (target != -1 && !enemy) {
+                status_.set_string(kStatuses[NEED_ENEMY]);
+            }
+            else if (target == -1) {
+                status_.set_string(kStatuses[NEED_TARGET]);
+            }
+            else if (is_immune) {
+                status_.set_string(kStatuses[DRAGON_IMMUNE_FIREBALL]);
             }
             else {
                 freeze();
@@ -1585,13 +1644,22 @@ void Battle::magic_confirm()
             else if (target == -1) {
                 status_.set_string(kStatuses[NEED_TARGET]);
             }
+            else if (is_immune) {
+                status_.set_string(kStatuses[DRAGON_IMMUNE_RESURRECT]);
+            }
             else {
                 resurrect();
                 set_state(BattleState::Delay);
             }
             break;
         case 6:    // turn undead
-            if (!enemy) {
+            if (target == -1) {
+                status_.set_string(kStatuses[NEED_TARGET]);
+            }
+            else if (is_immune) {
+                status_.set_string(kStatuses[DRAGON_IMMUNE_TURN_UNDEAD]);
+            }
+            else if (!enemy) {
                 status_.set_string(kStatuses[INVALID_SPELL_TARGET]);
             }
             else {

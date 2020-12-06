@@ -153,6 +153,8 @@ private:
     int teleport_team_ {-1};
     float delay_timer_ {0};
     bool was_shooting_ {false};
+
+    bool do_retaliate {false};
 };
 
 #endif    // BTY_INTRO_BATTLE_HPP_
