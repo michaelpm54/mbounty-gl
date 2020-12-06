@@ -244,7 +244,7 @@ void Battle::draw(bty::Gfx &gfx)
         }
     }
 
-    if (state_ == BattleState::Moving || state_ == BattleState::Flying || state_ == BattleState::Waiting || state_ == BattleState::Menu || state_ == BattleState::Shooting || state_ == BattleState::Magic || state_ == BattleState::IsFrozen || state_ == BattleState::Delay) {
+    if (state_ == BattleState::Moving || state_ == BattleState::Flying || state_ == BattleState::Waiting || state_ == BattleState::Menu || state_ == BattleState::Shooting || state_ == BattleState::Magic || state_ == BattleState::IsFrozen || state_ == BattleState::Delay || state_ == BattleState::Pass) {
         gfx.draw_sprite(cursor_, camera_);
     }
 
@@ -542,6 +542,8 @@ void Battle::update(float dt)
                 set_cursor_position(positions_[active_.x][active_.y].x, positions_[active_.x][active_.y].y);
             }
             break;
+        case BattleState::Pass:
+            [[fallthrough]];
         case BattleState::IsFrozen:
             delay_timer_ += dt;
             if (delay_timer_ >= 1.2f) {
@@ -1450,6 +1452,11 @@ void Battle::menu_confirm()
             break;
         case 2:
             set_state(BattleState::UseMagic);
+            break;
+        case 3:
+            moves_left_[active_.x][active_.y] = 0;
+            status_.set_string(fmt::format("{} pass", kUnits[armies_[active_.x][active_.y]].name_plural));
+            set_state(BattleState::Pass);
             break;
         case 6:
             set_state(BattleState::GiveUp);

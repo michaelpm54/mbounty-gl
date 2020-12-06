@@ -49,6 +49,7 @@ private:
         Delay,
         IsFrozen,
         Victory,
+        Pass,
     };
 
     struct UnitState {
