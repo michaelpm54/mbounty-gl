@@ -847,7 +847,7 @@ const Unit kUnits[UnitId::UnitCount] =
             3,
             1,
             2,
-            2,
+            6,
             75,
             7,
             kMoraleGroupC,
