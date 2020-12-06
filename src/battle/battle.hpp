@@ -46,7 +46,7 @@ private:
         ViewCharacter,
         UseMagic,
         TemporaryMessage,
-        TeleportUsed,
+        Delay,
     };
 
     struct UnitState {
@@ -89,6 +89,7 @@ private:
     void update_spells();
     void magic_confirm();
     void teleport();
+    void clone();
 
 private:
     bool loaded_ {false};
@@ -109,7 +110,6 @@ private:
     int cy_ {0};
     bty::Text status_;
     glm::ivec2 active_ {0, 0};
-    float wait_timer_ {0};
     std::array<std::array<int, 6>, 2> armies_;
     std::array<std::array<int, 6>, 2> moves_left_;
     std::array<std::array<int, 6>, 2> waits_used_;
@@ -122,7 +122,6 @@ private:
     const bty::Texture *shoot_;
     const bty::Texture *magic_;
     bty::Sprite hit_marker_;
-    float damage_timer_ {0};
 
     int last_attacking_team_ {-1};
     int last_attacking_unit_ {-1};
@@ -147,7 +146,7 @@ private:
     bool selecting_teleport_location_ {false};
     int teleport_target_ {-1};
     int teleport_team_ {-1};
-    float teleport_timer_ {0};
+    float delay_timer_ {0};
 };
 
 #endif    // BTY_INTRO_BATTLE_HPP_

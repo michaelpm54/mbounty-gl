@@ -31,7 +31,11 @@ enum StatusId {
     SELECT_TELEPORT,
     SELECT_TELEPORT_LOCATION,
     INVALID_TELEPORT_DESTINATION,
-    TELEPORT_DONE,
+    TELEPORT_USED,
+    CLONE_SELECT,
+    CLONE_MUST_SELECT_FRIENDLY,
+    CLONE_NEED_TARGET,
+    CLONE_USED,
 };
 
 static constexpr char *const kStatuses[] = {
@@ -55,6 +59,10 @@ static constexpr char *const kStatuses[] = {
     " Select new location to teleport army.",
     "  You must teleport to an empty area!",
     "{} are teleported",
+    "     Select your army to clone",
+    "    You must select your own army!",
+    "      You must target somebody!",
+    "{} {} are cloned",
 };
 
 Battle::Battle(bty::SceneSwitcher &scene_switcher)
@@ -394,9 +402,9 @@ void Battle::update(float dt)
 {
     switch (state_) {
         case BattleState::Waiting:
-            wait_timer_ += dt;
-            if (wait_timer_ >= 1.2f) {
-                wait_timer_ = 0;
+            delay_timer_ += dt;
+            if (delay_timer_ >= 1.2f) {
+                delay_timer_ = 0;
                 next_unit();
             }
             break;
@@ -411,8 +419,8 @@ void Battle::update(float dt)
             }
             break;
         case BattleState::PauseToDisplayDamage:
-            damage_timer_ += dt;
-            if (damage_timer_ >= 1.2f) {
+            delay_timer_ += dt;
+            if (delay_timer_ >= 1.2f) {
                 if (last_state_ == BattleState::Retaliation) {
                     clear_dead_units();
                     update_counts();
@@ -451,10 +459,10 @@ void Battle::update(float dt)
         case BattleState::UseMagic:
             use_magic_.animate(dt);
             break;
-        case BattleState::TeleportUsed:
-            teleport_timer_ += dt;
-            if (teleport_timer_ >= 1.2f) {
-                teleport_timer_ = 0;
+        case BattleState::Delay:
+            delay_timer_ += dt;
+            if (delay_timer_ >= 1.2f) {
+                delay_timer_ = 0;
                 next_unit();
             }
             break;
@@ -490,7 +498,7 @@ void Battle::enter(bool reset)
     view_character_.set_color(color);
     use_magic_.set_color(color);
 
-    wait_timer_ = 0;
+    delay_timer_ = 0;
     last_state_ = BattleState::Moving;
     state_ = BattleState::Moving;
     last_attacking_team_ = -1;
@@ -841,7 +849,7 @@ void Battle::move_confirm()
 
 void Battle::next_unit()
 {
-    damage_timer_ = 0;
+    delay_timer_ = 0;
 
     if (active_ == glm::ivec2 {-1, -1}) {
         active_ = {0, 0};
@@ -1099,9 +1107,6 @@ void Battle::set_state(BattleState state)
         case BattleState::Magic:
             cursor_.set_texture(magic_);
             break;
-        case BattleState::TeleportUsed:
-            teleport();
-            break;
         default:
             break;
     }
@@ -1109,7 +1114,7 @@ void Battle::set_state(BattleState state)
 
 void Battle::attack(int from_team, int from_unit, int to_team, int to_unit)
 {
-    damage_timer_ = 0;
+    delay_timer_ = 0;
 
     hit_marker_.reset_animation();
     hit_marker_.set_position(sprites_[to_team][to_unit].get_position());
@@ -1387,6 +1392,9 @@ void Battle::use_spell(int spell)
     set_state(BattleState::Magic);
 
     switch (using_spell_) {
+        case 0:
+            status_.set_string(kStatuses[CLONE_SELECT]);
+            break;
         case 1:
             status_.set_string(kStatuses[SELECT_TELEPORT]);
             break;
@@ -1459,13 +1467,26 @@ void Battle::magic_confirm()
     auto [target, enemy] = get_unit(cx_, cy_);
 
     switch (using_spell_) {
+        case 0:    // clone
+            if (target != -1 && enemy) {
+                status_.set_string(kStatuses[CLONE_MUST_SELECT_FRIENDLY]);
+            }
+            else if (target == -1) {
+                status_.set_string(kStatuses[CLONE_NEED_TARGET]);
+            }
+            else {
+                clone();
+                set_state(BattleState::Delay);
+            }
+            break;
         case 1:    // teleport
             if (selecting_teleport_location_) {
                 if (target != -1) {
                     status_.set_string(kStatuses[INVALID_TELEPORT_DESTINATION]);
                 }
                 else {
-                    set_state(BattleState::TeleportUsed);
+                    teleport();
+                    set_state(BattleState::Delay);
                 }
             }
             else {
@@ -1497,5 +1518,14 @@ void Battle::teleport()
 {
     selecting_teleport_location_ = false;
     move_unit_to(teleport_team_, teleport_target_, cx_, cy_);
-    status_.set_string(fmt::format(kStatuses[TELEPORT_DONE], kUnits[armies_[teleport_team_][teleport_target_]].name_plural));
+    status_.set_string(fmt::format(kStatuses[TELEPORT_USED], kUnits[armies_[teleport_team_][teleport_target_]].name_plural));
+}
+
+void Battle::clone()
+{
+    int clone_amount = 10 * scene_switcher_->state().spell_power;
+    auto [unit, enemy] = get_unit(cx_, cy_);
+    unit_states_[0][unit].count += clone_amount;
+    status_.set_string(fmt::format(kStatuses[CLONE_USED], clone_amount, kUnits[armies_[0][unit]].name_plural));
+    update_counts();
 }
