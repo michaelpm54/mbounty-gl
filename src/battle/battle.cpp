@@ -185,6 +185,13 @@ and send you back to
     victory_.create(5, 10, 30, 9, color, assets);
     victory_.add_line(1, 1, "");
 
+    controls_.create(10, 10, 20, 9, color, assets);
+    controls_.add_line(4, 1, "Game Control");
+    controls_.add_line(4, 2, "____________");
+    controls_.add_option(4, 4, "Music on");
+    controls_.add_option(4, 5, "Sound on");
+    controls_.add_option(4, 6, "Combat delay 5");
+
     for (int i = 0; i < 7; i++) {
         use_magic_.set_option_disabled(i, true);
     }
@@ -244,7 +251,7 @@ void Battle::draw(bty::Gfx &gfx)
         }
     }
 
-    if (state_ == BattleState::Moving || state_ == BattleState::Flying || state_ == BattleState::Waiting || state_ == BattleState::Menu || state_ == BattleState::Shooting || state_ == BattleState::Magic || state_ == BattleState::IsFrozen || state_ == BattleState::Delay || state_ == BattleState::Pass) {
+    if (state_ == BattleState::Moving || state_ == BattleState::Flying || state_ == BattleState::Waiting || state_ == BattleState::Menu || state_ == BattleState::Shooting || state_ == BattleState::Magic || state_ == BattleState::IsFrozen || state_ == BattleState::Delay || state_ == BattleState::Pass || state_ == BattleState::Controls) {
         gfx.draw_sprite(cursor_, camera_);
     }
 
@@ -272,6 +279,9 @@ void Battle::draw(bty::Gfx &gfx)
     }
     else if (state_ == BattleState::Victory) {
         victory_.draw(gfx, camera_);
+    }
+    else if (state_ == BattleState::Controls) {
+        controls_.draw(gfx, camera_);
     }
 
     if (tmp_msg) {
@@ -460,6 +470,50 @@ void Battle::key(int key, int scancode, int action, int mods)
                     break;
             }
             break;
+        case BattleState::Controls:
+            switch (action) {
+                case GLFW_PRESS:
+                    switch (key) {
+                        case GLFW_KEY_UP:
+                            controls_.prev();
+                            break;
+                        case GLFW_KEY_DOWN:
+                            controls_.next();
+                            break;
+                        case GLFW_KEY_LEFT:
+                            if (controls_.get_selection() == 2) {
+                                delay_--;
+                                if (delay_ < 0) {
+                                    delay_ = 9;
+                                }
+                                delay_duration_ = delay_ * 0.24f;
+                            }
+                            controls_.set_option(2, fmt::format("Combat delay {}", delay_));
+                            break;
+                        case GLFW_KEY_RIGHT:
+                            if (controls_.get_selection() == 2) {
+                                delay_++;
+                                if (delay_ >= 10) {
+                                    delay_ = 0;
+                                }
+                                delay_duration_ = delay_ * 0.24f;
+                            }
+                            controls_.set_option(2, fmt::format("Combat delay {}", delay_));
+                            break;
+                        case GLFW_KEY_ENTER:
+                            controls_confirm();
+                            break;
+                        case GLFW_KEY_BACKSPACE:
+                            set_state(state_before_menu_);
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
         default:
             break;
     }
@@ -475,7 +529,7 @@ void Battle::update(float dt)
     switch (state_) {
         case BattleState::Waiting:
             delay_timer_ += dt;
-            if (delay_timer_ >= 1.2f) {
+            if (delay_timer_ >= delay_duration_) {
                 delay_timer_ = 0;
                 next_unit();
             }
@@ -492,7 +546,7 @@ void Battle::update(float dt)
             break;
         case BattleState::PauseToDisplayDamage:
             delay_timer_ += dt;
-            if (delay_timer_ >= 1.2f) {
+            if (delay_timer_ >= delay_duration_) {
                 if (using_spell_ != -1) {    // no retaliation on magic
                     using_spell_ = -1;
                     clear_dead_units();
@@ -536,7 +590,7 @@ void Battle::update(float dt)
             break;
         case BattleState::Delay:
             delay_timer_ += dt;
-            if (delay_timer_ >= 1.2f) {
+            if (delay_timer_ >= delay_duration_) {
                 delay_timer_ = 0;
                 set_state(state_before_menu_);
                 set_cursor_position(positions_[active_.x][active_.y].x, positions_[active_.x][active_.y].y);
@@ -546,10 +600,13 @@ void Battle::update(float dt)
             [[fallthrough]];
         case BattleState::IsFrozen:
             delay_timer_ += dt;
-            if (delay_timer_ >= 1.2f) {
+            if (delay_timer_ >= delay_duration_) {
                 delay_timer_ = 0;
                 next_unit();
             }
+            break;
+        case BattleState::Controls:
+            controls_.animate(dt);
             break;
         default:
             break;
@@ -587,6 +644,7 @@ void Battle::enter(bool reset)
     view_character_.set_color(color);
     use_magic_.set_color(color);
     victory_.set_color(color);
+    controls_.set_color(color);
 
     delay_timer_ = 0;
     last_state_ = BattleState::Moving;
@@ -1462,6 +1520,9 @@ void Battle::menu_confirm()
             waits_used_[active_.x][active_.y]++;
             set_state(BattleState::Waiting);
             break;
+        case 5:
+            set_state(BattleState::Controls);
+            break;
         case 6:
             set_state(BattleState::GiveUp);
             break;
@@ -1843,4 +1904,8 @@ bool Battle::any_enemy_around() const
         }
     }
     return false;
+}
+
+void Battle::controls_confirm()
+{
 }

@@ -50,6 +50,7 @@ private:
         IsFrozen,
         Victory,
         Pass,
+        Controls,
     };
 
     struct UnitState {
@@ -71,6 +72,7 @@ private:
     void menu_confirm();
     void give_up_confirm();
     void magic_confirm();
+    void controls_confirm();
     void move_cursor(int dir);
     void status();
     void status_wait(const Unit &unit);
@@ -163,6 +165,11 @@ private:
     bool do_retaliate {false};
 
     bty::TextBox victory_;
+
+    bty::Dialog controls_;
+
+    int delay_ {1};
+    float delay_duration_ {1.2f};
 };
 
 #endif    // BTY_INTRO_BATTLE_HPP_
