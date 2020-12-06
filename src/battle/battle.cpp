@@ -1338,7 +1338,7 @@ void Battle::damage(int from_team, int from_unit, int to_team, int to_unit, bool
 
     last_kills_ = std::min(kills, unit_state_b.turn_count);
 
-    if (from_team == 0) {
+    if (from_team == 1) {
         scene_switcher_->state().followers_killed += last_kills_;
     }
 }
