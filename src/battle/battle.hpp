@@ -64,9 +64,12 @@ private:
     void move_unit_to(int team, int unit, int x, int y);
     void confirm();
     void move_confirm();
+    void shoot_confirm();
+    void menu_confirm();
+    void give_up_confirm();
+    void magic_confirm();
     void move_cursor(int dir);
     void status();
-    void status_move(const Unit &unit);
     void status_wait(const Unit &unit);
     void status_fly(const Unit &unit);
     void status_attack(const Unit &unit);
@@ -84,12 +87,9 @@ private:
     void damage(int from_team, int from_unit, int to_team, int to_unit, bool is_ranged, bool is_external, int external_damage, bool retaliation);
     void clear_dead_units();
     void update_counts();
-    void menu_confirm();
-    void give_up_confirm();
     void view_army();
     void use_spell(int spell);
     void update_spells();
-    void magic_confirm();
     void teleport();
     void clone();
     void freeze();
@@ -152,6 +152,7 @@ private:
     int teleport_target_ {-1};
     int teleport_team_ {-1};
     float delay_timer_ {0};
+    bool was_shooting_ {false};
 };
 
 #endif    // BTY_INTRO_BATTLE_HPP_

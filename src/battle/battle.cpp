@@ -13,6 +13,9 @@
 
 enum StatusId {
     ATTACK_MOVE,
+    ATTACK_SHOOT_MOVE,
+    SHOOT,
+    CANT_ATTACK_FRIENDLY,
     WAIT,
     FLY,
     ERR_OCCUPIED,
@@ -44,9 +47,12 @@ enum StatusId {
 };
 
 static constexpr char *const kStatuses[] = {
-    "{} attack or move {}",
-    "{} wait",
-    "{} fly",
+    "{} Attack or Move {}",
+    "{} Attack, Shoot or Move {}",
+    "{} Shoot ({} left)",
+    "   You can't attack your own army!",
+    "{} Wait",
+    "{} Fly",
     " You can't land on an occupied area!",
     "{} attack {}, {} die",
     "{} retaliate, killing {}",
@@ -441,13 +447,14 @@ void Battle::update(float dt)
                     update_counts();
                 }
                 else {
-                    if (!retaliated_this_turn_[last_attacked_team_][last_attacked_unit_]) {
+                    if (!retaliated_this_turn_[last_attacked_team_][last_attacked_unit_] && !was_shooting_) {
                         retaliated_this_turn_[last_attacked_team_][last_attacked_unit_] = true;
                         attack(last_attacked_team_, last_attacked_unit_, last_attacking_team_, last_attacking_unit_);
                         set_state(BattleState::Retaliation);
                         status();
                     }
                     else {
+                        was_shooting_ = false;
                         clear_dead_units();
                         update_counts();
                         next_unit();
@@ -539,7 +546,7 @@ void Battle::enter(bool reset)
         }
     }
 
-    state.army[0] = Demons;
+    state.army[0] = Archers;
     state.army[1] = Ghosts;
     state.army[2] = Nomads;
     state.army[3] = -1;
@@ -734,7 +741,7 @@ void Battle::move_cursor(int dir)
             if (cx_ == 0) {
                 return;
             }
-            if (state_ == BattleState::Flying || state_ == BattleState::Magic) {
+            if (state_ == BattleState::Flying || state_ == BattleState::Magic || state_ == BattleState::Shooting) {
                 cx_--;
             }
             else if (state_ == BattleState::Moving && cursor_distance_x_ > -1) {
@@ -746,7 +753,7 @@ void Battle::move_cursor(int dir)
             if (cx_ == 5) {
                 return;
             }
-            if (state_ == BattleState::Flying || state_ == BattleState::Magic) {
+            if (state_ == BattleState::Flying || state_ == BattleState::Magic || state_ == BattleState::Shooting) {
                 cx_++;
             }
             else if (state_ == BattleState::Moving && cursor_distance_x_ < 1) {
@@ -758,7 +765,7 @@ void Battle::move_cursor(int dir)
             if (cy_ == 0) {
                 return;
             }
-            if (state_ == BattleState::Flying || state_ == BattleState::Magic) {
+            if (state_ == BattleState::Flying || state_ == BattleState::Magic || state_ == BattleState::Shooting) {
                 cy_--;
             }
             else if (state_ == BattleState::Moving && cursor_distance_y_ > -1) {
@@ -770,7 +777,7 @@ void Battle::move_cursor(int dir)
             if (cy_ == 4) {
                 return;
             }
-            if (state_ == BattleState::Flying || state_ == BattleState::Magic) {
+            if (state_ == BattleState::Flying || state_ == BattleState::Magic || state_ == BattleState::Shooting) {
                 cy_++;
             }
             else if (state_ == BattleState::Moving && cursor_distance_y_ < 1) {
@@ -808,6 +815,9 @@ void Battle::confirm()
         case BattleState::Magic:
             magic_confirm();
             break;
+        case BattleState::Shooting:
+            shoot_confirm();
+            break;
         default:
             break;
     }
@@ -829,14 +839,20 @@ void Battle::land()
     }
     set_state(BattleState::Moving);
     move_unit_to(active_.x, active_.y, cx_, cy_);
-    status();
+
+    status_.set_string(fmt::format(kStatuses[ATTACK_MOVE], kUnits[armies_[active_.x][active_.y]].name_plural, moves_left_[active_.x][active_.y]));
 }
 
 void Battle::move_confirm()
 {
     if (cx_ == positions_[active_.x][active_.y].x && cy_ == positions_[active_.x][active_.y].y) {
-        waits_used_[active_.x][active_.y]++;
-        set_state(BattleState::Waiting);
+        if (unit_states_[active_.x][active_.y].ammo == 0) {
+            waits_used_[active_.x][active_.y]++;
+            set_state(BattleState::Waiting);
+        }
+        else {
+            set_state(BattleState::Shooting);
+        }
         return;
     }
 
@@ -962,6 +978,12 @@ void Battle::update_unit_info()
         }
     }
     else {
+        if (unit_states_[active_.x][active_.y].ammo) {
+            status_.set_string(fmt::format(kStatuses[ATTACK_SHOOT_MOVE], unit.name_plural, moves_left_[active_.x][active_.y]));
+        }
+        else {
+            status_.set_string(fmt::format(kStatuses[ATTACK_MOVE], unit.name_plural, moves_left_[active_.x][active_.y]));
+        }
         set_state(BattleState::Moving);
     }
     status();
@@ -972,7 +994,6 @@ void Battle::status()
     const auto &unit = kUnits[armies_[active_.x][active_.y]];
     switch (state_) {
         case BattleState::Moving:
-            status_move(unit);
             break;
         case BattleState::Waiting:
             status_wait(unit);
@@ -989,11 +1010,6 @@ void Battle::status()
         default:
             break;
     }
-}
-
-void Battle::status_move(const Unit &unit)
-{
-    status_.set_string(fmt::format(kStatuses[ATTACK_MOVE], unit.name_plural, moves_left_[active_.x][active_.y]));
 }
 
 void Battle::status_wait(const Unit &unit)
@@ -1070,7 +1086,6 @@ void Battle::reset_moves()
             us.turn_count = us.count;
             us.hp = unit.hp;
             us.injury = 0;
-            us.ammo = unit.initial_ammo;
             us.out_of_control = (us.hp * us.count) > leadership;
         }
     }
@@ -1145,6 +1160,10 @@ void Battle::set_state(BattleState state)
             delay_timer_ = 0;
             status_.set_string(fmt::format(kStatuses[FREEZE_USED], kUnits[armies_[active_.x][active_.y]].name_plural));
             break;
+        case BattleState::Shooting:
+            cursor_.set_texture(shoot_);
+            status_.set_string(fmt::format(kStatuses[SHOOT], kUnits[armies_[active_.x][active_.y]].name_plural, unit_states_[active_.x][active_.y].ammo));
+            break;
         default:
             break;
     }
@@ -1185,7 +1204,7 @@ void Battle::attack(int from_team, int from_unit, int to_team, int to_unit)
         }
     }
 
-    damage(from_team, from_unit, to_team, to_unit, false, using_spell_ != -1, spell_damage, from_team != active_.x);
+    damage(from_team, from_unit, to_team, to_unit, state_ == BattleState::Shooting, using_spell_ != -1, spell_damage, from_team != active_.x);
 }
 
 std::tuple<int, bool> Battle::get_unit(int x, int y) const
@@ -1626,4 +1645,22 @@ void Battle::set_cursor_position(int x, int y)
     cursor_distance_x_ = 0;
     cursor_distance_y_ = 0;
     cursor_.set_position(16.0f + cx_ * 48.0f, 24.0f + cy_ * 40.0f);
+}
+
+void Battle::shoot_confirm()
+{
+    auto [unit, enemy] = get_unit(cx_, cy_);
+
+    if (unit == -1) {
+        status_.set_string(kStatuses[NEED_TARGET]);
+    }
+    else {
+        if (!enemy) {
+            status_.set_string(kStatuses[CANT_ATTACK_FRIENDLY]);
+        }
+        else {
+            was_shooting_ = true;
+            set_state(BattleState::Attack);
+        }
+    }
 }
