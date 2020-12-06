@@ -174,6 +174,15 @@ trained in the art
     bridge_prompt_.add_line(1, 1, " Bridge in which direction?");
     bridge_prompt_.add_line(14, 3, " \x81\n\x84 \x82\n \x83");
 
+    disgrace_.create(1, 18, 30, 9, color, assets);
+    disgrace_.add_line(1, 1, R"raw(After being disgraced on the
+    field of battle, King
+ Maximus summons you to his
+  castle. After a lesson in
+   tactics, he reluctantly
+reissues your commission and
+   sends you on your way.)raw");
+
     loaded_ = true;
     return success;
 }
@@ -311,6 +320,13 @@ void Game::draw(bty::Gfx &gfx)
             hero_.draw(gfx, game_camera_);
             hud_.draw(gfx, camera_);
             bridge_prompt_.draw(gfx, camera_);
+            break;
+        case GameState::Disgrace:
+            map_.draw(game_camera_, continent);
+            draw_mobs(gfx);
+            hero_.draw(gfx, game_camera_);
+            hud_.draw(gfx, camera_);
+            disgrace_.draw(gfx, camera_);
             break;
         default:
             break;
@@ -455,6 +471,8 @@ void Game::key(int key, int scancode, int action, int mods)
         case GameState::ViewContinent:
             [[fallthrough]];
         case GameState::ViewPuzzle:
+            [[fallthrough]];
+        case GameState::Disgrace:
             switch (action) {
                 case GLFW_PRESS:
                     switch (key) {
@@ -1879,7 +1897,26 @@ void Game::gen_tiles()
 
 void Game::disgrace()
 {
-    set_state(GameState::LoseGame);
+    hero_.move_to_tile(map_.get_tile(11, 58, 0));
+    hero_.set_mount(Mount::Walk);
+    hero_.set_flip(false);
+    hero_.set_moving(false);
+
+    auto &state = scene_switcher_->state();
+
+    state.disgrace = false;
+    state.army[0] = Peasants;
+    state.army[1] = -1;
+    state.army[2] = -1;
+    state.army[3] = -1;
+    state.army[4] = -1;
+    state.army_counts[0] = 20;
+    state.army_counts[0] = 0;
+    state.army_counts[0] = 0;
+    state.army_counts[0] = 0;
+    state.army_counts[0] = 0;
+
+    update_camera();
 }
 
 void Game::lose_game()

@@ -184,6 +184,8 @@ private:
     bty::TextBox bridge_prompt_;
 
     std::queue<std::string> hud_message_queue_;
+
+    bty::TextBox disgrace_;
 };
 
 #endif    // BTY_GAME_GAME_HPP_
