@@ -69,8 +69,8 @@ static constexpr char const *kStatuses[] = {
     "{} Attack, Shoot or Move {}",
     "{} Shoot ({} left)",
     "   You can't attack your own army!",
-    "{} Wait",
-    "{} Fly",
+    "{} wait",
+    "{} fly",
     " You can't land on an occupied area!",
     "{} attack {}, {} die",
     "{} retaliate, killing {}",
@@ -1457,6 +1457,10 @@ void Battle::menu_confirm()
             moves_left_[active_.x][active_.y] = 0;
             status_.set_string(fmt::format("{} pass", kUnits[armies_[active_.x][active_.y]].name_plural));
             set_state(BattleState::Pass);
+            break;
+        case 4:
+            waits_used_[active_.x][active_.y]++;
+            set_state(BattleState::Waiting);
             break;
         case 6:
             set_state(BattleState::GiveUp);
