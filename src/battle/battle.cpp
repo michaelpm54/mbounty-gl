@@ -39,6 +39,8 @@ enum StatusId {
     FREEZE_SELECT,
     FREEZE_MUST_SELECT_ENEMY,
     FREEZE_USED,
+    RESURRECT_SELECT,
+    RESURRECT_USED,
 };
 
 static constexpr char *const kStatuses[] = {
@@ -69,6 +71,8 @@ static constexpr char *const kStatuses[] = {
     "     Select enemy army to freeze.",
     "   You must select an opposing army!",
     "{} are frozen",
+    "   Select your army to resurrect.",
+    "{} {} are resurrected",
 };
 
 Battle::Battle(bty::SceneSwitcher &scene_switcher)
@@ -206,7 +210,7 @@ void Battle::draw(bty::Gfx &gfx)
         }
     }
 
-    if (state_ == BattleState::Moving || state_ == BattleState::Flying || state_ == BattleState::Waiting || state_ == BattleState::Menu || state_ == BattleState::Shooting || state_ == BattleState::Magic || state_ == BattleState::IsFrozen) {
+    if (state_ == BattleState::Moving || state_ == BattleState::Flying || state_ == BattleState::Waiting || state_ == BattleState::Menu || state_ == BattleState::Shooting || state_ == BattleState::Magic || state_ == BattleState::IsFrozen || state_ == BattleState::Delay) {
         gfx.draw_sprite(cursor_, camera_);
     }
 
@@ -1426,10 +1430,10 @@ void Battle::use_spell(int spell)
     set_state(BattleState::Magic);
 
     switch (using_spell_) {
-        case 0:
+        case 0:    // clone
             status_.set_string(kStatuses[CLONE_SELECT]);
             break;
-        case 1:
+        case 1:    // teleport
             status_.set_string(kStatuses[SELECT_TELEPORT]);
             break;
         case 2:    // fireball
@@ -1438,8 +1442,11 @@ void Battle::use_spell(int spell)
         case 3:    // lightning
             status_.set_string(kStatuses[SELECT_LIGHTNING]);
             break;
-        case 4:
+        case 4:    // freeze
             status_.set_string(kStatuses[FREEZE_SELECT]);
+            break;
+        case 5:    // resurrect
+            status_.set_string(kStatuses[RESURRECT_SELECT]);
             break;
         case 6:    // turn undead
             status_.set_string(kStatuses[SELECT_TURN_UNDEAD]);
@@ -1550,6 +1557,18 @@ void Battle::magic_confirm()
                 set_state(BattleState::Delay);
             }
             break;
+        case 5:    // resurrect
+            if (target != -1 && enemy) {
+                status_.set_string(kStatuses[CLONE_MUST_SELECT_FRIENDLY]);
+            }
+            else if (target == -1) {
+                status_.set_string(kStatuses[NEED_TARGET]);
+            }
+            else {
+                resurrect();
+                set_state(BattleState::Delay);
+            }
+            break;
         case 6:    // turn undead
             if (!enemy) {
                 status_.set_string(kStatuses[INVALID_SPELL_TARGET]);
@@ -1584,6 +1603,18 @@ void Battle::freeze()
     auto [unit, enemy] = get_unit(cx_, cy_);
     unit_states_[1][unit].frozen = true;
     status_.set_string(fmt::format(kStatuses[FREEZE_USED], kUnits[armies_[1][unit]].name_plural));
+}
+
+void Battle::resurrect()
+{
+    auto [unit, enemy] = get_unit(cx_, cy_);
+    int num_resurrected = 20 * scene_switcher_->state().spell_power;
+    auto &us = unit_states_[0][unit];
+    num_resurrected = std::min(num_resurrected, us.start_count - us.count);
+    us.count += num_resurrected;
+    scene_switcher_->state().followers_killed = std::max(0, scene_switcher_->state().followers_killed - num_resurrected);
+    status_.set_string(fmt::format(kStatuses[RESURRECT_USED], num_resurrected, kUnits[armies_[0][unit]].name_plural));
+    update_counts();
 }
 
 void Battle::set_cursor_position(int x, int y)

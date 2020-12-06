@@ -93,6 +93,7 @@ private:
     void teleport();
     void clone();
     void freeze();
+    void resurrect();
     void set_cursor_position(int x, int y);
 
 private:
