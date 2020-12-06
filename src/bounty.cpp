@@ -739,7 +739,7 @@ const Unit kUnits[UnitId::UnitCount] =
             10,               // recruit_cost
             1,                // weekly_cost
             kMoraleGroupA,    // morale_group
-            {},
+            0,
         },
         {
             "Sprite",
@@ -771,7 +771,7 @@ const Unit kUnits[UnitId::UnitCount] =
             50,
             5,
             kMoraleGroupA,
-            {},
+            0,
         },
         {
             "Wolf",
@@ -787,7 +787,7 @@ const Unit kUnits[UnitId::UnitCount] =
             40,
             4,
             kMoraleGroupD,
-            {},
+            0,
         },
         {
             "Skeleton",
@@ -835,7 +835,7 @@ const Unit kUnits[UnitId::UnitCount] =
             60,
             6,
             kMoraleGroupC,
-            {},
+            0,
         },
         {
             "Orc",
@@ -851,7 +851,7 @@ const Unit kUnits[UnitId::UnitCount] =
             75,
             7,
             kMoraleGroupC,
-            {},
+            0,
         },
         {
             "Archer",
@@ -867,7 +867,7 @@ const Unit kUnits[UnitId::UnitCount] =
             250,
             25,
             kMoraleGroupB,
-            {},
+            0,
         },
         {
             "Elf",
@@ -883,7 +883,7 @@ const Unit kUnits[UnitId::UnitCount] =
             200,
             20,
             kMoraleGroupC,
-            {},
+            0,
         },
         {
             "Pikeman",
@@ -899,7 +899,7 @@ const Unit kUnits[UnitId::UnitCount] =
             300,
             30,
             kMoraleGroupB,
-            {},
+            0,
         },
         {
             "Nomad",
@@ -915,7 +915,7 @@ const Unit kUnits[UnitId::UnitCount] =
             300,
             30,
             kMoraleGroupC,
-            {},
+            0,
         },
         {
             "Dwarf",
@@ -931,7 +931,7 @@ const Unit kUnits[UnitId::UnitCount] =
             350,
             30,
             kMoraleGroupC,
-            {},
+            0,
         },
         {
             "Ghost",
@@ -963,7 +963,7 @@ const Unit kUnits[UnitId::UnitCount] =
             1000,
             100,
             kMoraleGroupB,
-            {},
+            0,
         },
         {
             "Ogre",
@@ -979,7 +979,7 @@ const Unit kUnits[UnitId::UnitCount] =
             750,
             75,
             kMoraleGroupD,
-            {},
+            0,
         },
         {
             "Barbarian",
@@ -995,7 +995,7 @@ const Unit kUnits[UnitId::UnitCount] =
             750,
             75,
             kMoraleGroupC,
-            {},
+            0,
         },
         {
             "Troll",
@@ -1027,7 +1027,7 @@ const Unit kUnits[UnitId::UnitCount] =
             800,
             80,
             kMoraleGroupB,
-            {},
+            0,
         },
         {
             "Druid",
@@ -1091,7 +1091,7 @@ const Unit kUnits[UnitId::UnitCount] =
             2000,
             200,
             kMoraleGroupC,
-            {},
+            0,
         },
         {
             "Demon",

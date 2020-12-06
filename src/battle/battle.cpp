@@ -493,17 +493,18 @@ void Battle::update(float dt)
         case BattleState::PauseToDisplayDamage:
             delay_timer_ += dt;
             if (delay_timer_ >= 1.2f) {
-                if (!do_retaliate || retaliated_this_turn_[last_attacked_team_][last_attacked_unit_]) {    // no retaliation on retaliation
-                    clear_dead_units();
-                    update_counts();
-                    next_unit();
-                }
-                else if (using_spell_ != -1) {    // no retaliation on magic
+                if (using_spell_ != -1) {    // no retaliation on magic
                     using_spell_ = -1;
                     clear_dead_units();
                     update_counts();
                     set_state(state_before_menu_);
                     set_cursor_position(positions_[active_.x][active_.y].x, positions_[active_.x][active_.y].y);
+                    update_unit_info();
+                }
+                else if (!do_retaliate || retaliated_this_turn_[last_attacked_team_][last_attacked_unit_]) {    // no retaliation on retaliation
+                    clear_dead_units();
+                    update_counts();
+                    next_unit();
                 }
                 else if (was_shooting_) {    // no retaliation on shooting
                     clear_dead_units();
@@ -918,7 +919,7 @@ void Battle::move_confirm()
         next_unit();
     }
     else {
-        if (unit_states_[active_.x][active_.y].ammo && !!any_enemy_around()) {
+        if (unit_states_[active_.x][active_.y].ammo && !any_enemy_around()) {
             status_.set_string(fmt::format(kStatuses[ATTACK_SHOOT_MOVE], kUnits[armies_[active_.x][active_.y]].name_plural, moves_left_[active_.x][active_.y]));
         }
         else {
@@ -1221,7 +1222,9 @@ void Battle::attack(int from_team, int from_unit, int to_team, int to_unit)
     last_attacked_team_ = to_team;
     last_attacked_unit_ = to_unit;
 
-    moves_left_[from_team][from_unit] = 0;
+    if (using_spell_ == -1) {
+        moves_left_[from_team][from_unit] = 0;
+    }
 
     int spell_damage = 0;
     int spell_power = scene_switcher_->state().spell_power;
