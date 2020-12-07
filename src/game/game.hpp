@@ -62,6 +62,8 @@ private:
         KingsCastle,
         UntrainedInMagic,
         Bridge,
+        JoinDialog,
+        JoinFlee,
     };
 
     struct EventTile {
@@ -113,6 +115,9 @@ private:
     void view_army();
     void artifact(const Tile &tile);
     void teleport_cave(const Tile &tile);
+    void join_confirm();
+    void setup_join_dialog();
+    void setup_join_flee();
 
 private:
     enum WeekPassedCard {
@@ -192,6 +197,8 @@ private:
     std::queue<std::string> hud_message_queue_;
 
     bty::TextBox disgrace_;
+    bty::Dialog join_dialog_;
+    bty::TextBox join_flee_;
 
     struct Shop {
         int x;
@@ -206,6 +213,8 @@ private:
     std::array<glm::ivec2, 3> sail_maps_;
     std::array<glm::ivec2, 4> local_maps_;
     std::array<std::array<glm::ivec2, 2>, 4> teleport_caves_;
+    std::array<std::vector<const Mob *>, 4> friendlies_;
+    int join_unit_ {-1};
 };
 
 #endif    // BTY_GAME_GAME_HPP_

@@ -67,7 +67,6 @@ void ViewArmy::view(int *army, int *counts, int *morales)
         }
     }
 
-    assert(num_units_ < 5);
     for (int i = 0; i < num_units_; i++) {
         int unit_id = army[i];
         const auto &unit = kUnits[unit_id];

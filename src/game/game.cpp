@@ -183,6 +183,16 @@ trained in the art
 reissues your commission and
    sends you on your way.)raw");
 
+    join_dialog_.create(1, 18, 30, 9, color, assets);
+    join_dialog_.add_line(1, 1, "");    // E.g. "Many Sprites"
+    join_dialog_.add_line(3, 3, "with desires of greater\nglory, wish to join you.");
+    join_dialog_.add_option(13, 6, "Accept");
+    join_dialog_.add_option(13, 7, "Decline");
+
+    join_flee_.create(1, 21, 30, 6, color, assets);
+    join_flee_.add_line(1, 1, "");    // E.g. "Many Sprites"
+    join_flee_.add_line(3, 3, " flee in terror at the\nsight of your vast army.");
+
     loaded_ = true;
     return success;
 }
@@ -332,6 +342,20 @@ void Game::draw(bty::Gfx &gfx)
             hero_.draw(gfx, game_camera_);
             hud_.draw(gfx, camera_);
             disgrace_.draw(gfx, camera_);
+            break;
+        case GameState::JoinDialog:
+            map_.draw(game_camera_, continent);
+            draw_mobs(gfx);
+            hero_.draw(gfx, game_camera_);
+            hud_.draw(gfx, camera_);
+            join_dialog_.draw(gfx, camera_);
+            break;
+        case GameState::JoinFlee:
+            map_.draw(game_camera_, continent);
+            draw_mobs(gfx);
+            hero_.draw(gfx, game_camera_);
+            hud_.draw(gfx, camera_);
+            join_flee_.draw(gfx, camera_);
             break;
         default:
             break;
@@ -491,6 +515,27 @@ void Game::key(int key, int scancode, int action, int mods)
                         case GLFW_KEY_BACKSPACE:
                             [[fallthrough]];
                         case GLFW_KEY_ENTER:
+                            set_state(GameState::Unpaused);
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case GameState::JoinFlee:
+            switch (action) {
+                case GLFW_PRESS:
+                    switch (key) {
+                        case GLFW_KEY_SPACE:
+                            [[fallthrough]];
+                        case GLFW_KEY_BACKSPACE:
+                            [[fallthrough]];
+                        case GLFW_KEY_ENTER:
+                            mobs_[state.continent][join_unit_].dead = true;
+                            join_unit_ = -1;
                             set_state(GameState::Unpaused);
                             break;
                         default:
@@ -748,6 +793,30 @@ void Game::key(int key, int scancode, int action, int mods)
                     break;
             }
             break;
+        case GameState::JoinDialog:
+            switch (action) {
+                case GLFW_PRESS:
+                    switch (key) {
+                        case GLFW_KEY_BACKSPACE:
+                            set_state(GameState::Unpaused);
+                            break;
+                        case GLFW_KEY_UP:
+                            join_dialog_.prev();
+                            break;
+                        case GLFW_KEY_DOWN:
+                            join_dialog_.next();
+                            break;
+                        case GLFW_KEY_ENTER:
+                            join_confirm();
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
         default:
             break;
     }
@@ -980,6 +1049,25 @@ void Game::update(float dt)
                 }
 
                 if (hero_.get_mount() == Mount::Walk && distance_x < 12.0f && distance_y < 12.0f) {
+                    for (int j = 0; j < friendlies_[continent].size(); j++) {
+                        if (friendlies_[continent][j] == &mob) {
+                            join_unit_ = i;
+                            int size = 0;
+                            for (int i = 0; i < 5; i++) {
+                                if (scene_switcher_->state().army[i] != -1) {
+                                    size++;
+                                }
+                            }
+                            if (size == 5) {
+                                set_state(GameState::JoinFlee);
+                            }
+                            else {
+                                set_state(GameState::JoinDialog);
+                            }
+                            return;
+                        }
+                    }
+
                     scene_switcher_->state().enemy_army = mob.army;
                     scene_switcher_->state().enemy_counts = mob.counts;
                     scene_switcher_->state().enemy_index = i;
@@ -1084,6 +1172,9 @@ void Game::update(float dt)
     }
     else if (state_ == GameState::KingsCastle) {
         kings_castle_.update(dt);
+    }
+    else if (state_ == GameState::JoinDialog) {
+        join_dialog_.animate(dt);
     }
 
     if (tmp_hud) {
@@ -1355,6 +1446,10 @@ void Game::setup_game()
     controls_locked_ = false;
     control_lock_timer_ = 0;
 
+    for (int i = 0; i < 4; i++) {
+        friendlies_[i].clear();
+    }
+
     /* Clear spells */
     for (int i = 0; i < 14; i++) {
         state.spells[i] = 2;
@@ -1395,6 +1490,8 @@ void Game::setup_game()
     sail_dialog_.set_color(color);
     dismiss_.set_color(color);
     kings_castle_.set_color(color);
+    join_dialog_.set_color(color);
+    join_flee_.set_color(color);
 
     /* Add starting army */
     for (int i = 0; i < 5; i++) {
@@ -1408,6 +1505,12 @@ void Game::setup_game()
             state.army_counts[0] = 100;
             state.army[1] = Archers;
             state.army_counts[1] = 2;
+            state.army[2] = Sprites;
+            state.army_counts[2] = 1;
+            state.army[3] = Ogres;
+            state.army_counts[3] = 1;
+            state.army[4] = Knights;
+            state.army_counts[4] = 1;
             break;
         case 1:
             state.army[0] = Peasants;
@@ -2160,6 +2263,8 @@ void Game::gen_tiles()
             mob.entity.move_to_tile({tile.x, tile.y, Tile_Grass});
 
             tiles[tile.x + tile.y * 64] = Tile_Grass;
+
+            friendlies_[continent].push_back(&mob);
         }
 
         /* Init castle occupants */
@@ -2192,16 +2297,6 @@ void Game::gen_tiles()
         /* Turn the rest of the RNG tiles into chests */
         for (int i = used_tiles; i < random_tiles.size(); i++) {
             tiles[random_tiles[i].x + random_tiles[i].y * 64] = Tile_Chest;
-        }
-    }
-
-    for (int i = 0; i < 4; i++) {
-        for (int j = 0; j < 11; j++) {
-            const Shop &shop = shops_[i][j];
-            if (shop.count == 0) {
-                continue;
-            }
-            spdlog::info("Continent {} Shop {} Tile {}, {} Unit {} Count {}", i, j, shop.x, shop.y, kUnits[shop.unit].name_plural, shop.count);
         }
     }
 
@@ -2352,6 +2447,12 @@ void Game::set_state(GameState state)
             break;
         case GameState::KingsCastle:
             kings_castle_.view();
+            break;
+        case GameState::JoinDialog:
+            setup_join_dialog();
+            break;
+        case GameState::JoinFlee:
+            setup_join_flee();
             break;
         default:
             break;
@@ -2775,4 +2876,64 @@ void Game::teleport_cave(const Tile &tile)
     glm::ivec2 dest = glm::ivec2 {tile.tx, tile.ty} == teleport_caves_[continent][0] ? teleport_caves_[continent][1] : teleport_caves_[continent][0];
     hero_.move_to_tile(map_.get_tile(dest, continent));
     update_camera();
+}
+
+void Game::join_confirm()
+{
+    auto &state = scene_switcher_->state();
+
+    switch (join_dialog_.get_selection()) {
+        case 0:
+            add_unit_to_army(mobs_[state.continent][join_unit_].army[0], mobs_[state.continent][join_unit_].counts[0]);
+            break;
+        default:
+            break;
+    }
+
+    mobs_[state.continent][join_unit_].dead = true;
+
+    join_unit_ = -1;
+
+    set_state(GameState::Unpaused);
+}
+
+std::string get_descriptor(int count)
+{
+    static constexpr const char *const kDescriptors[] = {
+        "A few",
+        "Some",
+        "Many",
+        "A lot",
+        "A horde",
+        "A multitude",
+    };
+
+    static constexpr int kThresholds[] = {
+        10,
+        20,
+        50,
+        100,
+        500,
+    };
+
+    int descriptor = 0;
+    while (count >= kThresholds[descriptor] && descriptor < 5) {
+        descriptor++;
+    }
+
+    return kDescriptors[descriptor];
+}
+
+void Game::setup_join_dialog()
+{
+    int continent = scene_switcher_->state().continent;
+
+    join_dialog_.set_line(0, fmt::format("{} {}", get_descriptor(mobs_[continent][join_unit_].counts[0]), kUnits[mobs_[continent][join_unit_].army[0]].name_plural));
+}
+
+void Game::setup_join_flee()
+{
+    int continent = scene_switcher_->state().continent;
+
+    join_flee_.set_line(0, fmt::format("{} {}", get_descriptor(mobs_[continent][join_unit_].counts[0]), kUnits[mobs_[continent][join_unit_].army[0]].name_plural));
 }
