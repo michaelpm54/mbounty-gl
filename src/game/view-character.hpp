@@ -26,9 +26,12 @@ private:
     bty::Sprite portrait_;
     bty::Rect rect_;
     bty::Text info_[11];
+    const bty::Texture *artifacts_[8];
     const bty::Texture *portraits_[4];
+    bty::Sprite artifact_sprites_[8];
     bty::Sprite map_sprites_[4];
-    int found_maps_ {0};
+    const bool *maps_found_;
+    const bool *artifacts_found_;
 };
 
 #endif    // BTY_GAME_VIEW_CHARACTER_HPP_

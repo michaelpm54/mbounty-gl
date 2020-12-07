@@ -20,6 +20,12 @@ void ViewCharacter::load(bty::Assets &assets, bty::BoxColor color, int hero_id)
         "moham",
     };
 
+    for (int i = 0; i < 8; i++) {
+        artifacts_[i] = assets.get_texture(fmt::format("artifacts/36x32/{}.png", i));
+        artifact_sprites_[i].set_position(14 + (i % 4) * 48, 136 + (i / 4) * 40);
+        artifact_sprites_[i].set_texture(artifacts_[i]);
+    }
+
     for (int i = 0; i < 4; i++) {
         portraits_[i] = assets.get_texture(fmt::format("char-page/{}.png", kPortraitFilenames[i]));
     }
@@ -59,13 +65,23 @@ void ViewCharacter::draw(bty::Gfx &gfx, glm::mat4 &camera)
     for (int i = 0; i < 11; i++) {
         gfx.draw_text(info_[i], camera);
     }
-    for (int i = 0; i < found_maps_; i++) {
-        gfx.draw_sprite(map_sprites_[i], camera);
+    for (int i = 0; i < 4; i++) {
+        if (maps_found_[i]) {
+            gfx.draw_sprite(map_sprites_[i], camera);
+        }
+    }
+    for (int i = 0; i < 8; i++) {
+        if (artifacts_found_[i]) {
+            gfx.draw_sprite(artifact_sprites_[i], camera);
+        }
     }
 }
 
 void ViewCharacter::view(const SharedState &state)
 {
+    maps_found_ = state.maps_found;
+    artifacts_found_ = state.artifacts_found;
+
     info_[0].set_string(kHeroNames[state.hero_id][state.hero_rank]);
     info_[1].set_string(fmt::format("Leadership {:>13}", state.leadership));
     info_[2].set_string(fmt::format("Commission/Week {:>8}", state.commission));
@@ -78,13 +94,6 @@ void ViewCharacter::view(const SharedState &state)
     info_[9].set_string(fmt::format("Followers killed {:>7}", state.followers_killed));
     info_[10].set_string(fmt::format("Current score {:>10}", 0));
     portrait_.set_texture(portraits_[state.hero_id]);
-
-    found_maps_ = 0;
-    for (int i = 0; i < 4; i++) {
-        if (state.maps_found[i]) {
-            found_maps_++;
-        }
-    }
 }
 
 void ViewCharacter::set_color(bty::BoxColor color)

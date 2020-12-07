@@ -822,6 +822,23 @@ void Game::collide(Tile &tile)
                 set_state(GameState::KingsCastle);
             }
             break;
+        case Tile_AfctRing:
+            [[fallthrough]];
+        case Tile_AfctAmulet:
+            [[fallthrough]];
+        case Tile_AfctAnchor:
+            [[fallthrough]];
+        case Tile_AfctCrown:
+            [[fallthrough]];
+        case Tile_AfctScroll:
+            [[fallthrough]];
+        case Tile_AfctShield:
+            [[fallthrough]];
+        case Tile_AfctSword:
+            [[fallthrough]];
+        case Tile_AfctBook:
+            artifact(tile);
+            break;
         default:
             break;
     }
@@ -2700,4 +2717,42 @@ void Game::view_army()
 {
     auto &state = scene_switcher_->state();
     view_army_.view(state.army, state.army_counts, state.army_morales);
+}
+
+void Game::artifact(const Tile &tile)
+{
+    auto &state = scene_switcher_->state();
+
+    map_.set_tile(tile, state.continent, Tile_Grass);
+
+    switch (tile.id) {
+        case Tile_AfctRing:
+            state.artifacts_found[ArtiRingOfHeroism] = true;
+            break;
+        case Tile_AfctAmulet:
+            state.artifacts_found[ArtiAmuletOfAugmentation] = true;
+            break;
+        case Tile_AfctAnchor:
+            state.artifacts_found[ArtiAnchorOfAdmirality] = true;
+            break;
+        case Tile_AfctCrown:
+            state.artifacts_found[ArtiCrownOfCommand] = true;
+            break;
+        case Tile_AfctScroll:
+            state.artifacts_found[ArtiArticlesOfNobility] = true;
+            break;
+        case Tile_AfctShield:
+            state.artifacts_found[ArtiShieldOfProtection] = true;
+            break;
+        case Tile_AfctSword:
+            state.artifacts_found[ArtiSwordOfProwess] = true;
+            break;
+        case Tile_AfctBook:
+            state.artifacts_found[ArtiBookOfNecros] = true;
+            break;
+        default:
+            break;
+    }
+
+    hud_.update_state();
 }

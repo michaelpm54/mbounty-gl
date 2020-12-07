@@ -101,9 +101,9 @@ void ViewPuzzle::view(bool *villains, bool *artifacts)
 void ViewPuzzle::update(float dt)
 {
     if (!done_) {
-        pop_timer_ -= dt;
-        if (pop_timer_ <= 0) {
-            pop_timer_ = 0.3f;
+        pop_timer_ += dt;
+        if (pop_timer_ >= 0.5f) {
+            pop_timer_ = 0;
             hide_[to_hide_[next_pop_++]] = true;
             if (next_pop_ == 25 || to_hide_[next_pop_] == -1) {
                 done_ = true;

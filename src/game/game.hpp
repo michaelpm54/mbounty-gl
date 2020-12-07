@@ -111,6 +111,7 @@ private:
     void hud_messages(const std::vector<std::string> &messages);
     void draw_mobs(bty::Gfx &gfx);
     void view_army();
+    void artifact(const Tile &tile);
 
 private:
     enum WeekPassedCard {
