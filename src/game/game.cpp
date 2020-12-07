@@ -771,7 +771,7 @@ void Game::find_map(const Tile &tile)
 {
     auto &state = scene_switcher_->state();
 
-    if (state.continent < 3 && map_tiles_[state.continent] == glm::ivec2 {tile.tx, tile.ty}) {
+    if (state.continent < 3 && sail_maps_[state.continent] == glm::ivec2 {tile.tx, tile.ty}) {
         hud_.set_title("You found a map!");
         map_.set_tile(tile, state.continent, Tile_Grass);
         state.maps_found[state.continent + 1] = true;
@@ -1685,35 +1685,6 @@ void Game::gen_tiles()
         }
     }
 
-    /* Clear shops */
-    for (int i = 0; i < 4; i++) {
-        shops_[i].clear();
-        shops_[i].resize(11);
-        for (int j = 0; j < 11; j++) {
-            shops_[i][j].count = 0;
-            shops_[i][j].unit = Peasants;
-            shops_[i][j].x = 0;
-            shops_[i][j].y = 0;
-        }
-        /* Guaranteed peasant dwelling */
-        if (i == 0) {
-            shops_[i][0].x = 27;
-            shops_[i][0].y = 11;
-            shops_[i][0].unit = Peasants;
-
-            int a = rand() % 25;
-            int b = a + 200;
-            int c = rand() % 25;
-            int d = c + b;
-            int e = rand() % 25;
-            int f = e + d;
-            int g = rand() % 25;
-            int h = g + f;
-
-            shops_[i][0].count = h;
-        }
-    }
-
     static constexpr int kNumShopsPerContinent[4] = {
         6,
         6,
@@ -2025,6 +1996,82 @@ void Game::gen_tiles()
         int used_tiles = 0;
         glm::ivec2 tile;
 
+        /* Process:
+			for each continent:
+				Gather list of RNG tiles
+				[-2] Gen 2 teleport caves
+				[-1] Gen 1 sail map
+				[-1] Gen 1 local map
+				[-2] Gen 2 artifacts
+				Init 11 shops
+				(continent 0) -> Gen 1 peasant shop
+				[-K] Gen K shops
+				[-L] Gen L high value shops
+				Init 35 mobs
+				Gen M mobs
+				[-5] Gen 5 friendlies
+				Set all RNG tiles to Grass
+			Total RNG tiles used:
+				11 + K + L
+		*/
+
+        /* 2 cave teleport tiles per continent */
+        tile = random_tiles[used_tiles++];
+        tiles[tile.x + tile.y * 64] = Tile_ShopCave;
+
+        tile = random_tiles[used_tiles++];
+        tiles[tile.x + tile.y * 64] = Tile_ShopCave;
+
+        /* 1 sail map */
+        if (continent != 3) {
+            /* Saharia doesn't have a map to anywhere */
+            tile = random_tiles[used_tiles++];
+            tiles[tile.x + tile.y * 64] = Tile_Chest;
+            sail_maps_[continent] = tile;
+        }
+
+        /* 1 local map */
+        tile = random_tiles[used_tiles++];
+        tiles[tile.x + tile.y * 64] = Tile_Chest;
+        local_maps_[continent] = tile;
+
+        /* 2 artifacts */
+        tile = random_tiles[used_tiles++];
+        tiles[tile.x + tile.y * 64] = kArtifactTiles[artifacts[artifact_index++]];
+
+        tile = random_tiles[used_tiles++];
+        tiles[tile.x + tile.y * 64] = kArtifactTiles[artifacts[artifact_index++]];
+
+        /* Init 11 shops. */
+        shops_[continent].resize(11);
+        for (int i = 0; i < 11; i++) {
+            auto &shop = shops_[continent][i];
+            shop.count = 0;
+            shop.unit = Peasants;
+            shop.x = 0;
+            shop.y = 0;
+        }
+
+        /* Gen guaranteed peasant dwelling. */
+        if (continent == 0) {
+            auto &shop = shops_[0][0];
+            shop.x = 27;
+            shop.y = 11;
+            shop.unit = Peasants;
+
+            int a = rand() % 25;
+            int b = a + 200;
+            int c = rand() % 25;
+            int d = c + b;
+            int e = rand() % 25;
+            int f = e + d;
+            int g = rand() % 25;
+            int h = g + f;
+
+            shop.count = h;
+        }
+
+        /* Gen K shops (skipping the first peasant shop) */
         for (int i = 0 + (continent == 0 ? 1 : 0); i <= kNumShopsPerContinent[continent]; i++) {
             tile = random_tiles[used_tiles++];
             auto &shop = shops_[continent][i];
@@ -2039,6 +2086,7 @@ void Game::gen_tiles()
             tiles[tile.x + tile.y * 64] = kShopTileForUnit[shop.unit];
         }
 
+        /* Gen L high value shops */
         for (int i = 0; i < kNumHighValueShopsPerContinent[continent]; i++) {
             tile = random_tiles[used_tiles++];
             auto &shop = shops_[continent][i];
@@ -2067,53 +2115,7 @@ void Game::gen_tiles()
             }
         }
 
-        /* 2 cave teleport tiles per continent */
-        tile = random_tiles[used_tiles++];
-        tiles[tile.x + tile.y * 64] = Tile_ShopCave;
-
-        tile = random_tiles[used_tiles++];
-        tiles[tile.x + tile.y * 64] = Tile_ShopCave;
-
-        /* Saharia doesn't have a map to anywhere */
-        if (continent != 3) {
-            tiles[random_tiles[used_tiles].x + random_tiles[used_tiles].y * 64] = Tile_Chest;
-            map_tiles_[continent] = random_tiles[used_tiles];
-            used_tiles++;
-        }
-
-        /* 2 artifacts per continent */
-        tile = random_tiles[used_tiles++];
-        tiles[tile.x + tile.y * 64] = kArtifactTiles[artifacts[artifact_index++]];
-
-        tile = random_tiles[used_tiles++];
-        tiles[tile.x + tile.y * 64] = kArtifactTiles[artifacts[artifact_index++]];
-
-        for (int i = 0; i < kCastlesPerContinent[continent]; i++) {
-            int index = kCastleIndices[continent] + i;
-            castle_occupations_[index] = {
-                index,
-                -1,
-                {{Peasants, Peasants, Peasants, Peasants, Peasants}},
-                {{0xFF, 0xFF, 0xFF, 0xFF, 0xFF}}};
-        }
-
-        int used_castles = 0;
-        for (int i = 0; i < kVillainsPerContinent[continent]; i++) {
-            int castle = castle_indices[used_castles++];
-
-            CastleOccupation occ;
-            occ.index = castle;
-            occ.occupier = i + kVillainIndices[continent];
-
-            for (int j = 0; j < 6; j++) {
-                occ.army[j] = unit_gen(rng_);
-                occ.army_counts[j] = (rand() % 100) + 1;
-            }
-
-            castle_occupations_[castle] = occ;
-        }
-
-        /* Five friendly mobs per continent */
+        /* Gen 5 friendlies */
         for (int i = 0; i < 5; i++) {
             tile = random_tiles[used_tiles++];
 
@@ -2129,6 +2131,33 @@ void Game::gen_tiles()
             mob.entity.move_to_tile({tile.x, tile.y, Tile_Grass});
 
             tiles[tile.x + tile.y * 64] = Tile_Grass;
+        }
+
+        /* Init castle occupants */
+        for (int i = 0; i < kCastlesPerContinent[continent]; i++) {
+            int index = kCastleIndices[continent] + i;
+            castle_occupations_[index] = {
+                index,
+                -1,
+                {{Peasants, Peasants, Peasants, Peasants, Peasants}},
+                {{0xFF, 0xFF, 0xFF, 0xFF, 0xFF}}};
+        }
+
+        /* Gen castle occupants */
+        int used_castles = 0;
+        for (int i = 0; i < kVillainsPerContinent[continent]; i++) {
+            int castle = castle_indices[used_castles++];
+
+            CastleOccupation occ;
+            occ.index = castle;
+            occ.occupier = i + kVillainIndices[continent];
+
+            for (int j = 0; j < 6; j++) {
+                occ.army[j] = unit_gen(rng_);
+                occ.army_counts[j] = (rand() % 100) + 1;
+            }
+
+            castle_occupations_[castle] = occ;
         }
     }
 

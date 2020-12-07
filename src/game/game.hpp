@@ -164,8 +164,6 @@ private:
 
     bty::Dialog dismiss_;
 
-    glm::ivec2 map_tiles_[3];
-
     bty::TextBox found_map_;
     bty::Text *found_map_continent_;
 
@@ -200,8 +198,11 @@ private:
         int count;
     };
 
+    /* RNG */
     std::array<std::array<Mob, 40>, 4> mobs_;
     std::array<std::vector<Shop>, 4> shops_;
+    std::array<glm::ivec2, 3> sail_maps_;
+    std::array<glm::ivec2, 4> local_maps_;
 };
 
 #endif    // BTY_GAME_GAME_HPP_
