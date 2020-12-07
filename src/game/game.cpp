@@ -861,19 +861,18 @@ void Game::town(const Tile &tile)
     int town = -1;
 
     for (int i = 0; i < 26; i++) {
-        if (kTownInfo[i].x == tile.tx && 63 - kTownInfo[i].y == tile.ty) {
+        if (kTownInfo[i].continent == continent && kTownInfo[i].x == tile.tx && 63 - kTownInfo[i].y == tile.ty) {
             town = i;
             break;
         }
     }
 
-    // TODO
-    int castle_town = town;
-    if (kTownInfo[town].castle == -1) {
-        castle_town = 2;
+    if (town == -1) {
+        spdlog::warn("Couldn't find town at {}, {}", tile.tx, tile.ty);
+        return;
     }
 
-    town_.view(town, tile, continent, town_units_[town], town_spells_[town], castle_occupations_[kTownInfo[castle_town].castle]);
+    town_.view(town, tile, continent, town_units_[town], town_spells_[town], castle_occupations_[town]);
     set_state(GameState::Town);
 }
 
@@ -1919,7 +1918,7 @@ void Game::gen_tiles()
     }
 
     std::uniform_int_distribution<int> unit_gen(0, UnitId::UnitCount - 1);
-    std::uniform_int_distribution<int> spell_gen(0, 14);
+    std::uniform_int_distribution<int> spell_gen(0, 13);
 
     static constexpr int kChestChanceGold[] =
         {
@@ -1978,22 +1977,23 @@ void Game::gen_tiles()
                 }
                 else if (id == Tile_GenTown) {
                     int town = -1;
-                    for (int i = 0; i < kTownsPerContinent[continent]; i++) {
-                        int index = kTownIndices[continent] + i;
-                        if (kTownInfo[index].x == x && 63 - kTownInfo[index].y == y) {
-                            town = index;
+                    for (int i = 0; i < 26; i++) {
+                        if (kTownInfo[i].continent == continent && kTownInfo[i].x == x && 63 - kTownInfo[i].y == y) {
+                            town = i;
                         }
                     }
                     if (town != -1) {
                         town_units_[town] = unit_gen(rng_);
 
                         /* Hunterville always has Bridge */
-                        if (town == 2) {
+                        if (town == 21) {
                             town_spells_[town] = 7;
                         }
                         else {
                             town_spells_[town] = spell_gen(rng_);
                         }
+
+                        assert(town_spells_[town] != 14);
 
                         tiles[x + y * 64] = Tile_Town;
                     }
@@ -2003,10 +2003,9 @@ void Game::gen_tiles()
                 }
                 else if (id == Tile_GenCastleGate) {
                     int castle = -1;
-                    for (int i = 0; i < kCastlesPerContinent[continent]; i++) {
-                        int index = kCastleIndices[continent] + i;
-                        if (kCastleInfo[index].x == x && 63 - kCastleInfo[index].y == y) {
-                            castle = index;
+                    for (int i = 0; i < 26; i++) {
+                        if (kCastleInfo[i].continent == continent && kCastleInfo[i].x == x && 63 - kCastleInfo[i].y == y) {
+                            castle = i;
                             break;
                         }
                     }
@@ -2096,24 +2095,6 @@ void Game::gen_tiles()
                     tiles[x + y * 64] = Tile_Grass;
                 }
                 n++;
-            }
-        }
-
-        if (castle_indices.size() != kCastlesPerContinent[continent]) {
-            spdlog::error("({}) Failed to find {} castles!", continent, kCastlesPerContinent[continent] - castle_indices.size());
-
-            for (int i = 0; i < kCastlesPerContinent[continent]; i++) {
-                bool found = false;
-                int index = kCastleIndices[continent] + i;
-                for (int j = 0; j < castle_indices.size(); j++) {
-                    if (castle_indices[j] == index) {
-                        found = true;
-                        break;
-                    }
-                }
-                if (!found) {
-                    spdlog::error("Missing {}", kCastleInfo[index].name);
-                }
             }
         }
 

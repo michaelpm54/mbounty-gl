@@ -8,13 +8,14 @@ struct TownInfo {
     std::string name;
     int x;
     int y;
-    int castle;
+    int continent;
 };
 
 struct CastleInfo {
     std::string name;
     int x;
     int y;
+    int continent;
 };
 
 extern const char *const kSpellNames[14];

@@ -49,11 +49,7 @@ void Town::view(int town, const Tile &tile, int continent, int unit_id, int spel
 
     unit_.set_texture(unit_textures_[unit_id]);
 
-    for (int i = 0; i < kTownsPerContinent[continent]; i++) {
-        if (tile.tx == kTownInfo[kTownIndices[continent] + i].x && tile.ty == 63 - kTownInfo[kTownIndices[continent] + i].y) {
-            dialog_.set_line(0, fmt::format("Town of {}", kTownInfo[i].name));
-        }
-    }
+    dialog_.set_line(0, fmt::format("Town of {}", kTownInfo[town].name));
 
     update_gold();
 
