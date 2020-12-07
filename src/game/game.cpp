@@ -2159,6 +2159,11 @@ void Game::gen_tiles()
 
             castle_occupations_[castle] = occ;
         }
+
+        /* Turn the rest of the RNG tiles into chests */
+        for (int i = used_tiles; i < random_tiles.size(); i++) {
+            tiles[random_tiles[i].x + random_tiles[i].y * 64] = Tile_Chest;
+        }
     }
 
     for (int i = 0; i < 4; i++) {
