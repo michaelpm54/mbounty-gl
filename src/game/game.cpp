@@ -1989,8 +1989,6 @@ void Game::gen_tiles()
                         }
                     }
 
-                    int unit_sprite_id = mob.army[highest];
-
                     mob.entity.set_texture(unit_textures_[mob.army[highest]]);
                     mob.entity.move_to_tile({x, y, Tile_Grass});
 
