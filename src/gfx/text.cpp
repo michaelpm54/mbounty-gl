@@ -32,6 +32,11 @@ Text::Text(Text &&other)
     other.vbo_ = GL_NONE;
 }
 
+Text::Text()
+{
+    glCreateVertexArrays(1, &vao_);
+}
+
 void Text::create(int x, int y, const std::string &string, const Font &font)
 {
     font_ = &font;
@@ -41,6 +46,10 @@ void Text::create(int x, int y, const std::string &string, const Font &font)
 
 void Text::set_string(const std::string &string)
 {
+    if (string_ == string) {
+        return;
+    }
+
     string_ = string;
 
     if (!font_) {
@@ -88,11 +97,9 @@ void Text::set_string(const std::string &string)
         x += 8;
     }
 
-    if (vao_ != GL_NONE) {
-        glDeleteVertexArrays(1, &vao_);
+    if (vbo_ != GL_NONE) {
+        glDeleteBuffers(1, &vbo_);
     }
-
-    glCreateVertexArrays(1, &vao_);
 
     glGenBuffers(1, &vbo_);
 

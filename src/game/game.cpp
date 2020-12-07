@@ -8,6 +8,7 @@
 #include <glm/gtx/transform.hpp>
 
 #include "assets.hpp"
+#include "game/shop-info.hpp"
 #include "gfx/gfx.hpp"
 #include "glfw.hpp"
 #include "scene-switcher.hpp"
@@ -158,6 +159,7 @@ charts describing passage to)raw");
 
     town_.load(assets, color, state);
     kings_castle_.load(assets, color, state, hud_);
+    shop_.load(assets, color, state, hud_);
 
     untrained_in_magic_.create(6, 10, 20, 10, color, assets);
     untrained_in_magic_.add_line(1, 1,
@@ -323,6 +325,10 @@ void Game::draw(bty::Gfx &gfx)
             hud_.draw(gfx, camera_);
             kings_castle_.draw(gfx, camera_);
             break;
+        case GameState::Shop:
+            hud_.draw(gfx, camera_);
+            shop_.draw(gfx, camera_);
+            break;
         case GameState::UntrainedInMagic:
             map_.draw(game_camera_, continent);
             draw_mobs(gfx);
@@ -409,6 +415,11 @@ void Game::key(int key, int scancode, int action, int mods)
                         case GLFW_KEY_C:
                             scene_switcher_->state().contract = (scene_switcher_->state().contract + 1) % 18;
                             hud_.update_state();
+                            break;
+                        case GLFW_KEY_N:
+                            for (int i = 0; i < 11; i++) {
+                                spdlog::debug("Shop {} = {}, {}, {}, {}", i, shops_[state.continent][i].x, shops_[state.continent][i].y, shops_[state.continent][i].unit, shops_[state.continent][i].count);
+                            }
                             break;
                         default:
                             break;
@@ -736,6 +747,13 @@ void Game::key(int key, int scancode, int action, int mods)
                     break;
             }
             break;
+        case GameState::Shop:
+            if (action == GLFW_PRESS || action == GLFW_RELEASE) {
+                if (shop_.key(key, action) == -2) {
+                    set_state(GameState::Unpaused);
+                }
+            }
+            break;
         case GameState::KingsCastle:
             switch (action) {
                 case GLFW_RELEASE:
@@ -914,8 +932,15 @@ void Game::collide(Tile &tile)
                 teleport_cave(tile);
             }
             else {
-                /* Shop */
+                shop(tile);
             }
+            break;
+        case Tile_ShopTree:
+            [[fallthrough]];
+        case Tile_ShopDungeon:
+            [[fallthrough]];
+        case Tile_ShopWagon:
+            shop(tile);
             break;
         default:
             break;
@@ -1168,6 +1193,10 @@ void Game::update(float dt)
     else if (state_ == GameState::Town) {
         hud_.update(dt);
         town_.update(dt);
+    }
+    else if (state_ == GameState::Shop) {
+        hud_.update(dt);
+        shop_.update(dt);
     }
     else if (state_ == GameState::KingsCastle) {
         kings_castle_.update(dt);
@@ -1491,6 +1520,7 @@ void Game::setup_game()
     kings_castle_.set_color(color);
     join_dialog_.set_color(color);
     join_flee_.set_color(color);
+    shop_.set_color(color);
 
     /* Add starting army */
     for (int i = 0; i < 5; i++) {
@@ -1501,15 +1531,9 @@ void Game::setup_game()
     switch (state.hero_id) {
         case 0:
             state.army[0] = Militias;
-            state.army_counts[0] = 100;
+            state.army_counts[0] = 20;
             state.army[1] = Archers;
             state.army_counts[1] = 2;
-            state.army[2] = Sprites;
-            state.army_counts[2] = 1;
-            state.army[3] = Ogres;
-            state.army_counts[3] = 1;
-            state.army[4] = Knights;
-            state.army_counts[4] = 1;
             break;
         case 1:
             state.army[0] = Peasants;
@@ -1858,31 +1882,31 @@ void Game::gen_tiles()
     };
 
     static constexpr int kShopTileForUnit[] = {
-        Tile_ShopWagon,
-        Tile_ShopTree,
-        Tile_ShopCave,
-        Tile_ShopDungeon,
-        Tile_ShopCave,
-        Tile_ShopTree,
-        Tile_ShopDungeon,
-        Tile_ShopTree,
-        Tile_ShopTree,
-        Tile_ShopTree,
-        Tile_ShopCave,
-        Tile_ShopTree,
-        Tile_ShopCave,
-        Tile_ShopTree,
-        Tile_ShopDungeon,
-        Tile_ShopTree,
-        Tile_ShopTree,
-        Tile_ShopCave,
-        Tile_ShopTree,
-        Tile_ShopTree,
-        Tile_ShopTree,
-        Tile_ShopTree,
-        Tile_ShopTree,
-        Tile_ShopTree,
-        Tile_ShopTree,
+        Tile_ShopWagon,      // peasants
+        Tile_ShopTree,       // militia
+        Tile_ShopTree,       // sprites
+        Tile_ShopWagon,      // wolves
+        Tile_ShopDungeon,    // skeletons
+        Tile_ShopDungeon,    // zombies
+        Tile_ShopTree,       // gnomes
+        Tile_ShopCave,       // orcs
+        Tile_ShopTree,       // archers
+        Tile_ShopTree,       // elves
+        Tile_ShopWagon,      // pikemen
+        Tile_ShopWagon,      // nomads
+        Tile_ShopCave,       // dwarves
+        Tile_ShopDungeon,    // ghosts
+        Tile_ShopTree,       // knights
+        Tile_ShopCave,       // ogres
+        Tile_ShopWagon,      // barbarians
+        Tile_ShopCave,       // trolls
+        Tile_ShopTree,       // cavalries
+        Tile_ShopTree,       // druids
+        Tile_ShopTree,       // archmages
+        Tile_ShopDungeon,    // vampires
+        Tile_ShopWagon,      // giants
+        Tile_ShopDungeon,    // demons
+        Tile_ShopCave,       // dragons
     };
 
     static constexpr int kArtifactTiles[] = {
@@ -1972,6 +1996,7 @@ void Game::gen_tiles()
         for (int y = 0; y < 64; y++) {
             for (int x = 0; x < 64; x++) {
                 int id = tiles[n];
+
                 if (id == Tile_GenRandom) {
                     random_tiles.push_back({x, y});
                 }
@@ -2165,11 +2190,15 @@ void Game::gen_tiles()
             shop.y = 0;
         }
 
+        int num_shops = 0;
+
         /* Gen guaranteed peasant dwelling. */
         if (continent == 0) {
-            auto &shop = shops_[0][0];
+            tiles[27 + 52 * 64] = Tile_ShopWagon;
+
+            auto &shop = shops_[0][num_shops++];
             shop.x = 27;
-            shop.y = 11;
+            shop.y = 63 - 11;
             shop.unit = Peasants;
 
             int a = rand() % 25;
@@ -2185,9 +2214,9 @@ void Game::gen_tiles()
         }
 
         /* Gen K shops (skipping the first peasant shop) */
-        for (int i = 0 + (continent == 0 ? 1 : 0); i <= kNumShopsPerContinent[continent]; i++) {
+        for (int i = 0; i < kNumShopsPerContinent[continent]; i++) {
             tile = random_tiles[used_tiles++];
-            auto &shop = shops_[continent][i];
+            auto &shop = shops_[continent][num_shops++];
             shop.x = tile.x;
             shop.y = tile.y;
             shop.unit = kShopUnits[i + continent * 6];
@@ -2199,10 +2228,14 @@ void Game::gen_tiles()
             tiles[tile.x + tile.y * 64] = kShopTileForUnit[shop.unit];
         }
 
+        int have_shop = -1;
+
         /* Gen L high value shops */
         for (int i = 0; i < kNumHighValueShopsPerContinent[continent]; i++) {
             tile = random_tiles[used_tiles++];
-            auto &shop = shops_[continent][i];
+            auto &shop = shops_[continent][num_shops++];
+            shop.x = tile.x;
+            shop.y = tile.y;
             if (continent == 3) {
                 int roll = rand() % 3;
                 shop.unit = roll + 0x15;
@@ -2223,9 +2256,19 @@ void Game::gen_tiles()
                 int a = (rand() % kMaxShopCounts[shop.unit]) / 8;
                 int b = (rand() % kMaxShopCounts[shop.unit]) / 16;
                 int c = rand() % 4;
+                shop.unit = id;
                 shop.count = continent + a + b + max;
                 tiles[tile.x + tile.y * 64] = kShopTileForUnit[shop.unit];
+
+                if (continent == 0 && tile.x == 8 && tile.y == 60) {
+                    spdlog::debug("[{}] High value shop at 8 60: {} {} With index {}", continent, shop.unit, shop.count, num_shops - 1);
+                    have_shop = num_shops - 1;
+                }
             }
+        }
+
+        if (have_shop != -1) {
+            spdlog::debug("Shop 0,8,60 {} {}", shops_[0][have_shop].unit, shops_[0][have_shop].count);
         }
 
         /* Gen 5 friendlies */
@@ -2428,6 +2471,9 @@ void Game::set_state(GameState state)
             break;
         case GameState::KingsCastle:
             kings_castle_.view();
+            break;
+        case GameState::Shop:
+            shop_.view(shops_[scene_switcher_->state().continent][shop_index_]);
             break;
         case GameState::JoinDialog:
             setup_join_dialog();
@@ -2917,4 +2963,22 @@ void Game::setup_join_flee()
     int continent = scene_switcher_->state().continent;
 
     join_flee_.set_line(0, fmt::format("{} {}", get_descriptor(mobs_[continent][join_unit_].counts[0]), kUnits[mobs_[continent][join_unit_].army[0]].name_plural));
+}
+
+void Game::shop(const Tile &tile)
+{
+    auto &state = scene_switcher_->state();
+
+    for (int i = 0; i < shops_[state.continent].size(); i++) {
+        if (shops_[state.continent][i].x == tile.tx && shops_[state.continent][i].y == tile.ty) {
+            shop_index_ = i;
+            break;
+        }
+    }
+    if (shop_index_ == -1) {
+        spdlog::warn("Failed to find shop at [{}] {} {}", state.continent, tile.tx, tile.ty);
+    }
+    else {
+        set_state(GameState::Shop);
+    }
 }

@@ -12,6 +12,8 @@
 #include "game/kings-castle.hpp"
 #include "game/map.hpp"
 #include "game/move-flags.hpp"
+#include "game/shop-info.hpp"
+#include "game/shop.hpp"
 #include "game/town.hpp"
 #include "game/view-army.hpp"
 #include "game/view-character.hpp"
@@ -64,6 +66,7 @@ private:
         Bridge,
         JoinDialog,
         JoinFlee,
+        Shop,
     };
 
     struct EventTile {
@@ -118,6 +121,7 @@ private:
     void join_confirm();
     void setup_join_dialog();
     void setup_join_flee();
+    void shop(const Tile &tile);
 
 private:
     enum WeekPassedCard {
@@ -199,17 +203,12 @@ private:
     bty::TextBox disgrace_;
     bty::Dialog join_dialog_;
     bty::TextBox join_flee_;
-
-    struct Shop {
-        int x;
-        int y;
-        int unit;
-        int count;
-    };
+    Shop shop_;
+    int shop_index_ {-1};
 
     /* RNG */
     std::array<std::array<Mob, 40>, 4> mobs_;
-    std::array<std::vector<Shop>, 4> shops_;
+    std::array<std::vector<ShopInfo>, 4> shops_;
     std::array<glm::ivec2, 3> sail_maps_;
     std::array<glm::ivec2, 4> local_maps_;
     std::array<std::array<glm::ivec2, 2>, 4> teleport_caves_;

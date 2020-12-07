@@ -63,11 +63,7 @@ void KingsCastle::draw(bty::Gfx &gfx, glm::mat4 &camera)
 
 void KingsCastle::view()
 {
-    added_while_holding_ = 0;
-    add_amt_ = 1;
-    increasing_amt_ = false;
-    decreasing_amt_ = false;
-    current_amt_ = 0;
+    recruit_input_.clear();
 
     how_many_->set_string("  0");
 
@@ -113,98 +109,35 @@ void KingsCastle::update(float dt)
     dialog_.animate(dt);
     recruit_.animate(dt);
     unit_.animate(dt);
-
-    if (increasing_amt_) {
-        update_timer_ += dt;
-        if (added_while_holding_ == 10) {
-            add_amt_ = 10;
-        }
-    }
-    else if (decreasing_amt_) {
-        update_timer_ += dt;
-        if (added_while_holding_ == -10) {
-            add_amt_ = -10;
-        }
-    }
-
-    if (update_timer_ > 0.1f) {
-        current_amt_ += add_amt_;
-        added_while_holding_ += add_amt_;
-        update_timer_ = 0;
-        if (current_amt_ < 0) {
-            current_amt_ = 0;
-        }
-        if (current_amt_ > max_amt_) {
-            current_amt_ = max_amt_;
-        }
-        how_many_->set_string(fmt::format("{:>3}", current_amt_));
-    }
+    recruit_input_.update(dt);
+    how_many_->set_string(fmt::format("{:>3}", recruit_input_.get_current()));
 }
 
 int KingsCastle::key(int key, int action)
 {
+    if (show_recruit_amount_) {
+        recruit_input_.key(key, action);
+    }
+
     switch (action) {
-        case GLFW_RELEASE:
-            switch (key) {
-                case GLFW_KEY_RIGHT:
-                    [[fallthrough]];
-                case GLFW_KEY_UP:
-                    increasing_amt_ = false;
-                    add_amt_ = 0;
-                    added_while_holding_ = 0;
-                    break;
-                case GLFW_KEY_LEFT:
-                    [[fallthrough]];
-                case GLFW_KEY_DOWN:
-                    decreasing_amt_ = false;
-                    add_amt_ = 0;
-                    added_while_holding_ = 0;
-                    break;
-                default:
-                    break;
-            }
-            break;
         case GLFW_PRESS:
             switch (key) {
-                case GLFW_KEY_LEFT:
-                    decreasing_amt_ = true;
-                    add_amt_ = -1;
-                    update_timer_ = 0.099f;
-                    break;
                 case GLFW_KEY_DOWN:
-                    if (show_recruit_) {
-                        if (show_recruit_amount_) {
-                            decreasing_amt_ = true;
-                            add_amt_ = -1;
-                            update_timer_ = 0.099f;
-                        }
-                        else {
-                            recruit_.next();
-                        }
+                    if (show_recruit_ && !show_recruit_amount_) {
+                        recruit_.next();
                     }
                     else {
                         dialog_.next();
                     }
                     break;
                 case GLFW_KEY_UP:
-                    if (show_recruit_) {
-                        if (show_recruit_amount_) {
-                            increasing_amt_ = true;
-                            add_amt_ = 1;
-                            update_timer_ = 0.099f;
-                        }
-                        else {
-                            recruit_.prev();
-                        }
+                    if (show_recruit_ && !show_recruit_amount_) {
+                        recruit_.prev();
                     }
                     else {
                         dialog_.prev();
                     }
                     break;
-                case GLFW_KEY_RIGHT:
-                    increasing_amt_ = true;
-                    update_timer_ = 0.099f;
-                    add_amt_ = 1;
                     break;
                 case GLFW_KEY_ENTER:
                     if (show_recruit_) {
@@ -217,10 +150,6 @@ int KingsCastle::key(int key, int action)
                 case GLFW_KEY_BACKSPACE:
                     if (show_recruit_) {
                         if (show_recruit_amount_) {
-                            current_amt_ = 0;
-                            added_while_holding_ = 0;
-                            add_amt_ = 0;
-                            update_timer_ = 0;
                             show_recruit_amount_ = false;
                             how_many_->set_string("  0");
                             recruit_.set_line_visible(2, true);
@@ -264,6 +193,8 @@ void KingsCastle::recruit_opt()
         Knights,
     };
 
+    int current = recruit_input_.get_current();
+
     if (!show_recruit_amount_) {
         show_recruit_amount_ = true;
         recruit_.set_line_visible(2, false);
@@ -282,26 +213,22 @@ void KingsCastle::recruit_opt()
             }
         }
 
-        spdlog::debug("Existing amount: {}", existing_amount);
-
-        max_amt_ = potential_amount - existing_amount;
-        max_amt_ = std::min(max_amt_, state_->gold / kUnits[id].recruit_cost);
-
-        may_get_->set_string(fmt::format("{}.", max_amt_));
+        int max_amt = potential_amount > existing_amount ? potential_amount - existing_amount : 0;
+        max_amt = std::min(max_amt, state_->gold / kUnits[id].recruit_cost);
+        recruit_input_.set_max(max_amt);
+        may_get_->set_string(fmt::format("{}.", max_amt));
 
         if (kUnits[id].recruit_cost > state_->gold) {
-            hud_->set_title("    You do not have enough gold!");
+            hud_->set_title("     You do not have enough gold!");
         }
 
-        current_amt_ = std::min(max_amt_, current_amt_);
-
-        how_many_->set_string(fmt::format("{:>3}", current_amt_));
+        how_many_->set_string(fmt::format("{:>3}", current));
     }
     else {
-        if (current_amt_ > 0) {
+        if (current > 0) {
             int id = kKingsCastleUnits[recruit_.get_selection()];
 
-            int cost = current_amt_ * kUnits[id].recruit_cost;
+            int cost = current * kUnits[id].recruit_cost;
             state_->gold -= cost;
             hud_->update_state();
             update_gold();
@@ -314,7 +241,7 @@ void KingsCastle::recruit_opt()
             bool found = false;
             for (int i = 0; i < 5; i++) {
                 if (state_->army[i] == id) {
-                    state_->army_counts[i] += current_amt_;
+                    state_->army_counts[i] += current;
                     found = true;
                     break;
                 }
@@ -324,7 +251,7 @@ void KingsCastle::recruit_opt()
                 for (int i = 0; i < 5; i++) {
                     if (state_->army[i] == -1) {
                         state_->army[i] = id;
-                        state_->army_counts[i] = current_amt_;
+                        state_->army_counts[i] = current;
                         break;
                     }
                 }

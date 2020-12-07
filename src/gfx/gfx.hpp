@@ -46,7 +46,7 @@ private:
     void set_initial_gl_state();
     void load_shaders(Assets &assets);
     void get_uniform_locations();
-    void create_geometry();
+    void create_quad_vao();
 
 private:
     GLuint sprite_shader_;
@@ -54,6 +54,7 @@ private:
     GLuint rect_shader_;
     GLuint text_shader_;
     GLuint quad_vao_;
+    GLuint quad_vbo_;
     GLint locations_[Locations::Count];
 };
 

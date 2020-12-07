@@ -2,6 +2,7 @@
 #define BTY_GAME_KINGS_CASTLE_HPP_
 
 #include "bounty.hpp"
+#include "game/recruit-input.hpp"
 #include "gfx/dialog.hpp"
 #include "gfx/sprite.hpp"
 
@@ -44,14 +45,7 @@ private:
     bty::Text *may_get_ {nullptr};
     bty::Text *how_many_ {nullptr};
 
-    bool increasing_amt_ {false};
-    bool decreasing_amt_ {false};
-    int add_amt_ {0};
-    int current_amt_ {0};
-    int max_amt_ {0};
-    float update_timer_ {0};
-
-    int added_while_holding_ {0};
+    RecruitInput recruit_input_;
 };
 
 #endif    // BTY_GAME_KINGS_CASTLE_HPP_

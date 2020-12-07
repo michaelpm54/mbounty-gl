@@ -38,6 +38,8 @@ set(MBOUNTYGL_SRC
 	src/game/view-puzzle.cpp
 	src/game/town.cpp
 	src/game/kings-castle.cpp
+	src/game/shop.cpp
+	src/game/recruit-input.cpp
 	src/battle/battle.cpp
 )
 

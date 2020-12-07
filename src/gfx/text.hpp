@@ -12,7 +12,7 @@ class Font;
 
 class Text : public Transformable {
 public:
-    Text() = default;
+    Text();
     ~Text();
     Text(Text &&other);
 

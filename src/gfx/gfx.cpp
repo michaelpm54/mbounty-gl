@@ -17,7 +17,7 @@ Gfx::Gfx(Assets &assets)
     set_initial_gl_state();
     load_shaders(assets);
     get_uniform_locations();
-    create_geometry();
+    create_quad_vao();
 }
 
 Gfx::~Gfx()
@@ -27,6 +27,7 @@ Gfx::~Gfx()
     glDeleteProgram(rect_shader_);
     glDeleteProgram(text_shader_);
     glDeleteVertexArrays(1, &quad_vao_);
+    glDeleteBuffers(1, &quad_vbo_);
 }
 
 void Gfx::clear()
@@ -162,10 +163,13 @@ void Gfx::set_initial_gl_state()
     glClearColor(0.0f, 163 / 255.0f, 166 / 255.0f, 1.0f);
 }
 
-void Gfx::create_geometry()
+void Gfx::create_quad_vao()
 {
-    GLuint quad_vbo;
-    glGenBuffers(1, &quad_vbo);
+    if (quad_vbo_ != GL_NONE) {
+        glDeleteBuffers(1, &quad_vbo_);
+    }
+
+    glGenBuffers(1, &quad_vbo_);
 
     /* clang-format off */
     GLfloat quad_vertices[] = {
@@ -179,18 +183,16 @@ void Gfx::create_geometry()
     };
     /* clang-format on */
 
-    glBindBuffer(GL_ARRAY_BUFFER, quad_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, quad_vbo_);
     glBufferData(GL_ARRAY_BUFFER, 48, quad_vertices, GL_STATIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, GL_NONE);
 
     glCreateVertexArrays(1, &quad_vao_);
     glBindVertexArray(quad_vao_);
-    glBindBuffer(GL_ARRAY_BUFFER, quad_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, quad_vbo_);
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 2, nullptr);
     glEnableVertexAttribArray(0);
     glBindVertexArray(GL_NONE);
-
-    glDeleteBuffers(1, &quad_vbo);
 }
 
 }    // namespace bty
