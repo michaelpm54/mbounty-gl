@@ -810,6 +810,8 @@ void Game::town(const Tile &tile)
 
 void Game::collide(Tile &tile)
 {
+    int continent = scene_switcher_->state().continent;
+
     switch (tile.id) {
         case Tile_Chest:
             find_map(tile);
@@ -838,6 +840,14 @@ void Game::collide(Tile &tile)
             [[fallthrough]];
         case Tile_AfctBook:
             artifact(tile);
+            break;
+        case Tile_ShopCave:
+            if (glm::ivec2 {tile.tx, tile.ty} == teleport_caves_[continent][0] || glm::ivec2 {tile.tx, tile.ty} == teleport_caves_[continent][1]) {
+                teleport_cave(tile);
+            }
+            else {
+                /* Shop */
+            }
             break;
         default:
             break;
@@ -2035,9 +2045,11 @@ void Game::gen_tiles()
         /* 2 cave teleport tiles per continent */
         tile = random_tiles[used_tiles++];
         tiles[tile.x + tile.y * 64] = Tile_ShopCave;
+        teleport_caves_[continent][0] = tile;
 
         tile = random_tiles[used_tiles++];
         tiles[tile.x + tile.y * 64] = Tile_ShopCave;
+        teleport_caves_[continent][1] = tile;
 
         /* 1 sail map */
         if (continent != 3) {
@@ -2755,4 +2767,12 @@ void Game::artifact(const Tile &tile)
     }
 
     hud_.update_state();
+}
+
+void Game::teleport_cave(const Tile &tile)
+{
+    int continent = scene_switcher_->state().continent;
+    glm::ivec2 dest = glm::ivec2 {tile.tx, tile.ty} == teleport_caves_[continent][0] ? teleport_caves_[continent][1] : teleport_caves_[continent][0];
+    hero_.move_to_tile(map_.get_tile(dest, continent));
+    update_camera();
 }

@@ -112,6 +112,7 @@ private:
     void draw_mobs(bty::Gfx &gfx);
     void view_army();
     void artifact(const Tile &tile);
+    void teleport_cave(const Tile &tile);
 
 private:
     enum WeekPassedCard {
@@ -204,6 +205,7 @@ private:
     std::array<std::vector<Shop>, 4> shops_;
     std::array<glm::ivec2, 3> sail_maps_;
     std::array<glm::ivec2, 4> local_maps_;
+    std::array<std::array<glm::ivec2, 2>, 4> teleport_caves_;
 };
 
 #endif    // BTY_GAME_GAME_HPP_
