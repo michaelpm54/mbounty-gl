@@ -890,7 +890,7 @@ void Battle::move_cursor(int dir)
             break;
     }
 
-    cursor_.set_position(16.0f + cx_ * 48.0f, 24.0f + cy_ * 40.0f);
+    update_cursor();
 
     if (state_ == BattleState::Moving) {
         auto [unit, enemy] = get_unit(cx_, cy_);
@@ -1341,9 +1341,10 @@ int damage_remainder(int dmg, int hp)
     return dmg % hp;
 }
 
-float morale_modifier()
+float morale_modifier(int morale)
 {
-    return 1.0f;
+    return morale == 0 ? 1.0f : morale == 1 ? 1.5f
+                                            : 0.5f;
 }
 
 void Battle::damage(int from_team, int from_unit, int to_team, int to_unit, bool is_ranged, bool is_external, int external_damage, bool retaliation)
@@ -1414,7 +1415,7 @@ void Battle::damage(int from_team, int from_unit, int to_team, int to_unit, bool
 
         if (from_team == 0) {
             if (!unit_state_a.out_of_control) {
-                final_damage = static_cast<int>(morale_modifier() * static_cast<float>(final_damage));
+                final_damage = static_cast<int>(morale_modifier(scene_switcher_->state().army_morales[from_unit]) * static_cast<float>(final_damage));
             }
         }
 

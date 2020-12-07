@@ -1064,46 +1064,53 @@ void Game::update(float dt)
     }
 }
 
-/*
- *  bounty.c -- tables and static data needed in the game
- *  Copyright (C) 2011 Vitaly Driedfruit
- *
- *  This file is part of openkb.
- *
- *  openkb is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 3 of the License, or
- *  (at your option) any later version.
- *
- *  openkb is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with openkb.  If not, see <http://www.gnu.org/licenses/>.
- */
-
-#define MORALE_NORMAL 0
-#define MORALE_LOW 1
-#define MORALE_HIGH 2
-
-#define _N MORALE_NORMAL
-#define _L MORALE_LOW
-#define _H MORALE_HIGH
-
-static char kMoraleChart[5][5] = {
-    /*	 A	 B	 C	 D	 E	 */
-    /* A */ {_N, _N, _N, _N, _N},
-    /* B */ {_N, _N, _N, _N, _N},
-    /* C */ {_N, _N, _H, _N, _N},
-    /* D */ {_L, _N, _L, _H, _N},
-    /* E */ {_L, _L, _L, _N, _N},
+/* clang-format off */
+static constexpr int kMoraleGroups[25] = {
+	0, 2, 0, 3, 4,
+	4, 2, 3, 1, 2,
+	1, 2, 2, 4, 1,
+	3, 2, 3, 1, 2,
+	2, 4, 2, 4, 3,
 };
 
-#undef _N
-#undef _L
-#undef _H
+/* 0 = normal
+   1 = high
+   2 = low
+*/
+static constexpr int kMoraleChart[25] = {
+	0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0,
+	0, 0, 1, 0, 0,
+	2, 0, 2, 1, 0,
+	2, 2, 2, 0, 0,
+};
+/* clang-format on */
+
+int check_morale(int me, int *army)
+{
+    /*
+		If there's a normal, return it. If it's not normal, keep checking
+		until we run out of units. At that point, if at any point we hit a low,
+		return the low. If we didn't hit normal or low, it's high.
+	*/
+    bool normal = false;
+    for (int i = 0; i < 5; i++) {
+        if (army[i] == -1) {
+            continue;
+        }
+        int result = kMoraleChart[kMoraleGroups[army[me]] + kMoraleGroups[army[i]] * 5];
+        if (result == 2) {
+            return 1;
+        }
+        if (result == 1) {
+            normal = true;
+        }
+    }
+    if (normal) {
+        return 0;
+    }
+    return 2;
+}
 
 void Game::add_unit_to_army(int id, int count)
 {
@@ -1142,19 +1149,9 @@ void Game::add_unit_to_army(int id, int count)
             continue;
         }
 
-        /* Morale regresses to how the other guy feels about me */
-        char morale_cnv[3] = {MORALE_LOW, MORALE_NORMAL, MORALE_HIGH};
-        char my_morale = MORALE_HIGH;
         for (int j = 0; j < 5; j++) {
-            if (army_counts[j] == 0)
-                break;
-            char other_group = kUnits[army[j]].morale_group;
-            char other_morale = kMoraleChart[other_group][unit.morale_group];
-            if (morale_cnv[other_morale] < morale_cnv[my_morale])
-                my_morale = other_morale;
+            army_morales[i] = check_morale(i, army);
         }
-
-        scene_switcher_->state().army_morales[i] = my_morale;
     }
 }
 

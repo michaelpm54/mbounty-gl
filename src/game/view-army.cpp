@@ -78,9 +78,9 @@ void ViewArmy::view(int *army, int *counts, int *morales)
             int g_cost = counts[i] * unit.weekly_cost;
 
             static const std::array<std::string, 4> kMoraleStrings = {{
-                "Morale: Low",
-                "Morale: Medium",
+                "Morale: Norm",
                 "Morale: High",
+                "Morale: Low",
                 "Out of control",
             }};
 
