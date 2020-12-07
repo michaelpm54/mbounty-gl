@@ -1,8 +1,10 @@
 #ifndef BTY_GAME_GAME_HPP_
 #define BTY_GAME_GAME_HPP_
 
+#include <array>
 #include <queue>
 #include <random>
+#include <vector>
 
 #include "game/entity.hpp"
 #include "game/hero.hpp"
@@ -72,7 +74,7 @@ private:
         bool dead {false};
         Entity entity;
         glm::ivec2 tile;
-        std::array<int, 6> army;
+        std::array<int, 6> army {-1};
         std::array<int, 6> counts;
     };
 
@@ -82,7 +84,7 @@ private:
     void update_visited_tiles();
     void update_spells();
     void end_of_week(bool search);
-    void sort_army();
+    void sort_army(int *army, int *counts, int max);
     void disgrace();
     void lose_game();
     void setup_game();
@@ -184,14 +186,22 @@ private:
     std::array<std::array<glm::ivec2, 40>, 4> mob_tile_;
     std::array<std::array<std::array<int, 6>, 40>, 4> mob_armies_;
 
-    std::array<std::array<Mob, 40>, 4> mobs_;
-
     bty::TextBox untrained_in_magic_;
     bty::TextBox bridge_prompt_;
 
     std::queue<std::string> hud_message_queue_;
 
     bty::TextBox disgrace_;
+
+    struct Shop {
+        int x;
+        int y;
+        int unit;
+        int count;
+    };
+
+    std::array<std::array<Mob, 40>, 4> mobs_;
+    std::array<std::vector<Shop>, 4> shops_;
 };
 
 #endif    // BTY_GAME_GAME_HPP_

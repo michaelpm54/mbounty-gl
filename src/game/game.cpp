@@ -203,7 +203,7 @@ void Game::enter(bool reset)
         }
         else {
             mobs_[state.continent][state.enemy_index].dead = true;
-            sort_army();
+            sort_army(scene_switcher_->state().army, scene_switcher_->state().army_counts, 5);
         }
     }
 }
@@ -358,7 +358,7 @@ void Game::key(int key, int scancode, int action, int mods)
                             break;
                         case GLFW_KEY_P:
                             hero_.set_debug(!hero_.get_debug());
-                            for (int i = 0; i < 40; i++) {
+                            for (int i = 0; i < mobs_[state.continent].size(); i++) {
                                 if (mobs_[state.continent][i].dead) {
                                     continue;
                                 }
@@ -930,7 +930,7 @@ void Game::update(float dt)
 
         int continent = scene_switcher_->state().continent;
 
-        for (int i = 0; i < 40; i++) {
+        for (int i = 0; i < mobs_[continent].size(); i++) {
             auto &mob = mobs_[continent][i];
             if (mob.dead) {
                 continue;
@@ -952,7 +952,7 @@ void Game::update(float dt)
                     dir.y = hero_pos.y > mob_pos.y ? 1.0f : -1.0f;
                 }
 
-                if (distance_x < 12.0f && distance_y < 12.0f) {
+                if (hero_.get_mount() == Mount::Walk && distance_x < 12.0f && distance_y < 12.0f) {
                     scene_switcher_->state().enemy_army = mob.army;
                     scene_switcher_->state().enemy_counts = mob.counts;
                     scene_switcher_->state().enemy_index = i;
@@ -972,7 +972,7 @@ void Game::update(float dt)
 
                 mob.entity.set_position(manifold.new_position);
 
-                for (auto j = 0u; j < 40; j++) {
+                for (auto j = 0u; j < mobs_[continent].size(); j++) {
                     if (i == j || mobs_[continent][j].dead) {
                         continue;
                     }
@@ -1280,7 +1280,7 @@ void Game::end_of_week(bool search)
         }
     }
 
-    sort_army();
+    sort_army(scene_switcher_->state().army, scene_switcher_->state().army_counts, 5);
 
     bool out_of_money = (boat + army_total) > (gold + commission);
     if (!out_of_money) {
@@ -1301,21 +1301,18 @@ void Game::end_of_week(bool search)
     }
 }
 
-void Game::sort_army()
+void Game::sort_army(int *army, int *counts, int max)
 {
-    int *army = scene_switcher_->state().army;
-    int *army_counts = scene_switcher_->state().army_counts;
-
     int last_free = -1;
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < max; i++) {
         if (last_free == -1 && army[i] == -1) {
             last_free = i;
         }
         else if (last_free != -1 && army[i] != -1) {
             army[last_free] = army[i];
             army[i] = -1;
-            army_counts[last_free] = army_counts[i];
-            army_counts[i] = -1;
+            counts[last_free] = counts[i];
+            counts[i] = -1;
             last_free = i;
         }
     }
@@ -1442,6 +1439,61 @@ void Game::setup_game()
     gen_tiles();
 }
 
+static constexpr int kShopUnits[24] = {
+    0x00,
+    0x01,
+    0x07,
+    0x04,
+    0x03,
+    0x06,
+    0x0c,
+    0x05,
+    0x0b,
+    0x09,
+    0x0f,
+    0x09,
+    0x0d,
+    0x10,
+    0x11,
+    0x13,
+    0x00,
+    0x00,
+    0x16,
+    0x15,
+    0x14,
+    0x18,
+    0x17,
+    0x00,
+};
+
+static constexpr int kMaxShopCounts[25] = {
+    250,
+    200,
+    0,
+    150,
+    150,
+    100,
+    250,
+    200,
+    0,
+    100,
+    0,
+    150,
+    100,
+    25,
+    0,
+    200,
+    100,
+    25,
+    0,
+    25,
+    25,
+    50,
+    50,
+    25,
+    25,
+};
+
 static constexpr int kMaxMobCounts[4][UnitId::UnitCount] = {
     {
         10,
@@ -1524,99 +1576,102 @@ static constexpr int kMaxMobCounts[4][UnitId::UnitCount] = {
         4,
         1,
     },
-    {100,
-     127,
-     100,
-     80,
-     50,
-     75,
-     100,
-     80,
-     0,
-     50,
-     0,
-     30,
-     50,
-     20,
-     0,
-     15,
-     20,
-     15,
-     0,
-     10,
-     8,
-     25,
-     10,
-     8,
-     2},
+    {
+        100,
+        127,
+        100,
+        80,
+        50,
+        75,
+        100,
+        80,
+        0,
+        50,
+        0,
+        30,
+        50,
+        20,
+        0,
+        15,
+        20,
+        15,
+        0,
+        10,
+        8,
+        25,
+        10,
+        8,
+        2,
+    },
 };
 
 int unit_count_gen(int continent, int unit)
 {
-    int base = kMaxMobCounts[continent][unit];
-    int a = rand() % (1 | (base / 8));
-    int b = rand() % 2;
-    return b | (base + a);
+    int bVar1 = kMaxMobCounts[continent][unit];
+    int cVar3 = ((bVar1 >> 3) ? (rand() % (bVar1 >> 3)) : 0);
+    int uVar2 = rand() % 2;
+    return uVar2 & 0xffffff00 | (unsigned int)(bVar1 + uVar2 + cVar3);
 }
 
-int unit_id_gen(int continent)
+static constexpr int kMobRollChances[16] = {
+    60,
+    20,
+    10,
+    3,
+    90,
+    70,
+    20,
+    6,
+    100,
+    95,
+    50,
+    10,
+    101,
+    100,
+    90,
+    40,
+};
+
+static constexpr int kMobIdRange[16] = {
+    Peasants,
+    Sprites,
+    Orcs,
+    Skeletons,
+    Wolves,
+    Gnomes,
+    Dwarves,
+    Zombies,
+    Nomads,
+    Elves,
+    Ogres,
+    Ghosts,
+    Barbarians,
+    Trolls,
+    Giants,
+    Vampires,
+};
+
+static constexpr int kMobIdRndHigh[4] = {
+    Archmages,
+    Druids,
+    Dragons,
+    Demons,
+};
+
+int mob_id_gen(int continent)
 {
-    static constexpr int kMobRollChances[16] = {
-        60,
-        20,
-        10,
-        3,
-        90,
-        70,
-        20,
-        6,
-        100,
-        95,
-        50,
-        10,
-        101,
-        100,
-        90,
-        40,
-    };
-
-    static constexpr int kMobRollIds[16] = {
-        Peasants,
-        Sprites,
-        Orcs,
-        Skeletons,
-        Wolves,
-        Gnomes,
-        Dwarves,
-        Zombies,
-        Nomads,
-        Elves,
-        Ogres,
-        Ghosts,
-        Barbarians,
-        Trolls,
-        Giants,
-        Vampires,
-    };
-
-    static constexpr int kMobRollUnlikelyIds[4] = {
-        Archmages,
-        Druids,
-        Dragons,
-        Demons,
-    };
-
-    int initial_roll = rand() % 11;
-    int max_tries = 4;
-    for (int i = 0; i < max_tries; i++) {
-        int roll = (rand() % 100) + 1;
-        if (roll < kMobRollChances[continent + i * 4]) {
-            int id = kMobRollIds[initial_roll / 4 + i * 4];
-            return id == 0 ? kMobRollIds[rand() % 8] | 1 : id;
+    int id = rand() % 11;
+    int chance = rand() % 100;
+    int tries = 0;
+    while (true) {
+        if (3 < tries) {
+            return kMobIdRndHigh[id >> 2];
         }
+        if ((chance + 1 & 0xff) < kMobRollChances[continent + tries * 4])
+            break;
+        tries++;
     }
-
-    return kMobRollUnlikelyIds[initial_roll / 4];
+    return tries * 4 & 0xffffff00 | kMobIdRange[((id >> 2) & 0xff) + tries * 4];
 }
 
 void Game::gen_tiles()
@@ -1625,8 +1680,37 @@ void Game::gen_tiles()
 
     /* Clear mobs */
     for (int i = 0; i < 4; i++) {
-        for (int j = 0; j < 40; j++) {
+        for (int j = 0; j < mobs_[scene_switcher_->state().continent].size(); j++) {
             mobs_[i][j].dead = true;
+        }
+    }
+
+    /* Clear shops */
+    for (int i = 0; i < 4; i++) {
+        shops_[i].clear();
+        shops_[i].resize(11);
+        for (int j = 0; j < 11; j++) {
+            shops_[i][j].count = 0;
+            shops_[i][j].unit = Peasants;
+            shops_[i][j].x = 0;
+            shops_[i][j].y = 0;
+        }
+        /* Guaranteed peasant dwelling */
+        if (i == 0) {
+            shops_[i][0].x = 27;
+            shops_[i][0].y = 11;
+            shops_[i][0].unit = Peasants;
+
+            int a = rand() % 25;
+            int b = a + 200;
+            int c = rand() % 25;
+            int d = c + b;
+            int e = rand() % 25;
+            int f = e + d;
+            int g = rand() % 25;
+            int h = g + f;
+
+            shops_[i][0].count = h;
         }
     }
 
@@ -1634,7 +1718,15 @@ void Game::gen_tiles()
         6,
         6,
         4,
-        5};
+        5,
+    };
+
+    static constexpr int kNumHighValueShopsPerContinent[4] = {
+        4,
+        4,
+        4,
+        2,
+    };
 
     static constexpr int kAvailableUnitsPerContinent[4][6] = {
         {
@@ -1728,6 +1820,46 @@ void Game::gen_tiles()
     std::uniform_int_distribution<int> unit_gen(0, UnitId::UnitCount - 1);
     std::uniform_int_distribution<int> spell_gen(0, 14);
 
+    static constexpr int kChestChanceGold[] =
+        {
+            61,
+            66,
+            76,
+            71,
+        };
+
+    static constexpr int kChestThresholdsCommission[] =
+        {
+            81,
+            86,
+            86,
+            81,
+        };
+
+    static constexpr int kChestThresholdsSpellPower[] =
+        {
+            0,
+            87,
+            88,
+            86,
+        };
+
+    static constexpr int kChestThresholdsSpellCapacity[] =
+        {
+            86,
+            92,
+            93,
+            91,
+        };
+
+    static constexpr int kChestThresholdsAddSpell[] =
+        {
+            101,
+            101,
+            101,
+            101,
+        };
+
     for (int continent = 0; continent < 4; continent++) {
         auto *tiles = map_.get_data(continent);
 
@@ -1796,17 +1928,12 @@ void Game::gen_tiles()
                     mob.tile = {x, y};
                     mob.dead = false;
 
-                    int army_size = std::max(rand() % 6, 2);
-
                     for (int i = 0; i < 6; i++) {
                         mob.army[i] = -1;
                         mob.counts[i] = 0;
-                    }
-
-                    for (int i = 0; i < army_size; i++) {
                     regen:
-                        int id = unit_id_gen(continent);
-                        for (int j = 0; j < army_size; j++) {
+                        int id = mob_id_gen(continent);
+                        for (int j = 0; j < 6; j++) {
                             if (mob.army[j] == id) {
                                 goto regen;
                             }
@@ -1815,10 +1942,56 @@ void Game::gen_tiles()
                         mob.counts[i] = unit_count_gen(continent, mob.army[i]);
                     }
 
-                    int sprite_index = rand() % army_size;
-                    int unit_sprite_id = mob.army[sprite_index];
+                    /* Cut 1-2 of them in half, or chop the last two off. */
+                    int roll = rand() % 3;
+                    if (roll == 0) {
+                        int n = rand() % 4;
+                        mob.counts[n] /= 2;
+                        if (mob.counts[n] == 0) {
+                            mob.counts[n] = (rand() % 2) + 1;
+                        }
 
-                    mob.entity.set_texture(unit_textures_[unit_sprite_id]);
+                        /* Cut 1 of them in half, or chop the last one off. */
+                        /* Note: modified by me to give a higher chance of chopping one off. */
+                        /* I seemed to be getting 5 unit armies too often. */
+                        /* was: rand % 3 */
+                        int a = rand() % 4;
+                        if (a == 0) {
+                            n = rand() % 5;
+                            mob.counts[n] /= 2;
+                            if (mob.counts[n] == 0) {
+                                mob.counts[n] = (rand() % 2) + 1;
+                            }
+                        }
+                        /* Chop the last one off. */
+                        else {
+                            mob.army[4] = -1;
+                            mob.counts[4] = 0;
+                        }
+                    }
+                    /* Chop the last two off. */
+                    else {
+                        mob.army[3] = -1;
+                        mob.army[4] = -1;
+                        mob.counts[3] = 0;
+                        mob.counts[4] = 0;
+                    }
+
+                    sort_army(mob.army.data(), mob.counts.data(), 6);
+
+                    int highest = 0;
+                    for (int i = 0; i < 5; i++) {
+                        if (mob.army[i] == -1) {
+                            continue;
+                        }
+                        if (kUnits[mob.army[i]].hp >= kUnits[mob.army[highest]].hp) {
+                            highest = i;
+                        }
+                    }
+
+                    int unit_sprite_id = mob.army[highest];
+
+                    mob.entity.set_texture(unit_textures_[mob.army[highest]]);
                     mob.entity.move_to_tile({x, y, Tile_Grass});
 
                     tiles[x + y * 64] = Tile_Grass;
@@ -1852,13 +2025,56 @@ void Game::gen_tiles()
         std::shuffle(std::begin(castle_indices), std::end(castle_indices), rng_);
 
         int used_tiles = 0;
+        glm::ivec2 tile;
 
-        for (int i = 0; i < kNumShopsPerContinent[continent]; i++) {
-            const glm::ivec2 &tile = random_tiles[used_tiles];
-            int unit = kAvailableUnitsPerContinent[continent][rand() % 6];
-            tiles[tile.x + tile.y * 64] = kShopTileForUnit[unit];
-            used_tiles++;
+        for (int i = 0 + (continent == 0 ? 1 : 0); i <= kNumShopsPerContinent[continent]; i++) {
+            tile = random_tiles[used_tiles++];
+            auto &shop = shops_[continent][i];
+            shop.x = tile.x;
+            shop.y = tile.y;
+            shop.unit = kShopUnits[i + continent * 6];
+            int max = kMaxShopCounts[shop.unit];
+            int a = (rand() % kMaxShopCounts[shop.unit]) / 8;
+            int b = (rand() % kMaxShopCounts[shop.unit]) / 16;
+            int c = rand() % 4;
+            shop.count = continent + a + b + max;
+            tiles[tile.x + tile.y * 64] = kShopTileForUnit[shop.unit];
         }
+
+        for (int i = 0; i < kNumHighValueShopsPerContinent[continent]; i++) {
+            tile = random_tiles[used_tiles++];
+            auto &shop = shops_[continent][i];
+            if (continent == 3) {
+                int roll = rand() % 3;
+                shop.unit = roll + 0x15;
+                int max = kMaxShopCounts[shop.unit];
+                int a = (rand() % kMaxShopCounts[shop.unit]) / 8;
+                int b = (rand() % kMaxShopCounts[shop.unit]) / 16;
+                int c = rand() % 4;
+                shop.count = continent + a + b + max;
+                tiles[tile.x + tile.y * 64] = kShopTileForUnit[shop.unit];
+            }
+            else {
+                int id = 0;
+                do {
+                    int roll = rand() % 14;
+                    id = roll + continent;
+                } while (kMaxShopCounts[id] == 0);
+                int max = kMaxShopCounts[id];
+                int a = (rand() % kMaxShopCounts[shop.unit]) / 8;
+                int b = (rand() % kMaxShopCounts[shop.unit]) / 16;
+                int c = rand() % 4;
+                shop.count = continent + a + b + max;
+                tiles[tile.x + tile.y * 64] = kShopTileForUnit[shop.unit];
+            }
+        }
+
+        /* 2 cave teleport tiles per continent */
+        tile = random_tiles[used_tiles++];
+        tiles[tile.x + tile.y * 64] = Tile_ShopCave;
+
+        tile = random_tiles[used_tiles++];
+        tiles[tile.x + tile.y * 64] = Tile_ShopCave;
 
         /* Saharia doesn't have a map to anywhere */
         if (continent != 3) {
@@ -1868,8 +2084,9 @@ void Game::gen_tiles()
         }
 
         /* 2 artifacts per continent */
-        auto tile = random_tiles[used_tiles++];
+        tile = random_tiles[used_tiles++];
         tiles[tile.x + tile.y * 64] = kArtifactTiles[artifacts[artifact_index++]];
+
         tile = random_tiles[used_tiles++];
         tiles[tile.x + tile.y * 64] = kArtifactTiles[artifacts[artifact_index++]];
 
@@ -1896,6 +2113,34 @@ void Game::gen_tiles()
             }
 
             castle_occupations_[castle] = occ;
+        }
+
+        /* Five friendly mobs per continent */
+        for (int i = 0; i < 5; i++) {
+            tile = random_tiles[used_tiles++];
+
+            int id = mob_id_gen(continent);
+            int count = unit_count_gen(continent, id);
+
+            auto &mob = mobs_[continent][num_mobs++];
+            mob.tile = {tile.x, tile.y};
+            mob.dead = false;
+            mob.army[0] = id;
+            mob.counts[0] = count;
+            mob.entity.set_texture(unit_textures_[id]);
+            mob.entity.move_to_tile({tile.x, tile.y, Tile_Grass});
+
+            tiles[tile.x + tile.y * 64] = Tile_Grass;
+        }
+    }
+
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 11; j++) {
+            const Shop &shop = shops_[i][j];
+            if (shop.count == 0) {
+                continue;
+            }
+            spdlog::info("Continent {} Shop {} Tile {}, {} Unit {} Count {}", i, j, shop.x, shop.y, kUnits[shop.unit].name_plural, shop.count);
         }
     }
 
@@ -1987,7 +2232,7 @@ void Game::dismiss_slot(int slot)
 
     scene_switcher_->state().army[slot] = -1;
     scene_switcher_->state().army_counts[slot] = 0;
-    sort_army();
+    sort_army(scene_switcher_->state().army, scene_switcher_->state().army_counts, 5);
     dismiss();
 }
 
@@ -2409,7 +2654,7 @@ void Game::draw_mobs(bty::Gfx &gfx)
     const auto &hero_tile = hero_.get_tile();
     int continent = scene_switcher_->state().continent;
 
-    for (int i = 0; i < 40; i++) {
+    for (int i = 0; i < mobs_[continent].size(); i++) {
         if (mobs_[continent][i].dead) {
             continue;
         }
