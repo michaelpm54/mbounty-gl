@@ -1289,9 +1289,9 @@ static constexpr int kMoraleChart[25] = {
 int check_morale(int me, int *army)
 {
     /*
-		If there's a normal, return it. If it's not normal, keep checking
-		until we run out of units. At that point, if at any point we hit a low,
-		return the low. If we didn't hit normal or low, it's high.
+		If there's a low, return it. If it's not low, keep checking
+		until we run out of units. At that point, if at any point we hit a normal,
+		return the normal. If we didn't hit normal or low, it's high.
 	*/
     bool normal = false;
     for (int i = 0; i < 5; i++) {
@@ -1302,7 +1302,7 @@ int check_morale(int me, int *army)
         if (result == 2) {
             return 1;
         }
-        if (result == 1) {
+        if (result == 0) {
             normal = true;
         }
     }
@@ -2850,6 +2850,9 @@ void Game::draw_mobs(bty::Gfx &gfx)
 void Game::view_army()
 {
     auto &state = scene_switcher_->state();
+    for (int i = 0; i < 5; i++) {
+        state.army_morales[i] = check_morale(i, state.army);
+    }
     view_army_.view(state.army, state.army_counts, state.army_morales);
 }
 

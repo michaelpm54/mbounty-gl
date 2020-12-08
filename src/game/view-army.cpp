@@ -78,8 +78,8 @@ void ViewArmy::view(int *army, int *counts, int *morales)
 
             static const std::array<std::string, 4> kMoraleStrings = {{
                 "Morale: Norm",
-                "Morale: High",
                 "Morale: Low",
+                "Morale: High",
                 "Out of control",
             }};
 
