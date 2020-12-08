@@ -201,6 +201,8 @@ reissues your commission and
     join_flee_.add_line(1, 1, "");    // E.g. "Many Sprites"
     join_flee_.add_line(3, 3, " flee in terror at the\nsight of your vast army.");
 
+    chest_.create(0, 0, 0, 0, color, assets);
+
     loaded_ = true;
     return success;
 }
@@ -376,6 +378,13 @@ void Game::draw(bty::Gfx &gfx)
             hud_.draw(gfx, camera_);
             join_flee_.draw(gfx, camera_);
             break;
+        case GameState::ChestMessage:
+            map_.draw(game_camera_, continent);
+            draw_mobs(gfx);
+            hero_.draw(gfx, game_camera_);
+            hud_.draw(gfx, camera_);
+            chest_.draw(gfx, camera_);
+            break;
         default:
             break;
     }
@@ -419,20 +428,6 @@ void Game::key(int key, int scancode, int action, int mods)
                             break;
                         case GLFW_KEY_B:
                             hero_.set_mount(hero_.get_mount() == Mount::Walk ? Mount::Boat : Mount::Walk);
-                            break;
-                        case GLFW_KEY_M:
-                            scene_switcher_->state().siege = !scene_switcher_->state().siege;
-                            scene_switcher_->state().magic = !scene_switcher_->state().magic;
-                            hud_.update_state();
-                            break;
-                        case GLFW_KEY_C:
-                            scene_switcher_->state().contract = (scene_switcher_->state().contract + 1) % 18;
-                            hud_.update_state();
-                            break;
-                        case GLFW_KEY_N:
-                            for (int i = 0; i < 11; i++) {
-                                spdlog::debug("Shop {} = {}, {}, {}, {}", i, shops_[state.continent][i].x, shops_[state.continent][i].y, shops_[state.continent][i].unit, shops_[state.continent][i].count);
-                            }
                             break;
                         default:
                             break;
@@ -715,6 +710,9 @@ void Game::key(int key, int scancode, int action, int mods)
                             [[fallthrough]];
                         case GLFW_KEY_BACKSPACE:
                             if (hud_message_queue_.empty()) {
+                                if (last_state_ == GameState::Bridge) {
+                                    last_state_ = GameState::Unpaused;
+                                }
                                 set_state(last_state_);
                             }
                             else {
@@ -755,6 +753,29 @@ void Game::key(int key, int scancode, int action, int mods)
                             [[fallthrough]];
                         case GLFW_KEY_ENTER:
                             set_state(GameState::ViewContinent);
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case GameState::ChestMessage:
+            switch (action) {
+                case GLFW_PRESS:
+                    switch (key) {
+                        case GLFW_KEY_UP:
+                            chest_.prev();
+                            break;
+                        case GLFW_KEY_DOWN:
+                            chest_.next();
+                            break;
+                        case GLFW_KEY_BACKSPACE:
+                            [[fallthrough]];
+                        case GLFW_KEY_ENTER:
+                            chest_confirm();
                             break;
                         default:
                             break;
@@ -1234,6 +1255,9 @@ void Game::update(float dt)
     else if (state_ == GameState::JoinDialog) {
         join_dialog_.animate(dt);
     }
+    else if (state_ == GameState::ChestMessage) {
+        chest_.animate(dt);
+    }
 
     if (tmp_hud) {
         state_ = GameState::HudMessage;
@@ -1544,6 +1568,7 @@ void Game::setup_game()
     shop_.set_color(color);
     found_map_.set_color(color);
     found_local_map_.set_color(color);
+    chest_.set_color(color);
 
     /* Add starting army */
     for (int i = 0; i < 5; i++) {
@@ -1968,46 +1993,6 @@ void Game::gen_tiles()
     std::uniform_int_distribution<int> unit_gen(0, UnitId::UnitCount - 1);
     std::uniform_int_distribution<int> spell_gen(0, 13);
 
-    static constexpr int kChestChanceGold[] =
-        {
-            61,
-            66,
-            76,
-            71,
-        };
-
-    static constexpr int kChestThresholdsCommission[] =
-        {
-            81,
-            86,
-            86,
-            81,
-        };
-
-    static constexpr int kChestThresholdsSpellPower[] =
-        {
-            0,
-            87,
-            88,
-            86,
-        };
-
-    static constexpr int kChestThresholdsSpellCapacity[] =
-        {
-            86,
-            92,
-            93,
-            91,
-        };
-
-    static constexpr int kChestThresholdsAddSpell[] =
-        {
-            101,
-            101,
-            101,
-            101,
-        };
-
     for (int continent = 0; continent < 4; continent++) {
         auto *tiles = map_.get_data(continent);
 
@@ -2252,8 +2237,6 @@ void Game::gen_tiles()
             tiles[tile.x + tile.y * 64] = kShopTileForUnit[shop.unit];
         }
 
-        int have_shop = -1;
-
         /* Gen L high value shops */
         for (int i = 0; i < kNumHighValueShopsPerContinent[continent]; i++) {
             tile = random_tiles[used_tiles++];
@@ -2283,16 +2266,7 @@ void Game::gen_tiles()
                 shop.unit = id;
                 shop.count = continent + a + b + max;
                 tiles[tile.x + tile.y * 64] = kShopTileForUnit[shop.unit];
-
-                if (continent == 0 && tile.x == 8 && tile.y == 60) {
-                    spdlog::debug("[{}] High value shop at 8 60: {} {} With index {}", continent, shop.unit, shop.count, num_shops - 1);
-                    have_shop = num_shops - 1;
-                }
             }
-        }
-
-        if (have_shop != -1) {
-            spdlog::debug("Shop 0,8,60 {} {}", shops_[0][have_shop].unit, shops_[0][have_shop].count);
         }
 
         /* Gen 5 friendlies */
@@ -2837,7 +2811,7 @@ void Game::bridge(int direction)
 
 void Game::bridge_fail()
 {
-    set_state(GameState::Unpaused);
+    last_state_ = GameState::Unpaused;
     hud_messages({" Not a suitable location for a bridge!", "    What a waste of a good spell!"});
 }
 
@@ -3020,6 +2994,177 @@ void Game::chest(const Tile &tile)
         view_continent_fog_ = false;
         set_state(GameState::FoundLocalMap);
     }
+    else {
+        chest_.clear();
+        chest_.clear_options();
+
+        static constexpr int kChestChanceGold[] = {
+            61,
+            66,
+            76,
+            71,
+        };
+
+        static constexpr int kChestChanceCommission[] = {
+            81,
+            86,
+            86,
+            81,
+        };
+
+        static constexpr int kChestChanceSpellPower[] = {
+            0,
+            87,
+            88,
+            86,
+        };
+
+        static constexpr int kChestChanceSpellCapacity[] = {
+            86,
+            92,
+            93,
+            91,
+        };
+
+        static constexpr int kChestChanceAddSpell[] = {
+            101,
+            101,
+            101,
+            101,
+        };
+
+        int roll = rand() % 100;
+        if (roll < kChestChanceGold[state.continent]) {
+            static constexpr int kGoldBase[] = {
+                5,
+                16,
+                21,
+                31,
+            };
+
+            static constexpr int kGoldExtra[] = {
+                0,
+                4,
+                9,
+                19,
+            };
+
+            roll = rand() % kGoldBase[state.continent];
+            int gold = kGoldExtra[state.continent] + (roll + 1) * 100;
+            int leadership = state.artifacts_found[ArtiRingOfHeroism] ? gold / 25 : gold / 50;
+
+            chest_.set_size(30, 9);
+            chest_.set_position(1, 18);
+            chest_.clear();
+            chest_.add_line(1, 1, R"raw(After scouring the area,
+you fall upon a hidden
+treasure cache. You may:)raw");
+            chest_.add_option(3, 4, fmt::format("Take the {} gold.", gold));
+            chest_.add_option(3, 5, fmt::format(R"raw(Distribute the gold to the
+ peasants, increasing your
+ leadership by {}.)raw",
+                                                leadership));
+            set_state(GameState::ChestMessage);
+
+            chest_gold_ = gold;
+            chest_leadership_ = leadership;
+        }
+        else if (roll < kChestChanceCommission[state.continent]) {
+            static constexpr int kCommissionBase[] = {
+                41,
+                51,
+                101,
+                45,
+            };
+
+            static constexpr int kCommissionExtra[] = {
+                9,
+                49,
+                99,
+                199,
+            };
+
+            roll = rand() % kCommissionBase[state.continent];
+            int commission = kCommissionExtra[state.continent] + roll + 1;
+            if (commission > 999) {
+                commission = 999;
+            }
+
+            chest_.set_size(30, 9);
+            chest_.set_position(1, 18);
+            chest_.clear();
+            chest_.add_line(1, 1, fmt::format(R"raw(  After surveying the area,
+   you discover that it is
+  rich in mineral deposits.
+
+  The King rewards you for
+   your find by increasing
+  your weekly income by {}.)raw",
+                                              commission));
+            set_state(GameState::ChestMessage);
+            state.commission += commission;
+        }
+        else if (roll < kChestChanceSpellPower[state.continent]) {
+            chest_.set_size(30, 9);
+            chest_.set_position(1, 18);
+            chest_.clear();
+            chest_.add_line(1, 1, R"raw(  Traversing the area, you
+  stumble upon a timeworn
+   canister. Curious, you
+     unstop the bottle,
+ releasing a powerful genie,
+    who raises your Spell
+   Power by 1 and vanishes.)raw");
+            set_state(GameState::ChestMessage);
+            state.spell_power++;
+        }
+        else if (roll < kChestChanceSpellCapacity[state.continent]) {
+            static constexpr int kSpellCapacityBase[] = {
+                1,
+                1,
+                2,
+                2,
+            };
+
+            int capacity = state.artifacts_found[ArtiRingOfHeroism] ? kSpellCapacityBase[state.continent] * 2 : kSpellCapacityBase[state.continent];
+
+            chest_.set_size(30, 9);
+            chest_.set_position(1, 18);
+            chest_.clear();
+            chest_.add_line(1, 1, fmt::format(R"raw(A tribe of nomads greet you
+and your army warmly. Their
+   shaman, in awe of your
+  prowess, teaches you the
+secret of his tribe's magic.
+Your maximum spell capacity
+     is increased by {}.)raw",
+                                              capacity));
+            set_state(GameState::ChestMessage);
+
+            state.max_spells += capacity;
+        }
+        else {    // spell
+            int amount = (rand() % (state.continent + 1)) + 1;
+            int spell = rand() % 14;
+
+            chest_.set_size(30, 9);
+            chest_.set_position(1, 18);
+            chest_.clear();
+            chest_.add_line(1, 1, fmt::format(R"raw(     You have captured a
+  mischievous imp which has
+    been terrorizing the
+   region. In exchange for
+  its release, you receive:
+  
+      {} {} spell{}.)raw",
+                                              amount,
+                                              kSpellNames[spell],
+                                              amount == 1 ? "" : "s"));
+            set_state(GameState::ChestMessage);
+
+            state.spells[spell] += amount;
+        }
+    }
 }
 
 void Game::view_continent()
@@ -3029,4 +3174,21 @@ void Game::view_continent()
         hero_.get_tile().ty,
         scene_switcher_->state().continent,
         view_continent_fog_ ? scene_switcher_->state().visited_tiles[scene_switcher_->state().continent].data() : map_.get_data(scene_switcher_->state().continent));
+}
+
+void Game::chest_confirm()
+{
+    if (chest_.get_selection() != -1) {
+        auto &state = scene_switcher_->state();
+        if (chest_.get_selection() == 0) {
+            state.gold += chest_gold_;
+        }
+        else {
+            state.leadership += chest_leadership_;
+        }
+        chest_gold_ = 0;
+        chest_leadership_ = 0;
+    }
+
+    set_state(GameState::Unpaused);
 }

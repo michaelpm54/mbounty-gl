@@ -68,6 +68,7 @@ private:
         JoinDialog,
         JoinFlee,
         Shop,
+        ChestMessage,
     };
 
     struct EventTile {
@@ -123,6 +124,7 @@ private:
     void setup_join_flee();
     void shop(const Tile &tile);
     void chest(const Tile &tile);
+    void chest_confirm();
     void view_continent();
 
 private:
@@ -217,6 +219,10 @@ private:
     std::array<std::array<glm::ivec2, 2>, 4> teleport_caves_;
     std::array<std::vector<const Mob *>, 4> friendlies_;
     int join_unit_ {-1};
+
+    bty::Dialog chest_;
+    int chest_gold_ {0};
+    int chest_leadership_ {0};
 };
 
 #endif    // BTY_GAME_GAME_HPP_

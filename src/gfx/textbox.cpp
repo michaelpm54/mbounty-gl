@@ -133,4 +133,10 @@ void TextBox::set_line_visible(int index, bool value)
     lines_visible_[index] = value;
 }
 
+void TextBox::clear()
+{
+    lines_.clear();
+    lines_visible_.clear();
+}
+
 }    // namespace bty

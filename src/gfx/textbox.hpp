@@ -34,10 +34,9 @@ public:
     void set_line(int i, std::string const &str);
     void set_color(bty::BoxColor color);
     void set_line_visible(int index, bool value);
-
-protected:
     void set_size(int w, int h);
     void set_position(int x, int y);
+    void clear();
 
 private:
     std::array<Sprite, 8> box_;
