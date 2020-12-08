@@ -57,7 +57,8 @@ private:
         Disgrace,
         ViewPuzzle,
         Dismiss,
-        ChestMap,
+        FoundSailMap,
+        FoundLocalMap,
         SailNext,
         Town,
         HudMessage,
@@ -99,7 +100,6 @@ private:
     void gen_tiles();
     void clear_movement();
     void set_state(GameState state);
-    void find_map(const Tile &tile);
     void sail_next();
     void sail_to(int continent);
     void town(const Tile &tile);
@@ -122,6 +122,8 @@ private:
     void setup_join_dialog();
     void setup_join_flee();
     void shop(const Tile &tile);
+    void chest(const Tile &tile);
+    void view_continent();
 
 private:
     enum WeekPassedCard {
@@ -177,6 +179,7 @@ private:
 
     bty::TextBox found_map_;
     bty::Text *found_map_continent_;
+    bty::TextBox found_local_map_;
 
     bty::Dialog sail_dialog_;
     bool controls_locked_ {false};

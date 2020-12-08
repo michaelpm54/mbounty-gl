@@ -154,6 +154,12 @@ the Sceptre.)raw");
 charts describing passage to)raw");
     found_map_continent_ = found_map_.add_line(10, 6, "");
 
+    found_local_map_.create(1, 18, 30, 9, color, assets);
+    found_local_map_.add_line(1, 2, R"raw(  Peering through a magical
+orb you are able to view the
+ entire continent. Your map
+  of this area is complete.)raw");
+
     sail_dialog_.create(1, 18, 30, 9, color, assets);
     sail_dialog_.add_line(3, 1, "Sail to which continent?");
 
@@ -304,12 +310,19 @@ void Game::draw(bty::Gfx &gfx)
             hud_.draw(gfx, camera_);
             dismiss_.draw(gfx, camera_);
             break;
-        case GameState::ChestMap:
+        case GameState::FoundSailMap:
             map_.draw(game_camera_, continent);
             draw_mobs(gfx);
             hero_.draw(gfx, game_camera_);
             hud_.draw(gfx, camera_);
             found_map_.draw(gfx, camera_);
+            break;
+        case GameState::FoundLocalMap:
+            map_.draw(game_camera_, continent);
+            draw_mobs(gfx);
+            hero_.draw(gfx, game_camera_);
+            hud_.draw(gfx, camera_);
+            found_local_map_.draw(gfx, camera_);
             break;
         case GameState::SailNext:
             map_.draw(game_camera_, continent);
@@ -509,11 +522,33 @@ void Game::key(int key, int scancode, int action, int mods)
                     break;
             }
             break;
+        case GameState::ViewContinent:
+            switch (action) {
+                case GLFW_PRESS:
+                    switch (key) {
+                        case GLFW_KEY_SPACE:
+                            [[fallthrough]];
+                        case GLFW_KEY_BACKSPACE:
+                            set_state(GameState::Unpaused);
+                            break;
+                        case GLFW_KEY_ENTER:
+                            spdlog::debug("Enter");
+                            if (state.local_maps_found[state.continent]) {
+                                view_continent_fog_ = !view_continent_fog_;
+                                view_continent();
+                            }
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
         case GameState::ViewArmy:
             [[fallthrough]];
         case GameState::ViewCharacter:
-            [[fallthrough]];
-        case GameState::ViewContinent:
             [[fallthrough]];
         case GameState::ViewPuzzle:
             [[fallthrough]];
@@ -695,7 +730,7 @@ void Game::key(int key, int scancode, int action, int mods)
                     break;
             }
             break;
-        case GameState::ChestMap:
+        case GameState::FoundSailMap:
             switch (action) {
                 case GLFW_PRESS:
                     switch (key) {
@@ -703,6 +738,23 @@ void Game::key(int key, int scancode, int action, int mods)
                             [[fallthrough]];
                         case GLFW_KEY_ENTER:
                             set_state(GameState::Unpaused);
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case GameState::FoundLocalMap:
+            switch (action) {
+                case GLFW_PRESS:
+                    switch (key) {
+                        case GLFW_KEY_BACKSPACE:
+                            [[fallthrough]];
+                        case GLFW_KEY_ENTER:
+                            set_state(GameState::ViewContinent);
                             break;
                         default:
                             break;
@@ -838,33 +890,11 @@ void Game::key(int key, int scancode, int action, int mods)
         default:
             break;
     }
-
-    if (state_ == GameState::ViewContinent && action == GLFW_PRESS && key == GLFW_KEY_F) {
-        view_continent_fog_ = !view_continent_fog_;
-        view_continent_.view(
-            hero_.get_tile().tx,
-            hero_.get_tile().ty,
-            scene_switcher_->state().continent,
-            view_continent_fog_ ? scene_switcher_->state().visited_tiles[scene_switcher_->state().continent].data() : map_.get_data(scene_switcher_->state().continent));
-    }
 }
 
 bool Game::loaded()
 {
     return loaded_;
-}
-
-void Game::find_map(const Tile &tile)
-{
-    auto &state = scene_switcher_->state();
-
-    if (state.continent < 3 && sail_maps_[state.continent] == glm::ivec2 {tile.tx, tile.ty}) {
-        hud_.set_title("You found a map!");
-        map_.set_tile(tile, state.continent, Tile_Grass);
-        state.maps_found[state.continent + 1] = true;
-        found_map_continent_->set_string(kContinents[state.continent + 1]);
-        set_state(GameState::ChestMap);
-    }
 }
 
 int coord(int x, int y)
@@ -900,7 +930,7 @@ void Game::collide(Tile &tile)
 
     switch (tile.id) {
         case Tile_Chest:
-            find_map(tile);
+            chest(tile);
             break;
         case Tile_Town:
             town(tile);
@@ -1512,6 +1542,8 @@ void Game::setup_game()
     join_dialog_.set_color(color);
     join_flee_.set_color(color);
     shop_.set_color(color);
+    found_map_.set_color(color);
+    found_local_map_.set_color(color);
 
     /* Add starting army */
     for (int i = 0; i < 5; i++) {
@@ -1567,6 +1599,7 @@ void Game::setup_game()
     /* Add continentia to maps */
     for (int i = 0; i < 4; i++) {
         state.maps_found[i] = false;
+        state.local_maps_found[i] = false;
     }
     state.maps_found[0] = true;
 
@@ -2431,11 +2464,7 @@ void Game::set_state(GameState state)
             view_character_.view(scene_switcher_->state());
             break;
         case GameState::ViewContinent:
-            view_continent_.view(
-                hero_.get_tile().tx,
-                hero_.get_tile().ty,
-                scene_switcher_->state().continent,
-                view_continent_fog_ ? scene_switcher_->state().visited_tiles[scene_switcher_->state().continent].data() : map_.get_data(scene_switcher_->state().continent));
+            view_continent();
             break;
         case GameState::UseMagic:
             update_spells();
@@ -2972,4 +3001,32 @@ void Game::shop(const Tile &tile)
     else {
         set_state(GameState::Shop);
     }
+}
+
+void Game::chest(const Tile &tile)
+{
+    auto &state = scene_switcher_->state();
+
+    map_.set_tile(tile, state.continent, Tile_Grass);
+
+    if (tile.tx == sail_maps_[state.continent].x && tile.ty == sail_maps_[state.continent].y) {
+        state.maps_found[state.continent + 1] = true;
+        hud_.set_title("You found a map!");
+        found_map_continent_->set_string(kContinents[state.continent + 1]);
+        set_state(GameState::FoundSailMap);
+    }
+    else if (tile.tx == local_maps_[state.continent].x && tile.ty == local_maps_[state.continent].y) {
+        state.local_maps_found[state.continent] = true;
+        view_continent_fog_ = false;
+        set_state(GameState::FoundLocalMap);
+    }
+}
+
+void Game::view_continent()
+{
+    view_continent_.view(
+        hero_.get_tile().tx,
+        hero_.get_tile().ty,
+        scene_switcher_->state().continent,
+        view_continent_fog_ ? scene_switcher_->state().visited_tiles[scene_switcher_->state().continent].data() : map_.get_data(scene_switcher_->state().continent));
 }
