@@ -25,6 +25,7 @@ void Hud::load(bty::Assets &assets, SharedState &state)
     font_ = &assets.get_font();
     name_.create(1, 1, kHeroNames[state.hero_id][state.hero_rank], *font_);
     days_.create(26, 1, "", *font_);
+    timestop_string_.create(26, 1, "", *font_);
 
     contract_textures_.resize(18);
     for (int i = 0, max = static_cast<int>(contract_textures_.size() - 1); i < max; i++) {
@@ -87,7 +88,12 @@ void Hud::draw(bty::Gfx &gfx, glm::mat4 &camera)
     gfx.draw_sprite(frame_, camera);
     gfx.draw_rect(top_bar_, camera);
     gfx.draw_text(name_, camera);
-    gfx.draw_text(days_, camera);
+    if (timestop_) {
+        gfx.draw_text(timestop_string_, camera);
+    }
+    else {
+        gfx.draw_text(days_, camera);
+    }
     gfx.draw_sprite(contract_, camera);
     gfx.draw_sprite(siege_, camera);
     gfx.draw_sprite(magic_, camera);
@@ -164,4 +170,15 @@ void Hud::set_hud_frame()
 void Hud::set_color(bty::BoxColor color)
 {
     top_bar_.set_color(color);
+}
+
+void Hud::set_timestop(int amount)
+{
+    timestop_string_.set_string(fmt::format("Timestop:{:>4}", amount));
+    timestop_ = true;
+}
+
+void Hud::clear_timestop()
+{
+    timestop_ = false;
 }

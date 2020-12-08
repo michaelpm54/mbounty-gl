@@ -1101,122 +1101,139 @@ void Game::update(float dt)
 
         int continent = scene_switcher_->state().continent;
 
-        for (int i = 0; i < mobs_[continent].size(); i++) {
-            auto &mob = mobs_[continent][i];
-            if (mob.dead) {
-                continue;
+        if (timestop_) {
+            timestop_timer_ += dt;
+            if (timestop_timer_ >= 0.25f) {
+                timestop_left_--;
+                timestop_timer_ = 0;
+                hud_.set_timestop(timestop_left_);
+            }
+            if (timestop_left_ == 0) {
+                hud_.clear_timestop();
+                timestop_ = false;
             }
 
-            if (std::abs(hero_tile.tx - mob.tile.x) < 4 && std::abs(hero_tile.ty - mob.tile.y) < 4) {
-                auto &mob_pos = mob.entity.get_position();
+            for (auto &mob : mobs_[continent]) {
+                mob.entity.animate(dt);
+            }
+        }
+        else {
+            clock_ += dt;
+            if (clock_ >= 14) {
+                clock_ = 0;
+                int &days = scene_switcher_->state().days;
+                days--;
+                if (days == 0) {
+                    set_state(GameState::LoseGame);
+                }
+                else {
+                    days_passed_this_week++;
+                    if (days_passed_this_week == 5) {
+                        days_passed_this_week = 0;
+                        set_state(GameState::WeekPassed);
+                        weeks_passed_++;
+                        end_of_week(false);
+                    }
+                    hud_.update_state();
+                }
+            }
 
-                float distance_x = std::abs(hero_pos.x - mob_pos.x);
-                float distance_y = std::abs(hero_pos.y - mob_pos.y);
-
-                glm::vec2 dir {0.0f, 0.0f};
-
-                if (distance_x > 3.0f) {
-                    dir.x = hero_pos.x > mob_pos.x ? 1.0f : -1.0f;
+            for (int i = 0; i < mobs_[continent].size(); i++) {
+                auto &mob = mobs_[continent][i];
+                if (mob.dead) {
+                    continue;
                 }
 
-                if (distance_y > 3.0f) {
-                    dir.y = hero_pos.y > mob_pos.y ? 1.0f : -1.0f;
-                }
+                if (std::abs(hero_tile.tx - mob.tile.x) < 4 && std::abs(hero_tile.ty - mob.tile.y) < 4) {
+                    auto &mob_pos = mob.entity.get_position();
 
-                if (hero_.get_mount() == Mount::Walk && distance_x < 12.0f && distance_y < 12.0f) {
-                    for (int j = 0; j < friendlies_[continent].size(); j++) {
-                        if (friendlies_[continent][j] == &mob) {
-                            join_unit_ = i;
-                            int size = 0;
-                            for (int i = 0; i < 5; i++) {
-                                if (scene_switcher_->state().army[i] != -1) {
-                                    size++;
+                    float distance_x = std::abs(hero_pos.x - mob_pos.x);
+                    float distance_y = std::abs(hero_pos.y - mob_pos.y);
+
+                    glm::vec2 dir {0.0f, 0.0f};
+
+                    if (distance_x > 3.0f) {
+                        dir.x = hero_pos.x > mob_pos.x ? 1.0f : -1.0f;
+                    }
+
+                    if (distance_y > 3.0f) {
+                        dir.y = hero_pos.y > mob_pos.y ? 1.0f : -1.0f;
+                    }
+
+                    if (hero_.get_mount() == Mount::Walk && distance_x < 12.0f && distance_y < 12.0f) {
+                        for (int j = 0; j < friendlies_[continent].size(); j++) {
+                            if (friendlies_[continent][j] == &mob) {
+                                join_unit_ = i;
+                                int size = 0;
+                                for (int i = 0; i < 5; i++) {
+                                    if (scene_switcher_->state().army[i] != -1) {
+                                        size++;
+                                    }
                                 }
+                                if (size == 5) {
+                                    set_state(GameState::JoinFlee);
+                                }
+                                else {
+                                    set_state(GameState::JoinDialog);
+                                }
+                                return;
                             }
-                            if (size == 5) {
-                                set_state(GameState::JoinFlee);
-                            }
-                            else {
-                                set_state(GameState::JoinDialog);
-                            }
-                            return;
+                        }
+
+                        scene_switcher_->state().enemy_army = mob.army;
+                        scene_switcher_->state().enemy_counts = mob.counts;
+                        scene_switcher_->state().enemy_index = i;
+                        scene_switcher_->fade_to(SceneId::Battle, true);
+                        return;
+                    }
+
+                    mob.entity.animate(dt);
+                    mob.entity.set_flip(hero_pos.x < mob_pos.x);
+
+                    float speed = 70.0f;
+                    float vel = speed * dt;
+                    float dx = dir.x * vel;
+                    float dy = dir.y * vel;
+
+                    auto manifold = mob.entity.move(dx, dy, map_, scene_switcher_->state().continent);
+
+                    mob.entity.set_position(manifold.new_position);
+
+                    for (auto j = 0u; j < mobs_[continent].size(); j++) {
+                        if (i == j || mobs_[continent][j].dead) {
+                            continue;
+                        }
+
+                        auto &other_mob = mobs_[continent][j];
+                        auto &other_mob_pos = other_mob.entity.get_position();
+
+                        distance_x = std::abs(mob_pos.x - other_mob_pos.x);
+                        distance_y = std::abs(mob_pos.y - other_mob_pos.y);
+
+                        if (distance_x > 48.0f * 4 || distance_y > 40.0f * 4) {
+                            continue;
+                        }
+
+                        if (dir.x > 0.5f && other_mob_pos.x > mob_pos.x && distance_x < 12.0f) {
+                            mob.entity.Transformable::move(-dx, 0.0f);
+                        }
+                        else if (dir.x < -0.5f && other_mob_pos.x < mob_pos.x && distance_x < 12.0f) {
+                            mob.entity.Transformable::move(-dx, 0.0f);
+                        }
+                        if (dir.y > 0.5f && other_mob_pos.y > mob_pos.y && distance_y < 8.0f) {
+                            mob.entity.Transformable::move(0.0f, -dy);
+                        }
+                        else if (dir.y < -0.5f && other_mob_pos.y < mob_pos.y && distance_y < 8.0f) {
+                            mob.entity.Transformable::move(0.0f, -dy);
                         }
                     }
 
-                    scene_switcher_->state().enemy_army = mob.army;
-                    scene_switcher_->state().enemy_counts = mob.counts;
-                    scene_switcher_->state().enemy_index = i;
-                    scene_switcher_->fade_to(SceneId::Battle, true);
-                    return;
+                    auto tile = mob.entity.get_tile();
+                    mob.tile.x = tile.tx;
+                    mob.tile.y = tile.ty;
                 }
-
-                mob.entity.animate(dt);
-                mob.entity.set_flip(hero_pos.x < mob_pos.x);
-
-                float speed = 70.0f;
-                float vel = speed * dt;
-                float dx = dir.x * vel;
-                float dy = dir.y * vel;
-
-                auto manifold = mob.entity.move(dx, dy, map_, scene_switcher_->state().continent);
-
-                mob.entity.set_position(manifold.new_position);
-
-                for (auto j = 0u; j < mobs_[continent].size(); j++) {
-                    if (i == j || mobs_[continent][j].dead) {
-                        continue;
-                    }
-
-                    auto &other_mob = mobs_[continent][j];
-                    auto &other_mob_pos = other_mob.entity.get_position();
-
-                    distance_x = std::abs(mob_pos.x - other_mob_pos.x);
-                    distance_y = std::abs(mob_pos.y - other_mob_pos.y);
-
-                    if (distance_x > 48.0f * 4 || distance_y > 40.0f * 4) {
-                        continue;
-                    }
-
-                    if (dir.x > 0.5f && other_mob_pos.x > mob_pos.x && distance_x < 12.0f) {
-                        mob.entity.Transformable::move(-dx, 0.0f);
-                    }
-                    else if (dir.x < -0.5f && other_mob_pos.x < mob_pos.x && distance_x < 12.0f) {
-                        mob.entity.Transformable::move(-dx, 0.0f);
-                    }
-                    if (dir.y > 0.5f && other_mob_pos.y > mob_pos.y && distance_y < 8.0f) {
-                        mob.entity.Transformable::move(0.0f, -dy);
-                    }
-                    else if (dir.y < -0.5f && other_mob_pos.y < mob_pos.y && distance_y < 8.0f) {
-                        mob.entity.Transformable::move(0.0f, -dy);
-                    }
-                }
-
-                auto tile = mob.entity.get_tile();
-                mob.tile.x = tile.tx;
-                mob.tile.y = tile.ty;
             }
         }
-
-        if (clock_ >= 14) {
-            clock_ = 0;
-            int &days = scene_switcher_->state().days;
-            days--;
-            if (days == 0) {
-                set_state(GameState::LoseGame);
-            }
-            else {
-                days_passed_this_week++;
-                if (days_passed_this_week == 5) {
-                    days_passed_this_week = 0;
-                    set_state(GameState::WeekPassed);
-                    weeks_passed_++;
-                    end_of_week(false);
-                }
-                hud_.update_state();
-            }
-        }
-
-        clock_ += dt;
     }
     else if (state_ == GameState::Paused || state_ == GameState::ViewContinent || state_ == GameState::UseMagic || state_ == GameState::ViewContract || state_ == GameState::ViewPuzzle || state_ == GameState::Dismiss) {
         hud_.update(dt);
@@ -2754,6 +2771,16 @@ void Game::use_spell(int spell)
     switch (spell) {
         case 0:
             set_state(GameState::Bridge);
+            break;
+        case 1:
+            timestop_ = true;
+            timestop_timer_ = 0;
+            timestop_left_ += state.spell_power * 10;
+            if (timestop_left_ > 9999) {
+                timestop_left_ = 9999;
+            }
+            hud_.set_timestop(timestop_left_);
+            set_state(GameState::Unpaused);
             break;
         default:
             break;

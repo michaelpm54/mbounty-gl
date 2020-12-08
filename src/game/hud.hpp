@@ -25,6 +25,8 @@ public:
     void update(float dt);
     void update_state();
     bty::Sprite *get_contract();
+    void set_timestop(int amount);
+    void clear_timestop();
 
     /* Temporarily set the text in the box. Intended to be cleared ASAP. */
     /* Useful for an alert or message. */
@@ -44,6 +46,7 @@ private:
     bty::Rect top_bar_;
     bty::Text name_;
     bty::Text days_;
+    bty::Text timestop_string_;
     bty::Sprite contract_;
     bty::Sprite siege_;
     bty::Sprite magic_;
@@ -64,6 +67,8 @@ private:
     int num_gold_coins_ {0};
     int num_silver_coins_ {0};
     int num_copper_coins_ {0};
+
+    bool timestop_ {false};
 };
 
 #endif    // GAME_HUD_HPP_

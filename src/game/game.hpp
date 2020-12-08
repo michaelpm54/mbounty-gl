@@ -223,6 +223,10 @@ private:
     bty::Dialog chest_;
     int chest_gold_ {0};
     int chest_leadership_ {0};
+
+    bool timestop_ {false};
+    float timestop_timer_ {0};
+    int timestop_left_ {0};
 };
 
 #endif    // BTY_GAME_GAME_HPP_
