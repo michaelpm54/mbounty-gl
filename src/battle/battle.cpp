@@ -62,6 +62,7 @@ enum StatusId {
     DRAGON_IMMUNE_FREEZE,
     DRAGON_IMMUNE_RESURRECT,
     DRAGON_IMMUNE_TURN_UNDEAD,
+    OUT_OF_CONTROL,
 };
 
 static constexpr char const *kStatuses[] = {
@@ -104,6 +105,7 @@ static constexpr char const *kStatuses[] = {
     "Freeze has no effect on Dragons",
     "Resurrect has no effect on Dragons",
     "Turn has no effect on Dragons",
+    "{} are out of control!",
 };
 
 Battle::Battle(bty::SceneSwitcher &scene_switcher)
@@ -979,7 +981,10 @@ void Battle::move_confirm()
         next_unit();
     }
     else {
-        if (unit_states_[active_.x][active_.y].ammo && !any_enemy_around()) {
+        if (unit_states_[active_.x][active_.y].out_of_control) {
+            status_.set_string(fmt::format(kStatuses[OUT_OF_CONTROL], kUnits[armies_[active_.x][active_.y]].name_plural));
+        }
+        else if (unit_states_[active_.x][active_.y].ammo && !any_enemy_around()) {
             status_.set_string(fmt::format(kStatuses[ATTACK_SHOOT_MOVE], kUnits[armies_[active_.x][active_.y]].name_plural, moves_left_[active_.x][active_.y]));
         }
         else {
@@ -1076,11 +1081,14 @@ void Battle::update_unit_info()
         }
     }
     else {
-        if (unit_states_[active_.x][active_.y].ammo && !any_enemy_around()) {
-            status_.set_string(fmt::format(kStatuses[ATTACK_SHOOT_MOVE], unit.name_plural, moves_left_[active_.x][active_.y]));
+        if (unit_states_[active_.x][active_.y].out_of_control) {
+            status_.set_string(fmt::format(kStatuses[OUT_OF_CONTROL], kUnits[armies_[active_.x][active_.y]].name_plural));
+        }
+        else if (unit_states_[active_.x][active_.y].ammo && !any_enemy_around()) {
+            status_.set_string(fmt::format(kStatuses[ATTACK_SHOOT_MOVE], kUnits[armies_[active_.x][active_.y]].name_plural, moves_left_[active_.x][active_.y]));
         }
         else {
-            status_.set_string(fmt::format(kStatuses[ATTACK_MOVE], unit.name_plural, moves_left_[active_.x][active_.y]));
+            status_.set_string(fmt::format(kStatuses[ATTACK_MOVE], kUnits[armies_[active_.x][active_.y]].name_plural, moves_left_[active_.x][active_.y]));
         }
         set_state(BattleState::Moving);
     }
