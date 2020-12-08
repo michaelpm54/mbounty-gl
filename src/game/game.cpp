@@ -1303,33 +1303,24 @@ void Game::add_unit_to_army(int id, int count)
 
 void Game::update_visited_tiles()
 {
-    auto tile = hero_.get_tile();
-    auto index = tile.tx + tile.ty * 64;
+    const auto tile = hero_.get_tile();
     auto *visited = scene_switcher_->state().visited_tiles[scene_switcher_->state().continent].data();
     auto *tiles = map_.get_data(scene_switcher_->state().continent);
 
-    visited[index] = tile.id;
+    int range = 4;
+    int offset = range / 2;
 
-    int initial_x = tile.tx;
-    int initial_y = tile.ty;
+    for (int i = 0; i <= range; i++) {
+        for (int j = 0; j <= range; j++) {
+            int x = tile.tx - offset + i;
+            int y = tile.ty - offset + j;
 
-    int start_x = initial_x - 2;
-    int start_y = initial_y - 2;
-
-    int end_x = initial_x + 2;
-    int end_y = initial_y + 2;
-
-    for (int x = start_x; x <= end_x; x++) {
-        for (int y = start_y; y <= end_y; y++) {
-            int i = x + y * 64;
-            if (i < 0 || i > 4095) {
+            if (x < 0 || x > 63 || y < 0 || y > 63) {
                 continue;
             }
-            int new_y = i / 64;
-            if (new_y != y) {
-                continue;
-            }
-            visited[i] = tiles[i];
+
+            int index = x + y * 64;
+            visited[index] = tiles[index];
         }
     }
 }
