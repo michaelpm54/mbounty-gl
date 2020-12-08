@@ -113,7 +113,10 @@ void ViewContinent::update(float dt)
     dot_timer_ += dt;
     dot_alpha_ = glm::abs(glm::cos(dot_timer_ * 4));
 
-    uint32_t pixel = 0xFF000000 | (static_cast<uint32_t>(0xFF * dot_alpha_) << 16);
+    uint8_t val = 0xFF * dot_alpha_;
+
+    /* Cyan */
+    uint32_t pixel = 0xFF000000 | (val << 8) | val;
 
     glTextureSubImage2D(
         map_texture_.handle,
