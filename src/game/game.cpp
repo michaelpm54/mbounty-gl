@@ -2851,6 +2851,11 @@ void Game::view_army()
 {
     auto &state = scene_switcher_->state();
     for (int i = 0; i < 5; i++) {
+        if (state.army_counts[i] * kUnits[state.army[i]].hp > state.leadership) {
+            state.army_morales[i] = 3;
+            continue;
+        }
+
         state.army_morales[i] = check_morale(i, state.army);
     }
     view_army_.view(state.army, state.army_counts, state.army_morales);

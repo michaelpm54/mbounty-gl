@@ -80,7 +80,7 @@ void ViewArmy::view(int *army, int *counts, int *morales)
                 "Morale: Norm",
                 "Morale: Low",
                 "Morale: High",
-                "Out of control",
+                "Out of Control",
             }};
 
             assert(unit_id < 25);
