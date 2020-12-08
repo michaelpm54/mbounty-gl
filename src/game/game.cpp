@@ -1460,6 +1460,13 @@ void Game::end_of_week(bool search)
 
     int army_total = 0;
     int commission = state.commission;
+
+    for (int i = 0; i < 26; i++) {
+        if (state.castle_occupants[i] == -1) {
+            commission += 250;
+        }
+    }
+
     int gold = state.gold;
     int boat = state.boat_rented ? (state.artifacts_found[ArtiAnchorOfAdmirality] ? 100 : 500) : 0;
     int balance = (commission + gold) - boat;
@@ -2781,6 +2788,12 @@ void Game::use_spell(int spell)
             }
             hud_.set_timestop(timestop_left_);
             set_state(GameState::Unpaused);
+            break;
+        case 2:
+            if (state.contract < 17) {
+                state.known_villains[state.contract] = true;
+            }
+            set_state(GameState::ViewContract);
             break;
         default:
             break;
