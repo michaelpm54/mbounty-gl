@@ -1119,7 +1119,7 @@ void Game::update(float dt)
         }
         else {
             clock_ += dt;
-            if (clock_ >= 14) {
+            if (clock_ >= 16) {
                 clock_ = 0;
                 int &days = scene_switcher_->state().days;
                 days--;
