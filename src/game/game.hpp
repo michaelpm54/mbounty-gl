@@ -68,7 +68,7 @@ private:
         JoinDialog,
         JoinFlee,
         Shop,
-        ChestMessage,
+        Message,
     };
 
     struct EventTile {
@@ -126,6 +126,7 @@ private:
     void chest(const Tile &tile);
     void chest_confirm();
     void view_continent();
+    void instant_army();
 
 private:
     enum WeekPassedCard {
@@ -220,13 +221,14 @@ private:
     std::array<std::vector<const Mob *>, 4> friendlies_;
     int join_unit_ {-1};
 
-    bty::Dialog chest_;
+    bty::Dialog message_;
     int chest_gold_ {0};
     int chest_leadership_ {0};
 
     bool timestop_ {false};
     float timestop_timer_ {0};
     int timestop_left_ {0};
+    bool chest_ {false};
 };
 
 #endif    // BTY_GAME_GAME_HPP_

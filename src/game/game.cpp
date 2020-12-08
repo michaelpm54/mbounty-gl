@@ -201,7 +201,7 @@ reissues your commission and
     join_flee_.add_line(1, 1, "");    // E.g. "Many Sprites"
     join_flee_.add_line(3, 3, " flee in terror at the\nsight of your vast army.");
 
-    chest_.create(0, 0, 0, 0, color, assets);
+    message_.create(0, 0, 0, 0, color, assets);
 
     loaded_ = true;
     return success;
@@ -378,12 +378,12 @@ void Game::draw(bty::Gfx &gfx)
             hud_.draw(gfx, camera_);
             join_flee_.draw(gfx, camera_);
             break;
-        case GameState::ChestMessage:
+        case GameState::Message:
             map_.draw(game_camera_, continent);
             draw_mobs(gfx);
             hero_.draw(gfx, game_camera_);
             hud_.draw(gfx, camera_);
-            chest_.draw(gfx, camera_);
+            message_.draw(gfx, camera_);
             break;
         default:
             break;
@@ -762,20 +762,26 @@ void Game::key(int key, int scancode, int action, int mods)
                     break;
             }
             break;
-        case GameState::ChestMessage:
+        case GameState::Message:
             switch (action) {
                 case GLFW_PRESS:
                     switch (key) {
                         case GLFW_KEY_UP:
-                            chest_.prev();
+                            message_.prev();
                             break;
                         case GLFW_KEY_DOWN:
-                            chest_.next();
+                            message_.next();
                             break;
                         case GLFW_KEY_BACKSPACE:
                             [[fallthrough]];
                         case GLFW_KEY_ENTER:
-                            chest_confirm();
+                            if (chest_) {
+                                chest_confirm();
+                                chest_ = false;
+                            }
+                            else {
+                                set_state(GameState::Unpaused);
+                            }
                             break;
                         default:
                             break;
@@ -1272,8 +1278,8 @@ void Game::update(float dt)
     else if (state_ == GameState::JoinDialog) {
         join_dialog_.animate(dt);
     }
-    else if (state_ == GameState::ChestMessage) {
-        chest_.animate(dt);
+    else if (state_ == GameState::Message) {
+        message_.animate(dt);
     }
 
     if (tmp_hud) {
@@ -1305,11 +1311,6 @@ static constexpr int kMoraleChart[25] = {
 
 int check_morale(int me, int *army)
 {
-    /*
-		If there's a low, return it. If it's not low, keep checking
-		until we run out of units. At that point, if at any point we hit a normal,
-		return the normal. If we didn't hit normal or low, it's high.
-	*/
     bool normal = false;
     for (int i = 0; i < 5; i++) {
         if (army[i] == -1) {
@@ -1336,6 +1337,17 @@ void Game::add_unit_to_army(int id, int count)
         return;
     }
 
+    int *army = scene_switcher_->state().army;
+    int *army_counts = scene_switcher_->state().army_counts;
+    int *army_morales = scene_switcher_->state().army_morales;
+
+    for (int i = 0; i < 5; i++) {
+        if (army[i] == id) {
+            army_counts[i] += count;
+            return;
+        }
+    }
+
     int army_size = 0;
 
     for (int i = 0; i < 5; i++) {
@@ -1351,25 +1363,8 @@ void Game::add_unit_to_army(int id, int count)
 
     int index = army_size++;
 
-    int *army = scene_switcher_->state().army;
-    int *army_counts = scene_switcher_->state().army_counts;
-    int *army_morales = scene_switcher_->state().army_morales;
-
     army[index] = id;
     army_counts[index] = count;
-
-    for (int i = 0; i < 5; i++) {
-        const auto &unit = kUnits[id];
-
-        if (army_counts[count] * unit.hp > scene_switcher_->state().leadership) {
-            army_morales[i] = 3;
-            continue;
-        }
-
-        for (int j = 0; j < 5; j++) {
-            army_morales[i] = check_morale(i, army);
-        }
-    }
 }
 
 void Game::update_visited_tiles()
@@ -1592,7 +1587,7 @@ void Game::setup_game()
     shop_.set_color(color);
     found_map_.set_color(color);
     found_local_map_.set_color(color);
-    chest_.set_color(color);
+    message_.set_color(color);
 
     /* Add starting army */
     for (int i = 0; i < 5; i++) {
@@ -2795,6 +2790,9 @@ void Game::use_spell(int spell)
             }
             set_state(GameState::ViewContract);
             break;
+        case 5:
+            instant_army();
+            break;
         default:
             break;
     }
@@ -3027,6 +3025,8 @@ void Game::shop(const Tile &tile)
 
 void Game::chest(const Tile &tile)
 {
+    chest_ = true;
+
     auto &state = scene_switcher_->state();
 
     map_.set_tile(tile, state.continent, Tile_Grass);
@@ -3043,8 +3043,8 @@ void Game::chest(const Tile &tile)
         set_state(GameState::FoundLocalMap);
     }
     else {
-        chest_.clear();
-        chest_.clear_options();
+        message_.clear();
+        message_.clear_options();
 
         static constexpr int kChestChanceGold[] = {
             61,
@@ -3101,18 +3101,18 @@ void Game::chest(const Tile &tile)
             int gold = kGoldExtra[state.continent] + (roll + 1) * 100;
             int leadership = state.artifacts_found[ArtiRingOfHeroism] ? gold / 25 : gold / 50;
 
-            chest_.set_size(30, 9);
-            chest_.set_position(1, 18);
-            chest_.clear();
-            chest_.add_line(1, 1, R"raw(After scouring the area,
+            message_.set_size(30, 9);
+            message_.set_position(1, 18);
+            message_.clear();
+            message_.add_line(1, 1, R"raw(After scouring the area,
 you fall upon a hidden
 treasure cache. You may:)raw");
-            chest_.add_option(3, 4, fmt::format("Take the {} gold.", gold));
-            chest_.add_option(3, 5, fmt::format(R"raw(Distribute the gold to the
+            message_.add_option(3, 4, fmt::format("Take the {} gold.", gold));
+            message_.add_option(3, 5, fmt::format(R"raw(Distribute the gold to the
  peasants, increasing your
  leadership by {}.)raw",
-                                                leadership));
-            set_state(GameState::ChestMessage);
+                                                  leadership));
+            set_state(GameState::Message);
 
             chest_gold_ = gold;
             chest_leadership_ = leadership;
@@ -3138,32 +3138,32 @@ treasure cache. You may:)raw");
                 commission = 999;
             }
 
-            chest_.set_size(30, 9);
-            chest_.set_position(1, 18);
-            chest_.clear();
-            chest_.add_line(1, 1, fmt::format(R"raw(  After surveying the area,
+            message_.set_size(30, 9);
+            message_.set_position(1, 18);
+            message_.clear();
+            message_.add_line(1, 1, fmt::format(R"raw(  After surveying the area,
    you discover that it is
   rich in mineral deposits.
 
   The King rewards you for
    your find by increasing
   your weekly income by {}.)raw",
-                                              commission));
-            set_state(GameState::ChestMessage);
+                                                commission));
+            set_state(GameState::Message);
             state.commission += commission;
         }
         else if (roll < kChestChanceSpellPower[state.continent]) {
-            chest_.set_size(30, 9);
-            chest_.set_position(1, 18);
-            chest_.clear();
-            chest_.add_line(1, 1, R"raw(  Traversing the area, you
+            message_.set_size(30, 9);
+            message_.set_position(1, 18);
+            message_.clear();
+            message_.add_line(1, 1, R"raw(  Traversing the area, you
   stumble upon a timeworn
    canister. Curious, you
      unstop the bottle,
  releasing a powerful genie,
     who raises your Spell
    Power by 1 and vanishes.)raw");
-            set_state(GameState::ChestMessage);
+            set_state(GameState::Message);
             state.spell_power++;
         }
         else if (roll < kChestChanceSpellCapacity[state.continent]) {
@@ -3176,18 +3176,18 @@ treasure cache. You may:)raw");
 
             int capacity = state.artifacts_found[ArtiRingOfHeroism] ? kSpellCapacityBase[state.continent] * 2 : kSpellCapacityBase[state.continent];
 
-            chest_.set_size(30, 9);
-            chest_.set_position(1, 18);
-            chest_.clear();
-            chest_.add_line(1, 1, fmt::format(R"raw(A tribe of nomads greet you
+            message_.set_size(30, 9);
+            message_.set_position(1, 18);
+            message_.clear();
+            message_.add_line(1, 1, fmt::format(R"raw(A tribe of nomads greet you
 and your army warmly. Their
    shaman, in awe of your
   prowess, teaches you the
 secret of his tribe's magic.
 Your maximum spell capacity
      is increased by {}.)raw",
-                                              capacity));
-            set_state(GameState::ChestMessage);
+                                                capacity));
+            set_state(GameState::Message);
 
             state.max_spells += capacity;
         }
@@ -3195,20 +3195,20 @@ Your maximum spell capacity
             int amount = (rand() % (state.continent + 1)) + 1;
             int spell = rand() % 14;
 
-            chest_.set_size(30, 9);
-            chest_.set_position(1, 18);
-            chest_.clear();
-            chest_.add_line(1, 1, fmt::format(R"raw(     You have captured a
+            message_.set_size(30, 9);
+            message_.set_position(1, 18);
+            message_.clear();
+            message_.add_line(1, 1, fmt::format(R"raw(     You have captured a
   mischievous imp which has
     been terrorizing the
    region. In exchange for
   its release, you receive:
   
       {} {} spell{}.)raw",
-                                              amount,
-                                              kSpellNames[spell],
-                                              amount == 1 ? "" : "s"));
-            set_state(GameState::ChestMessage);
+                                                amount,
+                                                kSpellNames[spell],
+                                                amount == 1 ? "" : "s"));
+            set_state(GameState::Message);
 
             state.spells[spell] += amount;
         }
@@ -3226,9 +3226,9 @@ void Game::view_continent()
 
 void Game::chest_confirm()
 {
-    if (chest_.get_selection() != -1) {
+    if (message_.get_selection() != -1) {
         auto &state = scene_switcher_->state();
-        if (chest_.get_selection() == 0) {
+        if (message_.get_selection() == 0) {
             state.gold += chest_gold_;
         }
         else {
@@ -3239,4 +3239,52 @@ void Game::chest_confirm()
     }
 
     set_state(GameState::Unpaused);
+}
+
+void Game::instant_army()
+{
+    auto &state = scene_switcher_->state();
+
+    static constexpr int kInstantArmyUnits[4][4] = {
+        {
+            Peasants,
+            Militias,
+            Archers,
+            Knights,
+        },
+        {
+            Peasants,
+            Militias,
+            Archers,
+            Cavalries,
+        },
+        {
+            Sprites,
+            Gnomes,
+            Elves,
+            Druids,
+        },
+        {
+            Peasants,
+            Wolves,
+            Orcs,
+            Ogres,
+        },
+    };
+
+    int unit = kInstantArmyUnits[state.hero_rank][state.hero_id];
+    int amt = state.spell_power * 3 + (rand() % state.spell_power + 2);
+
+    message_.clear();
+    message_.clear_options();
+
+    message_.set_size(30, 6);
+    message_.set_position(1, 21);
+
+    message_.add_line(1, 1, fmt::format("{} {}", get_descriptor(amt), kUnits[unit].name_plural));
+    message_.add_line(3, 3, "have joined your army.");
+
+    add_unit_to_army(unit, amt);
+
+    set_state(GameState::Message);
 }
