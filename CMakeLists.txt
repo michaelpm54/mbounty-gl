@@ -41,6 +41,7 @@ set(MBOUNTYGL_SRC
 	src/game/shop.cpp
 	src/game/recruit-input.cpp
 	src/game/chest.cpp
+	src/game/army-gen.cpp
 	src/battle/battle.cpp
 )
 

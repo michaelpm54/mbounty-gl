@@ -176,7 +176,6 @@ private:
 
     Town town_;
     std::array<int, 26> town_units_;
-    std::array<CastleOccupation, 26> castle_occupations_;
     std::array<int, 26> town_spells_;
 
     KingsCastle kings_castle_;
@@ -207,6 +206,9 @@ private:
 
     bool visited_towns_[26] {false};
     bool visited_castles_[26] {false};
+    std::vector<std::array<int, 5>> castle_armies_;
+    std::vector<std::array<int, 5>> castle_counts_;
+    std::array<int, 26> castle_occupants_;
 
     std::vector<std::pair<std::shared_ptr<bty::Dialog>, DialogDef>> dialogs_;
 };

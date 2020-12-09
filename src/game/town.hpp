@@ -13,18 +13,11 @@ class Gfx;
 struct Texture;
 }    // namespace bty
 
-struct CastleOccupation {
-    int index;
-    int occupier;
-    std::array<int, 6> army;
-    std::array<int, 6> army_counts;
-};
-
 class Town {
 public:
     void load(bty::Assets &assets, bty::BoxColor color, SharedState &state);
     void draw(bty::Gfx &gfx, glm::mat4 &camera);
-    void view(int town, const Tile &tile, int continent, int unit_id, int spell, const CastleOccupation &info);
+    void view(int town, const Tile &tile, int continent, int unit_id, int spell);
     void update(float dt);
     int key(int key);
     int get_town() const;

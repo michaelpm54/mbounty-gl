@@ -43,7 +43,7 @@ void Town::draw(bty::Gfx &gfx, glm::mat4 &camera)
     gfx.draw_sprite(unit_, camera);
 }
 
-void Town::view(int town, const Tile &tile, int continent, int unit_id, int spell, const CastleOccupation &occ)
+void Town::view(int town, const Tile &tile, int continent, int unit_id, int spell)
 {
     town_ = town;
 
@@ -70,6 +70,7 @@ void Town::view(int town, const Tile &tile, int continent, int unit_id, int spel
         dialog_.set_option(1, "Cancel boat rental");
     }
 
+    /*
     std::string army;
     for (int i = 0; i < 5; i++) {
         if (occ.army[i] != -1) {
@@ -103,11 +104,10 @@ void Town::view(int town, const Tile &tile, int continent, int unit_id, int spel
                                         occ.occupier == -1 ? "\n" : " ",
                                         occupier,
                                         army));
+    current_info_contract_ = occ.occupier;
+	*/
 
     dialog_.set_option(3, fmt::format("{} spell ({})", kSpellNames[spell], kSpellCosts[spell]));
-
-    current_info_contract_ = occ.occupier;
-
     dialog_.set_option_visibility(4, !state_->siege);
 }
 

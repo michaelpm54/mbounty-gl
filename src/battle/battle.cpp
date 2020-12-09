@@ -679,7 +679,7 @@ void Battle::enter(bool reset)
 
     /* Set armies from shared state. */
     for (int i = 0; i < 2; i++) {
-        for (int j = 0; j < 6; j++) {
+        for (int j = 0; j < 5; j++) {
             /* Hero has no 6th unit. */
             if (i == 0 && j == 5) {
                 continue;

@@ -26,7 +26,6 @@ struct SharedState {
     int commission {0};
     int max_spells {0};
     int spell_power {0};
-    int castle_occupants[26] {0x7F};
     bool maps_found[4] {false};
     bool local_maps_found[4] {false};
     bool villains_caught[17];

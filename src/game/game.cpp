@@ -8,6 +8,7 @@
 #include <glm/gtx/transform.hpp>
 
 #include "assets.hpp"
+#include "game/army-gen.hpp"
 #include "game/chest.hpp"
 #include "game/shop-info.hpp"
 #include "gfx/gfx.hpp"
@@ -94,14 +95,18 @@ void Game::enter(bool reset)
     else {
         auto &state = scene_switcher_->state();
         if (state.disgrace) {
-            for (int i = 0; i < 6; i++) {
-                mobs_[state.continent][state.enemy_index].army[i] = state.enemy_army[i];
-                mobs_[state.continent][state.enemy_index].counts[i] = state.enemy_counts[i];
+            if (state.enemy_index != -1) {
+                for (int i = 0; i < 6; i++) {
+                    mobs_[state.continent][state.enemy_index].army[i] = state.enemy_army[i];
+                    mobs_[state.continent][state.enemy_index].counts[i] = state.enemy_counts[i];
+                }
             }
             disgrace();
         }
         else {
-            mobs_[state.continent][state.enemy_index].dead = true;
+            if (state.enemy_index != -1) {
+                mobs_[state.continent][state.enemy_index].dead = true;
+            }
             sort_army(scene_switcher_->state().army, scene_switcher_->state().army_counts, 5);
         }
     }
@@ -457,7 +462,7 @@ void Game::town(const Tile &tile)
 
     visited_towns_[town] = true;
 
-    town_.view(town, tile, continent, town_units_[town], town_spells_[town], castle_occupations_[town]);
+    town_.view(town, tile, continent, town_units_[town], town_spells_[town]);
     set_state(GameState::Town);
 }
 
@@ -711,7 +716,7 @@ void Game::end_week_budget()
     int commission = state.commission;
 
     for (int i = 0; i < 26; i++) {
-        if (state.castle_occupants[i] == -1) {
+        if (castle_occupants_[i] == -1) {
             commission += 250;
         }
     }
@@ -824,6 +829,19 @@ void Game::setup_game()
     set_state(GameState::Unpaused);
 
     auto &state = scene_switcher_->state();
+
+    castle_armies_.clear();
+    castle_counts_.clear();
+    castle_armies_.resize(26);
+    castle_counts_.resize(26);
+
+    for (int i = 0; i < 26; i++) {
+        castle_occupants_[i] = 0x7F;
+        for (int j = 0; j < 5; j++) {
+            castle_armies_[i][j] = -1;
+            castle_counts_[i][j] = 0;
+        }
+    }
 
     for (int i = 0; i < 26; i++) {
         visited_towns_[i] = false;
@@ -1589,31 +1607,23 @@ void Game::gen_tiles()
             friendlies_[continent].push_back(&mob);
         }
 
-        /* Init castle occupants */
-        for (int i = 0; i < kCastlesPerContinent[continent]; i++) {
-            int index = kCastleIndices[continent] + i;
-            castle_occupations_[index] = {
-                index,
-                -1,
-                {{Peasants, Peasants, Peasants, Peasants, Peasants}},
-                {{0xFF, 0xFF, 0xFF, 0xFF, 0xFF}}};
-        }
-
         /* Gen castle occupants */
         int used_castles = 0;
         for (int i = 0; i < kVillainsPerContinent[continent]; i++) {
             int castle = castle_indices[used_castles++];
 
-            CastleOccupation occ;
-            occ.index = castle;
-            occ.occupier = i + kVillainIndices[continent];
+            auto &state = scene_switcher_->state();
 
+            int villain = i + kVillainIndices[continent];
+            castle_occupants_[castle] = villain;
+            gen_villain_army(villain, castle_armies_[castle], castle_counts_[castle]);
+
+            /*
             for (int j = 0; j < 6; j++) {
                 occ.army[j] = unit_gen(rng_);
                 occ.army_counts[j] = (rand() % 100) + 1;
             }
-
-            castle_occupations_[castle] = occ;
+			*/
         }
 
         /* Turn the rest of the RNG tiles into chests */
@@ -1948,7 +1958,7 @@ void Game::view_contract()
     if (state.contract < 17 && state.known_villains[state.contract]) {
         int castle_id = -1;
         for (int i = 0; i < 26; i++) {
-            if (castle_occupations_[i].occupier == state.contract) {
+            if (castle_occupants_[i] == state.contract) {
                 castle_id = i;
                 break;
             }
@@ -3033,6 +3043,16 @@ void Game::castle(const Tile &tile)
         return;
     }
 
+    int occupier = castle_occupants_[castle_id];
+
+    if (occupier == -1) {
+        spdlog::warn("TODO: garrisoned castles");
+        return;
+    }
+
+    std::string occ_name = occupier == 0x7F ? "Various groups of monsters" : fmt::format("{} and", kVillains[occupier][0]);
+    std::string line_two = occupier == 0x7F ? "occupy this castle" : "army occupy this castle";
+
     show_dialog({
         .x = 1,
         .y = 18,
@@ -3040,6 +3060,26 @@ void Game::castle(const Tile &tile)
         .h = 9,
         .strings = {
             {1, 1, fmt::format("Castle {}", kCastleInfo[castle_id].name)},
+            {1, 3, occ_name},
+            {2, 4, line_two},
+        },
+        .options = {
+            {11, 6, "Lay siege."},
+            {11, 7, "Venture on."},
+        },
+        .callbacks = {
+            .confirm = [this, castle_id, &state](int opt) {
+                if (opt == 0) {
+                    for (int i = 0; i < 5; i++) {
+                        state.enemy_army[i] = castle_armies_[castle_id][i];
+                        state.enemy_counts[i] = castle_counts_[castle_id][i];
+                    }
+                    state.enemy_index = -1;
+                    scene_switcher_->fade_to(SceneId::Battle, true);
+                }
+            },
         },
     });
+
+    visited_castles_[castle_id] = true;
 }
