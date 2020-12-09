@@ -476,6 +476,9 @@ void Game::collide(Tile &tile)
             if (tile.tx == 11 && tile.ty == 56) {
                 set_state(GameState::KingsCastle);
             }
+            else {
+                castle(tile);
+            }
             break;
         case Tile_AfctRing:
             [[fallthrough]];
@@ -2179,21 +2182,6 @@ void Game::teleport_cave(const Tile &tile)
     update_camera();
 }
 
-void Game::join_confirm(int opt)
-{
-    auto &state = scene_switcher_->state();
-
-    switch (opt) {
-        case 0:
-
-            break;
-        default:
-            break;
-    }
-
-    set_state(GameState::Unpaused);
-}
-
 std::string get_descriptor(int count)
 {
     static constexpr const char *const kDescriptors[] = {
@@ -3026,4 +3014,32 @@ void Game::spell_raise_control()
     auto &state = scene_switcher_->state();
     state.leadership += state.spell_power * 100;
     state.leadership &= 0xFFFF;
+}
+
+void Game::castle(const Tile &tile)
+{
+    auto &state = scene_switcher_->state();
+
+    int castle_id = -1;
+
+    for (int i = 0; i < 26; i++) {
+        if (kCastleInfo[i].x == tile.tx && kCastleInfo[i].y == 63 - tile.ty && kCastleInfo[i].continent == state.continent) {
+            castle_id = i;
+        }
+    }
+
+    if (castle_id == -1) {
+        spdlog::warn("Failed to find castle at [{},{}] in {}", tile.tx, tile.ty, kContinents[state.continent]);
+        return;
+    }
+
+    show_dialog({
+        .x = 1,
+        .y = 18,
+        .w = 30,
+        .h = 9,
+        .strings = {
+            {1, 1, fmt::format("Castle {}", kCastleInfo[castle_id].name)},
+        },
+    });
 }

@@ -87,8 +87,6 @@ private:
     void clear_movement();
     void set_state(GameState state);
     void sail_to(int continent);
-    void town(const Tile &tile);
-    void town_option(int opt);
     void next_contract();
     void rent_boat();
     void view_contract();
@@ -98,11 +96,6 @@ private:
     void hud_messages(const std::vector<std::string> &messages);
     void draw_mobs(bty::Gfx &gfx);
     void view_army();
-    void artifact(const Tile &tile);
-    void teleport_cave(const Tile &tile);
-    void join_confirm(int opt);
-    void shop(const Tile &tile);
-    void chest(const Tile &tile);
     void view_continent();
     bty::Dialog *show_dialog(const DialogDef &dialog);
     void castle_gate_confirm(int opt);
@@ -116,18 +109,28 @@ private:
     void pause_confirm(int opt);
 
     void place_bridge_at(int x, int y, int continent, bool horizontal);
-
     void bridge_fail();
 
     void use_magic();
     void use_spell(int spell);
 
+    /* Adventuring spells. */
     void spell_bridge();
     void spell_timestop();
     void spell_find_villain();
     void spell_tc_gate(bool town);
     void spell_instant_army();
     void spell_raise_control();
+
+    void town_option(int opt);
+
+    /* Event tiles. */
+    void town(const Tile &tile);
+    void castle(const Tile &tile);
+    void artifact(const Tile &tile);
+    void teleport_cave(const Tile &tile);
+    void shop(const Tile &tile);
+    void chest(const Tile &tile);
 
 private:
     bty::Assets *assets_;
