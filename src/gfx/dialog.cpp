@@ -198,4 +198,9 @@ void Dialog::set_option_visibility(int index, bool visible)
     }
 }
 
+bool Dialog::get_option_visible(int index) const
+{
+    return index < options_.size() && visible_options_[index];
+}
+
 }    // namespace bty

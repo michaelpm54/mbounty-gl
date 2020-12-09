@@ -14,6 +14,7 @@ struct SharedState {
     int army_counts[5] {0};
     int army_morales[5] {0};
     int leadership {0};
+    int permanent_leadership {0};
     int contract {17};
     bool siege {false};
     bool magic {false};

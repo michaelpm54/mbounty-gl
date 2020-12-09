@@ -2,16 +2,18 @@
 #define BTY_GAME_GAME_HPP_
 
 #include <array>
+#include <functional>
 #include <queue>
 #include <random>
 #include <vector>
 
+#include "game/dialog-def.hpp"
+#include "game/dir-flags.hpp"
 #include "game/entity.hpp"
 #include "game/hero.hpp"
 #include "game/hud.hpp"
 #include "game/kings-castle.hpp"
 #include "game/map.hpp"
-#include "game/move-flags.hpp"
 #include "game/shop-info.hpp"
 #include "game/shop.hpp"
 #include "game/town.hpp"
@@ -46,29 +48,17 @@ public:
 private:
     enum class GameState {
         Unpaused,
-        Paused,
         ViewArmy,
         ViewCharacter,
         ViewContinent,
-        UseMagic,
         ViewContract,
         LoseGame,
-        WeekPassed,
-        Disgrace,
         ViewPuzzle,
-        Dismiss,
-        FoundSailMap,
-        FoundLocalMap,
-        SailNext,
         Town,
         HudMessage,
         KingsCastle,
-        UntrainedInMagic,
         Bridge,
-        JoinDialog,
-        JoinFlee,
         Shop,
-        Message,
     };
 
     struct Mob {
@@ -84,7 +74,8 @@ private:
     void add_unit_to_army(int id, int count);
     void update_visited_tiles();
     void update_spells();
-    void end_of_week(bool search);
+    void end_week_astrology();
+    void end_week_budget();
     void sort_army(int *army, int *counts, int max);
     void disgrace();
     void lose_game();
@@ -95,7 +86,6 @@ private:
     void gen_tiles();
     void clear_movement();
     void set_state(GameState state);
-    void sail_next();
     void sail_to(int continent);
     void town(const Tile &tile);
     void town_option(int opt);
@@ -105,29 +95,43 @@ private:
     void buy_spell();
     void buy_siege();
     void kings_castle_option(int opt);
-    void use_spell(int spell);
-    void bridge(int direction);
-    void bridge_fail();
     void hud_messages(const std::vector<std::string> &messages);
     void draw_mobs(bty::Gfx &gfx);
     void view_army();
     void artifact(const Tile &tile);
     void teleport_cave(const Tile &tile);
-    void join_confirm();
-    void setup_join_dialog();
-    void setup_join_flee();
+    void join_confirm(int opt);
     void shop(const Tile &tile);
     void chest(const Tile &tile);
-    void chest_confirm();
     void view_continent();
-    void instant_army();
+    bty::Dialog *show_dialog(const DialogDef &dialog);
+    void castle_gate_confirm(int opt);
+    void town_gate_confirm(int opt);
+    void update_timestop(float dt);
+    void update_day_clock(float dt);
+    void update_mobs(float dt);
+    void auto_move(float dt);
+    void move_hero(float dt);
+    void pause();
+    void pause_confirm(int opt);
+
+    void place_bridge_at(int x, int y, int continent, bool horizontal);
+
+    void bridge_fail();
+
+    void use_magic();
+    void use_spell(int spell);
+
+    void spell_bridge();
+    void spell_timestop();
+    void spell_find_villain();
+    void spell_tc_gate(bool town);
+    void spell_instant_army();
+    void spell_raise_control();
 
 private:
-    enum WeekPassedCard {
-        Astrology,
-        Budget,
-    };
-
+    bty::Assets *assets_;
+    bool paused_ {false};
     std::default_random_engine rng_ {};
 
     bty::SceneSwitcher *scene_switcher_;
@@ -138,24 +142,19 @@ private:
 
     Hud hud_;
     Map map_;
-    bty::Dialog pause_menu_;
 
     glm::vec3 camera_pos_ {0};
     glm::mat4 game_camera_ {1};
-    glm::mat4 zoom_ {0};
 
-    uint8_t move_flags_ {MOVE_FLAGS_NONE};
+    uint8_t move_flags_ {DIR_FLAG_NONE};
 
     Hero hero_;
 
     ViewArmy view_army_;
     ViewCharacter view_character_;
     ViewContinent view_continent_;
-    bty::Dialog use_magic_;
     ViewContract view_contract_;
     ViewPuzzle view_puzzle_;
-
-    bty::Text *magic_spells_[14] {nullptr};
 
     bool view_continent_fog_ {true};
 
@@ -163,22 +162,11 @@ private:
     int days_passed_this_week {0};
     int weeks_passed_ {0};
 
-    WeekPassedCard week_passed_card_ {WeekPassedCard::Astrology};
-    bty::TextBox astrology_;
-    bty::TextBox budget_;
-
     bty::TextBox lose_msg_;
     bty::Sprite lose_pic_;
     bty::Text *lose_msg_name_;
     int lose_state_ {0};
 
-    bty::Dialog dismiss_;
-
-    bty::TextBox found_map_;
-    bty::Text *found_map_continent_;
-    bty::TextBox found_local_map_;
-
-    bty::Dialog sail_dialog_;
     bool controls_locked_ {false};
     float control_lock_timer_ {0};
     glm::ivec2 auto_move_dir_ {0};
@@ -195,14 +183,10 @@ private:
     std::array<std::array<glm::ivec2, 40>, 4> mob_tile_;
     std::array<std::array<std::array<int, 6>, 40>, 4> mob_armies_;
 
-    bty::TextBox untrained_in_magic_;
     bty::TextBox bridge_prompt_;
 
     std::queue<std::string> hud_message_queue_;
 
-    bty::TextBox disgrace_;
-    bty::Dialog join_dialog_;
-    bty::TextBox join_flee_;
     Shop shop_;
     int shop_index_ {-1};
 
@@ -213,16 +197,15 @@ private:
     std::array<glm::ivec2, 4> local_maps_;
     std::array<std::array<glm::ivec2, 2>, 4> teleport_caves_;
     std::array<std::vector<const Mob *>, 4> friendlies_;
-    int join_unit_ {-1};
-
-    bty::Dialog message_;
-    int chest_gold_ {0};
-    int chest_leadership_ {0};
 
     bool timestop_ {false};
     float timestop_timer_ {0};
     int timestop_left_ {0};
-    bool chest_ {false};
+
+    bool visited_towns_[26] {false};
+    bool visited_castles_[26] {false};
+
+    std::vector<std::pair<std::shared_ptr<bty::Dialog>, DialogDef>> dialogs_;
 };
 
 #endif    // BTY_GAME_GAME_HPP_

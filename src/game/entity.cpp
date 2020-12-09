@@ -4,7 +4,7 @@
 
 #include <unordered_set>
 
-#include "game/move-flags.hpp"
+#include "game/dir-flags.hpp"
 #include "gfx/gfx.hpp"
 
 #define CUTE_C2_IMPLEMENTATION

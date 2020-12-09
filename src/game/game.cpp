@@ -8,11 +8,14 @@
 #include <glm/gtx/transform.hpp>
 
 #include "assets.hpp"
+#include "game/chest.hpp"
 #include "game/shop-info.hpp"
 #include "gfx/gfx.hpp"
 #include "glfw.hpp"
 #include "scene-switcher.hpp"
 #include "shared-state.hpp"
+
+std::string get_descriptor(int count);
 
 Game::Game(bty::SceneSwitcher &scene_switcher)
     : scene_switcher_(&scene_switcher)
@@ -22,6 +25,8 @@ Game::Game(bty::SceneSwitcher &scene_switcher)
 bool Game::load(bty::Assets &assets)
 {
     bool success {true};
+
+    assets_ = &assets;
 
     camera_ = glm::ortho(0.0f, 320.0f, 224.0f, 0.0f, -1.0f, 1.0f);
 
@@ -33,57 +38,6 @@ bool Game::load(bty::Assets &assets)
     }
 
     hud_.load(assets, state);
-
-    /* Create pause menu */
-    pause_menu_.create(
-        3,
-        7,
-        26,
-        16,
-        color,
-        assets);
-
-    pause_menu_.add_option(3, 2, "View your army");
-    pause_menu_.add_option(3, 3, "View your character");
-    pause_menu_.add_option(3, 4, "Look at continent map");
-    pause_menu_.add_option(3, 5, "Use magic");
-    pause_menu_.add_option(3, 6, "Contract information");
-    pause_menu_.add_option(3, 7, "Wait to end of week");
-    pause_menu_.add_option(3, 8, "Look at puzzle pieces");
-    pause_menu_.add_option(3, 9, "Search the area");
-    pause_menu_.add_option(3, 10, "Dismiss army");
-    pause_menu_.add_option(3, 11, "Game controls");
-    pause_menu_.add_option(3, 13, "Save game");
-
-    /* Create "Use magic" menu */
-    use_magic_.create(
-        6,
-        4,
-        20,
-        22,
-        color,
-        assets);
-
-    use_magic_.add_line(1, 1, "Adventuring Spells");
-    magic_spells_[0] = use_magic_.add_option(4, 3, "");
-    magic_spells_[1] = use_magic_.add_option(4, 4, "");
-    magic_spells_[2] = use_magic_.add_option(4, 5, "");
-    magic_spells_[3] = use_magic_.add_option(4, 6, "");
-    magic_spells_[4] = use_magic_.add_option(4, 7, "");
-    magic_spells_[5] = use_magic_.add_option(4, 8, "");
-    magic_spells_[6] = use_magic_.add_option(4, 9, "");
-    use_magic_.add_line(3, 12, "Combat Spells");
-    magic_spells_[7] = use_magic_.add_option(4, 14, "");
-    magic_spells_[8] = use_magic_.add_option(4, 15, "");
-    magic_spells_[9] = use_magic_.add_option(4, 16, "");
-    magic_spells_[10] = use_magic_.add_option(4, 17, "");
-    magic_spells_[11] = use_magic_.add_option(4, 18, "");
-    magic_spells_[12] = use_magic_.add_option(4, 19, "");
-    magic_spells_[13] = use_magic_.add_option(4, 20, "");
-
-    for (int i = 7; i < 14; i++) {
-        use_magic_.set_option_disabled(i, true);
-    }
 
     /* Create various pause-menu menu's */
     view_army_.load(assets, color);
@@ -97,26 +51,6 @@ bool Game::load(bty::Assets &assets)
 
     /* Load hero sprites */
     hero_.load(assets);
-
-    /* Create end-of-week messages */
-    astrology_.create(1, 18, 30, 9, color, assets);
-    budget_.create(1, 18, 30, 9, color, assets);
-
-    astrology_.add_line(1, 1, "");
-    astrology_.add_line(1, 3, "");
-
-    budget_.add_line(1, 1, "");
-    budget_.add_line(23, 1, "Budget");
-    budget_.add_line(1, 3, "");
-    budget_.add_line(1, 4, "");
-    budget_.add_line(1, 5, "");
-    budget_.add_line(1, 6, "");
-    budget_.add_line(1, 7, "");
-    budget_.add_line(15, 3, "");
-    budget_.add_line(15, 4, "");
-    budget_.add_line(15, 5, "");
-    budget_.add_line(15, 6, "");
-    budget_.add_line(15, 7, "");
 
     /* Days run out/lose game */
     lose_msg_.create(1, 3, 20, 24, color, assets);
@@ -143,65 +77,9 @@ the Sceptre.)raw");
     lose_pic_.set_texture(assets.get_texture("bg/king-dead.png"));
     lose_pic_.set_position(168, 24);
 
-    dismiss_.create(1, 18, 30, 9, color, assets);
-    dismiss_.add_line(5, 1, "Dismiss which army?");
-
-    /* Found a map message */
-    found_map_.create(1, 18, 30, 9, color, assets);
-    found_map_.add_line(1, 2,
-                        R"raw(  Hidden within an ancient
-  chest, you find maps and
-charts describing passage to)raw");
-    found_map_continent_ = found_map_.add_line(10, 6, "");
-
-    found_local_map_.create(1, 18, 30, 9, color, assets);
-    found_local_map_.add_line(1, 2, R"raw(  Peering through a magical
-orb you are able to view the
- entire continent. Your map
-  of this area is complete.)raw");
-
-    sail_dialog_.create(1, 18, 30, 9, color, assets);
-    sail_dialog_.add_line(3, 1, "Sail to which continent?");
-
     town_.load(assets, color, state);
     kings_castle_.load(assets, color, state, hud_);
     shop_.load(assets, color, state, hud_);
-
-    untrained_in_magic_.create(6, 10, 20, 10, color, assets);
-    untrained_in_magic_.add_line(1, 1,
-                                 R"raw( You haven't been
-trained in the art
-  of spellcasting
-  yet. Visit the
- Archmage Aurange
- in Continentia at
-  11,19 for this
-     ability.)raw");
-
-    bridge_prompt_.create(1, 20, 30, 7, color, assets);
-    bridge_prompt_.add_line(1, 1, " Bridge in which direction?");
-    bridge_prompt_.add_line(14, 3, " \x81\n\x84 \x82\n \x83");
-
-    disgrace_.create(1, 18, 30, 9, color, assets);
-    disgrace_.add_line(1, 1, R"raw(After being disgraced on the
-    field of battle, King
- Maximus summons you to his
-  castle. After a lesson in
-   tactics, he reluctantly
-reissues your commission and
-   sends you on your way.)raw");
-
-    join_dialog_.create(1, 18, 30, 9, color, assets);
-    join_dialog_.add_line(1, 1, "");    // E.g. "Many Sprites"
-    join_dialog_.add_line(3, 3, "with desires of greater\nglory, wish to join you.");
-    join_dialog_.add_option(13, 6, "Accept");
-    join_dialog_.add_option(13, 7, "Decline");
-
-    join_flee_.create(1, 21, 30, 6, color, assets);
-    join_flee_.add_line(1, 1, "");    // E.g. "Many Sprites"
-    join_flee_.add_line(3, 3, " flee in terror at the\nsight of your vast army.");
-
-    message_.create(0, 0, 0, 0, color, assets);
 
     loaded_ = true;
     return success;
@@ -209,17 +87,18 @@ reissues your commission and
 
 void Game::enter(bool reset)
 {
+    dialogs_.clear();
     if (reset) {
         setup_game();
     }
     else {
         auto &state = scene_switcher_->state();
         if (state.disgrace) {
-            set_state(GameState::Disgrace);
             for (int i = 0; i < 6; i++) {
                 mobs_[state.continent][state.enemy_index].army[i] = state.enemy_army[i];
                 mobs_[state.continent][state.enemy_index].counts[i] = state.enemy_counts[i];
             }
+            disgrace();
         }
         else {
             mobs_[state.continent][state.enemy_index].dead = true;
@@ -253,13 +132,6 @@ void Game::draw(bty::Gfx &gfx)
             hero_.draw(gfx, game_camera_);
             hud_.draw(gfx, camera_);
             break;
-        case GameState::Paused:
-            map_.draw(game_camera_, continent);
-            draw_mobs(gfx);
-            hero_.draw(gfx, game_camera_);
-            hud_.draw(gfx, camera_);
-            pause_menu_.draw(gfx, camera_);
-            break;
         case GameState::ViewArmy:
             map_.draw(game_camera_, continent);
             hud_.draw(gfx, camera_);
@@ -274,27 +146,9 @@ void Game::draw(bty::Gfx &gfx)
             hud_.draw(gfx, camera_);
             view_continent_.draw(gfx, camera_);
             break;
-        case GameState::UseMagic:
-            map_.draw(game_camera_, continent);
-            draw_mobs(gfx);
-            hud_.draw(gfx, camera_);
-            use_magic_.draw(gfx, camera_);
-            break;
         case GameState::ViewContract:
             hud_.draw(gfx, camera_);
             view_contract_.draw(gfx, camera_);
-            break;
-        case GameState::WeekPassed:
-            map_.draw(game_camera_, continent);
-            draw_mobs(gfx);
-            hero_.draw(gfx, game_camera_);
-            hud_.draw(gfx, camera_);
-            if (week_passed_card_ == WeekPassedCard::Astrology) {
-                astrology_.draw(gfx, camera_);
-            }
-            else {
-                budget_.draw(gfx, camera_);
-            }
             break;
         case GameState::LoseGame:
             hud_.draw(gfx, camera_);
@@ -304,33 +158,6 @@ void Game::draw(bty::Gfx &gfx)
         case GameState::ViewPuzzle:
             hud_.draw(gfx, camera_);
             view_puzzle_.draw(gfx, camera_);
-            break;
-        case GameState::Dismiss:
-            map_.draw(game_camera_, continent);
-            draw_mobs(gfx);
-            hero_.draw(gfx, game_camera_);
-            hud_.draw(gfx, camera_);
-            dismiss_.draw(gfx, camera_);
-            break;
-        case GameState::FoundSailMap:
-            map_.draw(game_camera_, continent);
-            draw_mobs(gfx);
-            hero_.draw(gfx, game_camera_);
-            hud_.draw(gfx, camera_);
-            found_map_.draw(gfx, camera_);
-            break;
-        case GameState::FoundLocalMap:
-            map_.draw(game_camera_, continent);
-            draw_mobs(gfx);
-            hero_.draw(gfx, game_camera_);
-            hud_.draw(gfx, camera_);
-            found_local_map_.draw(gfx, camera_);
-            break;
-        case GameState::SailNext:
-            map_.draw(game_camera_, continent);
-            hero_.draw(gfx, game_camera_);
-            hud_.draw(gfx, camera_);
-            sail_dialog_.draw(gfx, camera_);
             break;
         case GameState::Town:
             hud_.draw(gfx, camera_);
@@ -344,12 +171,6 @@ void Game::draw(bty::Gfx &gfx)
             hud_.draw(gfx, camera_);
             shop_.draw(gfx, camera_);
             break;
-        case GameState::UntrainedInMagic:
-            map_.draw(game_camera_, continent);
-            draw_mobs(gfx);
-            hud_.draw(gfx, camera_);
-            untrained_in_magic_.draw(gfx, camera_);
-            break;
         case GameState::Bridge:
             map_.draw(game_camera_, continent);
             draw_mobs(gfx);
@@ -357,39 +178,15 @@ void Game::draw(bty::Gfx &gfx)
             hud_.draw(gfx, camera_);
             bridge_prompt_.draw(gfx, camera_);
             break;
-        case GameState::Disgrace:
-            map_.draw(game_camera_, continent);
-            draw_mobs(gfx);
-            hero_.draw(gfx, game_camera_);
-            hud_.draw(gfx, camera_);
-            disgrace_.draw(gfx, camera_);
-            break;
-        case GameState::JoinDialog:
-            map_.draw(game_camera_, continent);
-            draw_mobs(gfx);
-            hero_.draw(gfx, game_camera_);
-            hud_.draw(gfx, camera_);
-            join_dialog_.draw(gfx, camera_);
-            break;
-        case GameState::JoinFlee:
-            map_.draw(game_camera_, continent);
-            draw_mobs(gfx);
-            hero_.draw(gfx, game_camera_);
-            hud_.draw(gfx, camera_);
-            join_flee_.draw(gfx, camera_);
-            break;
-        case GameState::Message:
-            map_.draw(game_camera_, continent);
-            draw_mobs(gfx);
-            hero_.draw(gfx, game_camera_);
-            hud_.draw(gfx, camera_);
-            message_.draw(gfx, camera_);
-            break;
         default:
             break;
     }
     if (tmp_hud) {
         state_ = GameState::HudMessage;
+    }
+
+    for (auto &[dialog, d] : dialogs_) {
+        dialog->draw(gfx, camera_);
     }
 }
 
@@ -423,91 +220,8 @@ void Game::key(int key, int scancode, int action, int mods)
                         case GLFW_KEY_L:
                             set_state(GameState::LoseGame);
                             break;
-                        case GLFW_KEY_SPACE:
-                            set_state(GameState::Paused);
-                            break;
                         case GLFW_KEY_B:
                             hero_.set_mount(hero_.get_mount() == Mount::Walk ? Mount::Boat : Mount::Walk);
-                            break;
-                        default:
-                            break;
-                    }
-                    break;
-                default:
-                    break;
-            }
-            break;
-        case GameState::Paused:
-            switch (action) {
-                case GLFW_PRESS:
-                    switch (key) {
-                        case GLFW_KEY_BACKSPACE:
-                            [[fallthrough]];
-                        case GLFW_KEY_SPACE:
-                            set_state(GameState::Unpaused);
-                            break;
-                        case GLFW_KEY_UP:
-                            pause_menu_.prev();
-                            break;
-                        case GLFW_KEY_DOWN:
-                            pause_menu_.next();
-                            break;
-                        case GLFW_KEY_ENTER:
-                            switch (pause_menu_.get_selection()) {
-                                case 0:
-                                    set_state(GameState::ViewArmy);
-                                    break;
-                                case 1:
-                                    set_state(GameState::ViewCharacter);
-                                    break;
-                                case 2:
-                                    set_state(GameState::ViewContinent);
-                                    break;
-                                case 3:
-                                    set_state(GameState::UseMagic);
-                                    break;
-                                case 4:
-                                    set_state(GameState::ViewContract);
-                                    break;
-                                case 5:
-                                    /*
-                                        9 becomes 5
-                                        8 becomes 5
-                                        7 becomes 5
-                                        etc
-                                     */
-                                    if ((scene_switcher_->state().days % 5) != 0) {
-                                        scene_switcher_->state().days = (scene_switcher_->state().days / 5) * 5;
-                                    }
-                                    /*
-                                        100 becomes 95
-                                        65 becomes 60
-                                        10 becomes 5
-                                        etc
-                                    */
-                                    else {
-                                        scene_switcher_->state().days = ((scene_switcher_->state().days / 5) - 1) * 5;
-                                    }
-                                    if (scene_switcher_->state().days == 0) {
-                                        set_state(GameState::LoseGame);
-                                    }
-                                    else {
-                                        set_state(GameState::WeekPassed);
-                                    }
-                                    clock_ = 0;
-                                    hud_.update_state();
-                                    break;
-                                case 6:
-                                    set_state(GameState::ViewPuzzle);
-                                    break;
-                                case 7:
-                                    break;
-                                case 8:
-                                    set_state(GameState::Dismiss);
-                                    break;
-                                default:
-                                    break;
-                            }
                             break;
                         default:
                             break;
@@ -527,7 +241,6 @@ void Game::key(int key, int scancode, int action, int mods)
                             set_state(GameState::Unpaused);
                             break;
                         case GLFW_KEY_ENTER:
-                            spdlog::debug("Enter");
                             if (state.local_maps_found[state.continent]) {
                                 view_continent_fog_ = !view_continent_fog_;
                                 view_continent();
@@ -547,46 +260,6 @@ void Game::key(int key, int scancode, int action, int mods)
             [[fallthrough]];
         case GameState::ViewPuzzle:
             [[fallthrough]];
-        case GameState::Disgrace:
-            switch (action) {
-                case GLFW_PRESS:
-                    switch (key) {
-                        case GLFW_KEY_SPACE:
-                            [[fallthrough]];
-                        case GLFW_KEY_BACKSPACE:
-                            [[fallthrough]];
-                        case GLFW_KEY_ENTER:
-                            set_state(GameState::Unpaused);
-                            break;
-                        default:
-                            break;
-                    }
-                    break;
-                default:
-                    break;
-            }
-            break;
-        case GameState::JoinFlee:
-            switch (action) {
-                case GLFW_PRESS:
-                    switch (key) {
-                        case GLFW_KEY_SPACE:
-                            [[fallthrough]];
-                        case GLFW_KEY_BACKSPACE:
-                            [[fallthrough]];
-                        case GLFW_KEY_ENTER:
-                            mobs_[state.continent][join_unit_].dead = true;
-                            join_unit_ = -1;
-                            set_state(GameState::Unpaused);
-                            break;
-                        default:
-                            break;
-                    }
-                    break;
-                default:
-                    break;
-            }
-            break;
         case GameState::ViewContract:
             switch (action) {
                 case GLFW_PRESS:
@@ -602,30 +275,6 @@ void Game::key(int key, int scancode, int action, int mods)
                             else {
                                 set_state(GameState::Unpaused);
                             }
-                            break;
-                        default:
-                            break;
-                    }
-                    break;
-                default:
-                    break;
-            }
-            break;
-        case GameState::UseMagic:
-            switch (action) {
-                case GLFW_PRESS:
-                    switch (key) {
-                        case GLFW_KEY_BACKSPACE:
-                            set_state(GameState::Unpaused);
-                            break;
-                        case GLFW_KEY_UP:
-                            use_magic_.prev();
-                            break;
-                        case GLFW_KEY_DOWN:
-                            use_magic_.next();
-                            break;
-                        case GLFW_KEY_ENTER:
-                            use_spell(use_magic_.get_selection());
                             break;
                         default:
                             break;
@@ -657,51 +306,6 @@ void Game::key(int key, int scancode, int action, int mods)
                     break;
             }
             break;
-        case GameState::WeekPassed:
-            switch (action) {
-                case GLFW_PRESS:
-                    switch (key) {
-                        case GLFW_KEY_ENTER:
-                            if (week_passed_card_ == WeekPassedCard::Budget) {
-                                week_passed_card_ = WeekPassedCard::Astrology;
-                                set_state(GameState::Unpaused);
-                            }
-                            else {
-                                week_passed_card_ = WeekPassedCard::Budget;
-                            }
-                            break;
-                        default:
-                            break;
-                    }
-                    break;
-                default:
-                    break;
-            }
-            break;
-        case GameState::Dismiss:
-            switch (action) {
-                case GLFW_PRESS:
-                    switch (key) {
-                        case GLFW_KEY_UP:
-                            dismiss_.prev();
-                            break;
-                        case GLFW_KEY_DOWN:
-                            dismiss_.next();
-                            break;
-                        case GLFW_KEY_ENTER:
-                            dismiss_slot(dismiss_.get_selection());
-                            break;
-                        case GLFW_KEY_BACKSPACE:
-                            set_state(GameState::Unpaused);
-                            break;
-                        default:
-                            break;
-                    }
-                    break;
-                default:
-                    break;
-            }
-            break;
         case GameState::HudMessage:
             switch (action) {
                 case GLFW_PRESS:
@@ -719,95 +323,6 @@ void Game::key(int key, int scancode, int action, int mods)
                                 hud_.set_title(hud_message_queue_.back());
                                 hud_message_queue_.pop();
                             }
-                            break;
-                        default:
-                            break;
-                    }
-                    break;
-                default:
-                    break;
-            }
-            break;
-        case GameState::FoundSailMap:
-            switch (action) {
-                case GLFW_PRESS:
-                    switch (key) {
-                        case GLFW_KEY_BACKSPACE:
-                            [[fallthrough]];
-                        case GLFW_KEY_ENTER:
-                            set_state(GameState::Unpaused);
-                            break;
-                        default:
-                            break;
-                    }
-                    break;
-                default:
-                    break;
-            }
-            break;
-        case GameState::FoundLocalMap:
-            switch (action) {
-                case GLFW_PRESS:
-                    switch (key) {
-                        case GLFW_KEY_BACKSPACE:
-                            [[fallthrough]];
-                        case GLFW_KEY_ENTER:
-                            set_state(GameState::ViewContinent);
-                            break;
-                        default:
-                            break;
-                    }
-                    break;
-                default:
-                    break;
-            }
-            break;
-        case GameState::Message:
-            switch (action) {
-                case GLFW_PRESS:
-                    switch (key) {
-                        case GLFW_KEY_UP:
-                            message_.prev();
-                            break;
-                        case GLFW_KEY_DOWN:
-                            message_.next();
-                            break;
-                        case GLFW_KEY_BACKSPACE:
-                            [[fallthrough]];
-                        case GLFW_KEY_ENTER:
-                            if (chest_) {
-                                chest_confirm();
-                                chest_ = false;
-                            }
-                            else {
-                                set_state(GameState::Unpaused);
-                            }
-                            break;
-                        default:
-                            break;
-                    }
-                    break;
-                default:
-                    break;
-            }
-            break;
-        case GameState::SailNext:
-            switch (action) {
-                case GLFW_PRESS:
-                    switch (key) {
-                        case GLFW_KEY_BACKSPACE:
-                            set_state(GameState::Unpaused);
-                            sail_to(scene_switcher_->state().continent);
-                            break;
-                        case GLFW_KEY_ENTER:
-                            set_state(GameState::Unpaused);
-                            sail_to(sail_dialog_.get_selection());
-                            break;
-                        case GLFW_KEY_UP:
-                            sail_dialog_.prev();
-                            break;
-                        case GLFW_KEY_DOWN:
-                            sail_dialog_.next();
                             break;
                         default:
                             break;
@@ -844,78 +359,71 @@ void Game::key(int key, int scancode, int action, int mods)
                     break;
             }
             break;
-        case GameState::UntrainedInMagic:
-            switch (action) {
-                case GLFW_PRESS:
-                    switch (key) {
-                        case GLFW_KEY_ENTER:
-                            [[fallthrough]];
-                        case GLFW_KEY_BACKSPACE:
-                            set_state(GameState::Unpaused);
-                            break;
-                        default:
-                            break;
-                    }
-                    break;
-                default:
-                    break;
-            }
-            break;
-        case GameState::Bridge:
-            switch (action) {
-                case GLFW_PRESS:
-                    switch (key) {
-                        case GLFW_KEY_ENTER:
-                            [[fallthrough]];
-                        case GLFW_KEY_BACKSPACE:
-                            set_state(GameState::Unpaused);
-                            break;
-                        case GLFW_KEY_LEFT:
-                            bridge(MOVE_FLAGS_LEFT);
-                            break;
-                        case GLFW_KEY_RIGHT:
-                            bridge(MOVE_FLAGS_RIGHT);
-                            break;
-                        case GLFW_KEY_UP:
-                            bridge(MOVE_FLAGS_UP);
-                            break;
-                        case GLFW_KEY_DOWN:
-                            bridge(MOVE_FLAGS_DOWN);
-                            break;
-                        default:
-                            break;
-                    }
-                    break;
-                default:
-                    break;
-            }
-            break;
-        case GameState::JoinDialog:
-            switch (action) {
-                case GLFW_PRESS:
-                    switch (key) {
-                        case GLFW_KEY_BACKSPACE:
-                            set_state(GameState::Unpaused);
-                            break;
-                        case GLFW_KEY_UP:
-                            join_dialog_.prev();
-                            break;
-                        case GLFW_KEY_DOWN:
-                            join_dialog_.next();
-                            break;
-                        case GLFW_KEY_ENTER:
-                            join_confirm();
-                            break;
-                        default:
-                            break;
-                    }
-                    break;
-                default:
-                    break;
-            }
-            break;
         default:
             break;
+    }
+
+    if (!paused_) {
+        switch (action) {
+            case GLFW_PRESS:
+                switch (key) {
+                    case GLFW_KEY_SPACE:
+                        pause();
+                        break;
+                    default:
+                        break;
+                }
+                break;
+            default:
+                break;
+        }
+    }
+    else if (!dialogs_.empty()) {
+        std::pair<std::shared_ptr<bty::Dialog>, DialogDef> back;
+        if (action == GLFW_PRESS) {
+            switch (key) {
+                case GLFW_KEY_BACKSPACE:
+                    dialogs_.pop_back();
+                    break;
+                case GLFW_KEY_ENTER:
+                    back = dialogs_.back();
+                    if (dialogs_.back().second.pop_on_confirm) {
+                        dialogs_.pop_back();
+                    }
+                    if (back.second.callbacks.confirm) {
+                        back.second.callbacks.confirm(back.first->get_selection());
+                    }
+                    break;
+                case GLFW_KEY_UP:
+                    if (dialogs_.back().second.callbacks.up) {
+                        dialogs_.back().second.callbacks.up(*dialogs_.back().first);
+                    }
+                    else {
+                        dialogs_.back().first->prev();
+                    }
+                    break;
+                case GLFW_KEY_DOWN:
+                    if (dialogs_.back().second.callbacks.down) {
+                        dialogs_.back().second.callbacks.down(*dialogs_.back().first);
+                    }
+                    else {
+                        dialogs_.back().first->next();
+                    }
+                    break;
+                case GLFW_KEY_LEFT:
+                    if (dialogs_.back().second.callbacks.left) {
+                        dialogs_.back().second.callbacks.left(*dialogs_.back().first);
+                    }
+                    break;
+                case GLFW_KEY_RIGHT:
+                    if (dialogs_.back().second.callbacks.right) {
+                        dialogs_.back().second.callbacks.right(*dialogs_.back().first);
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
     }
 }
 
@@ -946,6 +454,8 @@ void Game::town(const Tile &tile)
         spdlog::warn("Couldn't find town at {}, {}", tile.tx, tile.ty);
         return;
     }
+
+    visited_towns_[town] = true;
 
     town_.view(town, tile, continent, town_units_[town], town_spells_[town], castle_occupations_[town]);
     set_state(GameState::Town);
@@ -1006,244 +516,55 @@ void Game::collide(Tile &tile)
 
 void Game::update(float dt)
 {
+    paused_ = !dialogs_.empty() || state_ != GameState::Unpaused;
+
     bool tmp_hud {false};
     if (state_ == GameState::HudMessage) {
         state_ = last_state_;
         tmp_hud = true;
     }
 
-    if (state_ == GameState::Unpaused) {
+    if (!paused_) {
         if (controls_locked_) {
-            control_lock_timer_ -= dt;
-            if (control_lock_timer_ <= 0) {
-                controls_locked_ = false;
-            }
-
-            float speed = 100;
-            float vel = speed * dt;
-            float dx = auto_move_dir_.x * vel;
-            float dy = auto_move_dir_.y * vel;
-
-            auto manifold = hero_.move(dx, dy, map_, scene_switcher_->state().continent);
-            hero_.set_position(manifold.new_position);
-            update_visited_tiles();
-            update_camera();
+            auto_move(dt);
         }
-        else if (!tmp_hud) {
-            move_flags_ = MOVE_FLAGS_NONE;
+        else {
+            move_flags_ = DIR_FLAG_NONE;
             if (scene_switcher_->get_key(GLFW_KEY_LEFT)) {
-                move_flags_ |= MOVE_FLAGS_LEFT;
+                move_flags_ |= DIR_FLAG_LEFT;
             }
             if (scene_switcher_->get_key(GLFW_KEY_RIGHT)) {
-                move_flags_ |= MOVE_FLAGS_RIGHT;
+                move_flags_ |= DIR_FLAG_RIGHT;
             }
             if (scene_switcher_->get_key(GLFW_KEY_UP)) {
-                move_flags_ |= MOVE_FLAGS_UP;
+                move_flags_ |= DIR_FLAG_UP;
             }
             if (scene_switcher_->get_key(GLFW_KEY_DOWN)) {
-                move_flags_ |= MOVE_FLAGS_DOWN;
-            }
-        }
-
-        if (move_flags_) {
-            hero_.set_moving(true);
-
-            if ((move_flags_ & MOVE_FLAGS_LEFT) && !(move_flags_ & MOVE_FLAGS_RIGHT)) {
-                hero_.set_flip(true);
-            }
-            else if ((move_flags_ & MOVE_FLAGS_RIGHT) && !(move_flags_ & MOVE_FLAGS_LEFT)) {
-                hero_.set_flip(false);
+                move_flags_ |= DIR_FLAG_DOWN;
             }
 
-            glm::vec2 dir {0.0f};
-
-            if (move_flags_ & MOVE_FLAGS_UP)
-                dir.y -= 1.0f;
-            if (move_flags_ & MOVE_FLAGS_DOWN)
-                dir.y += 1.0f;
-            if (move_flags_ & MOVE_FLAGS_LEFT)
-                dir.x -= 1.0f;
-            if (move_flags_ & MOVE_FLAGS_RIGHT)
-                dir.x += 1.0f;
-
-            float speed = hero_.get_mount() == Mount::Fly ? 200.0f : 100.0f;
-            float vel = speed * dt;
-            float dx = dir.x * vel;
-            float dy = dir.y * vel;
-
-            auto manifold = hero_.move(dx, dy, map_, scene_switcher_->state().continent);
-            hero_.set_position(manifold.new_position);
-
-            if (manifold.collided) {
-                for (auto &tile : manifold.collided_tiles) {
-                    collide(tile);
-                }
+            if (move_flags_) {
+                move_hero(dt);
             }
-            else if (manifold.out_of_bounds) {
-                set_state(GameState::SailNext);
+            else if (!controls_locked_) {
+                hero_.set_moving(false);
             }
-            else {
-                if (manifold.changed_tile) {
-                    hero_.set_tile_info(manifold.new_tile);
-                    if (hero_.get_mount() == Mount::Boat && manifold.new_tile.id == Tile_Grass) {
-                        hero_.set_mount(Mount::Walk);
-                    }
-                    update_visited_tiles();
-                }
-            }
-
-            update_camera();
-        }
-        else if (!controls_locked_) {
-            hero_.set_moving(false);
         }
 
         map_.update(dt);
         hero_.animate(dt);
         hud_.update(dt);
 
-        const auto &hero_tile = hero_.get_tile();
-        const auto &hero_pos = hero_.get_position();
-
-        int continent = scene_switcher_->state().continent;
-
         if (timestop_) {
-            timestop_timer_ += dt;
-            if (timestop_timer_ >= 0.25f) {
-                timestop_left_--;
-                timestop_timer_ = 0;
-                hud_.set_timestop(timestop_left_);
-            }
-            if (timestop_left_ == 0) {
-                hud_.clear_timestop();
-                timestop_ = false;
-            }
-
-            for (auto &mob : mobs_[continent]) {
-                mob.entity.animate(dt);
-            }
+            update_timestop(dt);
         }
         else {
-            clock_ += dt;
-            if (clock_ >= 16) {
-                clock_ = 0;
-                int &days = scene_switcher_->state().days;
-                days--;
-                if (days == 0) {
-                    set_state(GameState::LoseGame);
-                }
-                else {
-                    days_passed_this_week++;
-                    if (days_passed_this_week == 5) {
-                        days_passed_this_week = 0;
-                        set_state(GameState::WeekPassed);
-                        weeks_passed_++;
-                        end_of_week(false);
-                    }
-                    hud_.update_state();
-                }
-            }
-
-            for (int i = 0; i < mobs_[continent].size(); i++) {
-                auto &mob = mobs_[continent][i];
-                if (mob.dead) {
-                    continue;
-                }
-
-                if (std::abs(hero_tile.tx - mob.tile.x) < 4 && std::abs(hero_tile.ty - mob.tile.y) < 4) {
-                    auto &mob_pos = mob.entity.get_position();
-
-                    float distance_x = std::abs(hero_pos.x - mob_pos.x);
-                    float distance_y = std::abs(hero_pos.y - mob_pos.y);
-
-                    glm::vec2 dir {0.0f, 0.0f};
-
-                    if (distance_x > 3.0f) {
-                        dir.x = hero_pos.x > mob_pos.x ? 1.0f : -1.0f;
-                    }
-
-                    if (distance_y > 3.0f) {
-                        dir.y = hero_pos.y > mob_pos.y ? 1.0f : -1.0f;
-                    }
-
-                    if (hero_.get_mount() == Mount::Walk && distance_x < 12.0f && distance_y < 12.0f) {
-                        for (int j = 0; j < friendlies_[continent].size(); j++) {
-                            if (friendlies_[continent][j] == &mob) {
-                                join_unit_ = i;
-                                int size = 0;
-                                for (int i = 0; i < 5; i++) {
-                                    if (scene_switcher_->state().army[i] != -1) {
-                                        size++;
-                                    }
-                                }
-                                if (size == 5) {
-                                    set_state(GameState::JoinFlee);
-                                }
-                                else {
-                                    set_state(GameState::JoinDialog);
-                                }
-                                return;
-                            }
-                        }
-
-                        scene_switcher_->state().enemy_army = mob.army;
-                        scene_switcher_->state().enemy_counts = mob.counts;
-                        scene_switcher_->state().enemy_index = i;
-                        scene_switcher_->fade_to(SceneId::Battle, true);
-                        return;
-                    }
-
-                    mob.entity.animate(dt);
-                    mob.entity.set_flip(hero_pos.x < mob_pos.x);
-
-                    float speed = 70.0f;
-                    float vel = speed * dt;
-                    float dx = dir.x * vel;
-                    float dy = dir.y * vel;
-
-                    auto manifold = mob.entity.move(dx, dy, map_, scene_switcher_->state().continent);
-
-                    mob.entity.set_position(manifold.new_position);
-
-                    for (auto j = 0u; j < mobs_[continent].size(); j++) {
-                        if (i == j || mobs_[continent][j].dead) {
-                            continue;
-                        }
-
-                        auto &other_mob = mobs_[continent][j];
-                        auto &other_mob_pos = other_mob.entity.get_position();
-
-                        distance_x = std::abs(mob_pos.x - other_mob_pos.x);
-                        distance_y = std::abs(mob_pos.y - other_mob_pos.y);
-
-                        if (distance_x > 48.0f * 4 || distance_y > 40.0f * 4) {
-                            continue;
-                        }
-
-                        if (dir.x > 0.5f && other_mob_pos.x > mob_pos.x && distance_x < 12.0f) {
-                            mob.entity.Transformable::move(-dx, 0.0f);
-                        }
-                        else if (dir.x < -0.5f && other_mob_pos.x < mob_pos.x && distance_x < 12.0f) {
-                            mob.entity.Transformable::move(-dx, 0.0f);
-                        }
-                        if (dir.y > 0.5f && other_mob_pos.y > mob_pos.y && distance_y < 8.0f) {
-                            mob.entity.Transformable::move(0.0f, -dy);
-                        }
-                        else if (dir.y < -0.5f && other_mob_pos.y < mob_pos.y && distance_y < 8.0f) {
-                            mob.entity.Transformable::move(0.0f, -dy);
-                        }
-                    }
-
-                    auto tile = mob.entity.get_tile();
-                    mob.tile.x = tile.tx;
-                    mob.tile.y = tile.ty;
-                }
-            }
+            update_day_clock(dt);
+            update_mobs(dt);
         }
     }
-    else if (state_ == GameState::Paused || state_ == GameState::ViewContinent || state_ == GameState::UseMagic || state_ == GameState::ViewContract || state_ == GameState::ViewPuzzle || state_ == GameState::Dismiss) {
+    else if (state_ == GameState::ViewContinent || state_ == GameState::ViewContract || state_ == GameState::ViewPuzzle) {
         hud_.update(dt);
-        pause_menu_.animate(dt);
     }
     if (state_ == GameState::ViewArmy) {
         view_army_.update(dt);
@@ -1251,18 +572,8 @@ void Game::update(float dt)
     else if (state_ == GameState::ViewContinent) {
         view_continent_.update(dt);
     }
-    else if (state_ == GameState::UseMagic) {
-        use_magic_.animate(dt);
-    }
     else if (state_ == GameState::ViewPuzzle) {
         view_puzzle_.update(dt);
-    }
-    else if (state_ == GameState::Dismiss) {
-        hero_.animate(dt);
-        dismiss_.animate(dt);
-    }
-    else if (state_ == GameState::SailNext) {
-        sail_dialog_.animate(dt);
     }
     else if (state_ == GameState::Town) {
         hud_.update(dt);
@@ -1275,15 +586,13 @@ void Game::update(float dt)
     else if (state_ == GameState::KingsCastle) {
         kings_castle_.update(dt);
     }
-    else if (state_ == GameState::JoinDialog) {
-        join_dialog_.animate(dt);
-    }
-    else if (state_ == GameState::Message) {
-        message_.animate(dt);
-    }
 
     if (tmp_hud) {
         state_ = GameState::HudMessage;
+    }
+
+    for (auto &[dialog, _] : dialogs_) {
+        dialog->animate(dt);
     }
 }
 
@@ -1391,67 +700,9 @@ void Game::update_visited_tiles()
     }
 }
 
-void Game::update_spells()
+void Game::end_week_budget()
 {
-    bool no_spells = true;
-    int *spells = scene_switcher_->state().spells;
-
-    for (int i = 0; i < 7; i++) {
-        use_magic_.set_option_disabled(i, spells[(i + 7) % 14] == 0);
-        if (spells[(i + 7) % 14] != 0) {
-            no_spells = false;
-        }
-    }
-
-    if (no_spells) {
-        hud_.set_title("You have no Adventuring spell to cast!");
-    }
-
-    int n = 0;
-
-    magic_spells_[n]->set_string(fmt::format("{} Bridge", spells[7]));
-    n++;
-    magic_spells_[n]->set_string(fmt::format("{} Time Stop", spells[8]));
-    n++;
-    magic_spells_[n]->set_string(fmt::format("{} Find Villain", spells[9]));
-    n++;
-    magic_spells_[n]->set_string(fmt::format("{} Castle Gate", spells[10]));
-    n++;
-    magic_spells_[n]->set_string(fmt::format("{} Town Gate", spells[11]));
-    n++;
-    magic_spells_[n]->set_string(fmt::format("{} Instant Army", spells[12]));
-    n++;
-    magic_spells_[n]->set_string(fmt::format("{} Raise Control", spells[13]));
-    n++;
-    magic_spells_[n]->set_string(fmt::format("{} Clone", spells[0]));
-    n++;
-    magic_spells_[n]->set_string(fmt::format("{} Teleport", spells[1]));
-    n++;
-    magic_spells_[n]->set_string(fmt::format("{} Fireball", spells[2]));
-    n++;
-    magic_spells_[n]->set_string(fmt::format("{} Lightning", spells[3]));
-    n++;
-    magic_spells_[n]->set_string(fmt::format("{} Freeze", spells[4]));
-    n++;
-    magic_spells_[n]->set_string(fmt::format("{} Resurrect", spells[5]));
-    n++;
-    magic_spells_[n]->set_string(fmt::format("{} Turn Undead", spells[6]));
-}
-
-void Game::end_of_week(bool search)
-{
-    std::string week = fmt::format("Week #{}", weeks_passed_);
-
-    int unit = rand() % UnitId::UnitCount;
-
-    const auto &name = kUnits[unit].name_singular;
-
-    astrology_.set_line(0, week);
-    astrology_.set_line(1, fmt::format("Astrologers proclaim:\nWeek of the {}\n\nAll {} dwellings are\nrepopulated.", name, name));
-
     auto &state = scene_switcher_->state();
-
-    std::string on_hand = bty::number_with_ks(state.gold);
 
     int army_total = 0;
     int commission = state.commission;
@@ -1466,49 +717,86 @@ void Game::end_of_week(bool search)
     int boat = state.boat_rented ? (state.artifacts_found[ArtiAnchorOfAdmirality] ? 100 : 500) : 0;
     int balance = (commission + gold) - boat;
 
+    std::vector<DialogDef::StringDef> strings;
+
     for (int i = 0; i < 5; i++) {
         if (state.army[i] == -1) {
-            budget_.set_line(7 + i, "");
             continue;
         }
 
         const auto &unit = kUnits[state.army[i]];
+
         int weekly_cost = unit.weekly_cost * state.army_counts[i];
         if (balance > weekly_cost || balance - weekly_cost == 0) {
             balance -= weekly_cost;
             army_total += weekly_cost;
+
             std::string cost = bty::number_with_ks(weekly_cost);
             std::string spaces(14 - (cost.size() + unit.name_plural.size()), ' ');
-            budget_.set_line(7 + i, fmt::format("{}{}{}", unit.name_plural, spaces, cost));
+            strings.push_back({15, 3 + i, fmt::format("{}{}{}", unit.name_plural, spaces, cost)});
         }
         else {
-            std::string leave = "Leave";
-            std::string spaces(14 - (leave.size() + unit.name_plural.size()), ' ');
-            budget_.set_line(7 + i, fmt::format("{}{}{}", unit.name_plural, spaces, leave));
             state.army[i] = -1;
             state.army_counts[i] = -1;
+
+            std::string spaces(14 - (5 + unit.name_plural.size()), ' ');
+            strings.push_back({15, 3 + i, fmt::format("{}{}Leave", unit.name_plural, spaces)});
         }
     }
 
-    sort_army(scene_switcher_->state().army, scene_switcher_->state().army_counts, 5);
+    sort_army(state.army, state.army_counts, 5);
 
     bool out_of_money = (boat + army_total) > (gold + commission);
     if (!out_of_money) {
-        balance = (commission + gold) - (boat - army_total);
+        balance = (commission + gold) - (boat + army_total);
     }
+
+    strings.push_back({1, 1, fmt::format("Week #{}", weeks_passed_)});
+    strings.push_back({23, 1, "Budget"});
+    strings.push_back({1, 3, fmt::format("On Hand: {}", bty::number_with_ks(state.gold))});
+    strings.push_back({1, 4, fmt::format("Payment: {:>4}", commission)});
+    strings.push_back({1, 5, fmt::format("Boat: {:>7}", boat)});
+    strings.push_back({1, 6, fmt::format("Army: {:>7}", army_total)});
+    strings.push_back({1, 7, fmt::format("Balance: {:>4}", bty::number_with_ks(balance))});
 
     state.gold = balance;
 
-    budget_.set_line(0, week);
-    budget_.set_line(2, fmt::format("On Hand: {:>4}", on_hand));
-    budget_.set_line(3, fmt::format("Payment: {:>4}", commission));
-    budget_.set_line(4, fmt::format("Boat: {:>7}", boat));
-    budget_.set_line(5, fmt::format("Army: {:>7}", army_total));
-    budget_.set_line(6, fmt::format("Balance: {:>4}", bty::number_with_ks(balance)));
+    show_dialog({
+        .x = 1,
+        .y = 18,
+        .w = 30,
+        .h = 9,
+        .strings = strings,
+    });
 
-    if ((state.army[0] == -1 || out_of_money) && search) {
-        set_state(GameState::Disgrace);
+    if (state.army[0] == -1 || out_of_money) {
+        disgrace();
     }
+}
+
+void Game::end_week_astrology()
+{
+    int unit = rand() % UnitId::UnitCount;
+    const auto &name = kUnits[unit].name_singular;
+
+    show_dialog({
+        .x = 1,
+        .y = 18,
+        .w = 30,
+        .h = 9,
+        .strings = {
+            {1, 1, fmt::format("Week #{}", weeks_passed_)},
+            {1, 3, fmt::format("Astrologers proclaim:\nWeek of the {}\n\nAll {} dwellings are\nrepopulated.", name, name)},
+        },
+        .callbacks = {
+            .confirm = [this](int) {
+                end_week_budget();
+            },
+        },
+    });
+
+    auto &state = scene_switcher_->state();
+    state.leadership = state.permanent_leadership;
 }
 
 void Game::sort_army(int *army, int *counts, int max)
@@ -1533,6 +821,11 @@ void Game::setup_game()
     set_state(GameState::Unpaused);
 
     auto &state = scene_switcher_->state();
+
+    for (int i = 0; i < 26; i++) {
+        visited_towns_[i] = false;
+        visited_castles_[i] = false;
+    }
 
     /* Misc */
     controls_locked_ = false;
@@ -1570,24 +863,13 @@ void Game::setup_game()
     /* Update box colours */
     auto color = bty::get_box_color(state.difficulty_level);
     hud_.set_color(color);
-    pause_menu_.set_color(color);
-    use_magic_.set_color(color);
     view_army_.set_color(color);
     view_character_.set_color(color);
     view_continent_.set_color(color);
     view_contract_.set_color(color);
-    astrology_.set_color(color);
-    budget_.set_color(color);
     town_.set_color(color);
-    sail_dialog_.set_color(color);
-    dismiss_.set_color(color);
     kings_castle_.set_color(color);
-    join_dialog_.set_color(color);
-    join_flee_.set_color(color);
     shop_.set_color(color);
-    found_map_.set_color(color);
-    found_local_map_.set_color(color);
-    message_.set_color(color);
 
     /* Add starting army */
     for (int i = 0; i < 5; i++) {
@@ -1626,15 +908,11 @@ void Game::setup_game()
     state.contract = 17;
     state.gold = kStartingGold[state.hero_id];
     state.commission = kRankCommission[state.hero_id][0];
-    state.leadership = kRankLeadership[state.hero_id][0];
+    state.permanent_leadership = kRankLeadership[state.hero_id][0];
+    state.leadership = state.permanent_leadership;
     state.max_spells = kRankSpells[state.hero_id][0];
     state.spell_power = kRankSpellPower[state.hero_id][0];
     state.followers_killed = 0;
-
-    /* Reset dialogs */
-    pause_menu_.set_selection(0);
-    use_magic_.set_selection(0);
-    dismiss_.set_selection(0);
 
     if (state.hero_id == 2) {
         state.magic = true;
@@ -2360,12 +1638,28 @@ void Game::disgrace()
     state.army[3] = -1;
     state.army[4] = -1;
     state.army_counts[0] = 20;
-    state.army_counts[0] = 0;
-    state.army_counts[0] = 0;
-    state.army_counts[0] = 0;
-    state.army_counts[0] = 0;
+    state.army_counts[1] = 0;
+    state.army_counts[2] = 0;
+    state.army_counts[3] = 0;
+    state.army_counts[4] = 0;
 
     update_camera();
+
+    show_dialog({
+        .x = 1,
+        .y = 18,
+        .w = 30,
+        .h = 9,
+        .strings = {
+            {1, 1, "After being disgraced on the"},
+            {5, 2, "field of battle, King"},
+            {2, 3, "Maximus summons you to his"},
+            {3, 4, "castle. After a lesson in"},
+            {4, 5, "tactics, he reluctantly"},
+            {1, 6, "reissues your commission and"},
+            {4, 7, "sends you on your way."},
+        },
+    });
 }
 
 void Game::lose_game()
@@ -2397,20 +1691,30 @@ void Game::view_puzzle()
 
 void Game::dismiss()
 {
-    int opt = dismiss_.get_selection();
-    dismiss_.clear_options();
-
     auto &state = scene_switcher_->state();
+
+    std::vector<DialogDef::StringDef> options;
 
     for (int i = 0; i < 5; i++) {
         if (state.army[i] != -1) {
-            dismiss_.add_option(11, 3 + i, kUnits[state.army[i]].name_plural);
+            options.push_back({11, 3 + i, kUnits[state.army[i]].name_plural});
         }
     }
 
-    if (opt > 0) {
-        dismiss_.set_selection(opt - 1);
-    }
+    show_dialog({
+        .x = 1,
+        .y = 18,
+        .w = 30,
+        .h = 9,
+        .strings = {{5, 1, "Dismiss which army?"}},
+        .options = options,
+        .callbacks = {
+            .confirm = [this](int opt) {
+                dismiss_slot(opt);
+                dismiss();
+            },
+        },
+    });
 }
 
 void Game::dismiss_slot(int slot)
@@ -2459,40 +1763,17 @@ void Game::set_state(GameState state)
         case GameState::ViewContinent:
             view_continent();
             break;
-        case GameState::UseMagic:
-            update_spells();
-            break;
         case GameState::ViewContract:
             view_contract();
             break;
-        case GameState::WeekPassed:
-            weeks_passed_++;
-            end_of_week(false);
-            break;
         case GameState::ViewPuzzle:
             view_puzzle();
-            break;
-        case GameState::Dismiss:
-            dismiss();
-            hud_.update_state();
-            break;
-        case GameState::Disgrace:
-            disgrace();
-            break;
-        case GameState::SailNext:
-            sail_next();
             break;
         case GameState::KingsCastle:
             kings_castle_.view();
             break;
         case GameState::Shop:
             shop_.view(shops_[scene_switcher_->state().continent][shop_index_]);
-            break;
-        case GameState::JoinDialog:
-            setup_join_dialog();
-            break;
-        case GameState::JoinFlee:
-            setup_join_flee();
             break;
         default:
             break;
@@ -2503,43 +1784,30 @@ void Game::set_state(GameState state)
 
 void Game::clear_movement()
 {
-    move_flags_ = MOVE_FLAGS_NONE;
+    move_flags_ = DIR_FLAG_NONE;
     hero_.set_moving(false);
-}
-
-void Game::sail_next()
-{
-    sail_dialog_.clear_options();
-
-    auto &state = scene_switcher_->state();
-
-    for (int i = 0; i < 4; i++) {
-        if (state.maps_found[i]) {
-            sail_dialog_.add_option(10, 3 + i, kContinents[i]);
-        }
-    }
 }
 
 void Game::sail_to(int continent)
 {
     if (continent == scene_switcher_->state().continent) {
-        auto pos = hero_.get_position();
+        auto pos = hero_.get_center();
 
         auto_move_dir_ = {0, 0};
 
-        if (pos.x <= 0) {
+        if (pos.x < 0) {
             auto_move_dir_.x = 1;
             hero_.set_flip(false);
         }
-        else if (pos.x >= 48 * 64) {
+        else if (pos.x > 48 * 64) {
             auto_move_dir_.x = -1;
             hero_.set_flip(true);
         }
 
-        if (pos.y <= 0) {
+        if (pos.y < 0) {
             auto_move_dir_.y = 1;
         }
-        else if (pos.y >= 40 * 64) {
+        else if (pos.y > 40 * 64) {
             auto_move_dir_.y = -1;
         }
 
@@ -2751,99 +2019,64 @@ void Game::use_spell(int spell)
 {
     auto &state = scene_switcher_->state();
 
-    bool no_spells {true};
-    for (int i = 0; i < 7; i++) {
-        if (state.spells[i + 7]) {
-            no_spells = false;
-            break;
-        }
-    }
-    if (no_spells) {
+    if (false && !state.magic) {
+        show_dialog({
+            .x = 6,
+            .y = 10,
+            .w = 20,
+            .h = 10,
+            .strings = {
+                {2, 1, "You haven't been"},
+                {1, 2, "trained in the art"},
+                {3, 3, "of spellcasting"},
+                {3, 4, "yet. Visit the"},
+                {2, 5, "Archmage Aurange"},
+                {2, 6, "in Continentia at"},
+                {3, 7, "11,19 for this"},
+                {6, 8, "ability."},
+            },
+        });
         return;
     }
 
-    if (0 && !state.magic) {
-        set_state(GameState::UntrainedInMagic);
-        return;
-    }
-
-    assert(spell + 7 > -1 && spell + 7 < 14);
     state.spells[spell + 7]--;
 
     switch (spell) {
         case 0:
-            set_state(GameState::Bridge);
+            spell_bridge();
             break;
         case 1:
-            timestop_ = true;
-            timestop_timer_ = 0;
-            timestop_left_ += state.spell_power * 10;
-            if (timestop_left_ > 9999) {
-                timestop_left_ = 9999;
-            }
-            hud_.set_timestop(timestop_left_);
-            set_state(GameState::Unpaused);
+            spell_timestop();
             break;
         case 2:
-            if (state.contract < 17) {
-                state.known_villains[state.contract] = true;
-            }
-            set_state(GameState::ViewContract);
+            spell_find_villain();
+            break;
+        case 3:
+            spell_tc_gate(false);
+            break;
+        case 4:
+            spell_tc_gate(true);
             break;
         case 5:
-            instant_army();
+            spell_instant_army();
+            break;
+        case 6:
+            spell_raise_control();
             break;
         default:
             break;
     }
 }
 
-void Game::bridge(int direction)
+void Game::place_bridge_at(int x, int y, int continent, bool horizontal)
 {
-    const auto &hero_tile = hero_.get_tile();
-    const int continent = scene_switcher_->state().continent;
+    auto destination = map_.get_tile(x, y, continent);
 
-    if (direction == MOVE_FLAGS_LEFT) {
-        auto tile = map_.get_tile(hero_tile.tx - 1, hero_tile.ty, continent);
-        if (tile.id != -1 && tile.id >= Tile_WaterIRT && tile.id <= Tile_Water) {
-            map_.set_tile(tile, continent, Tile_BridgeHorizontal);
-            set_state(GameState::Unpaused);
-        }
-        else {
-            bridge_fail();
-        }
-    }
-    else if (direction == MOVE_FLAGS_RIGHT) {
-        auto tile = map_.get_tile(hero_tile.tx + 1, hero_tile.ty, continent);
-        if (tile.id != -1 && tile.id >= Tile_WaterIRT && tile.id <= Tile_Water) {
-            map_.set_tile(tile, continent, Tile_BridgeHorizontal);
-            set_state(GameState::Unpaused);
-        }
-        else {
-            bridge_fail();
-        }
-    }
-    else if (direction == MOVE_FLAGS_UP) {
-        auto tile = map_.get_tile(hero_tile.tx, hero_tile.ty - 1, continent);
-        if (tile.id != -1 && tile.id >= Tile_WaterIRT && tile.id <= Tile_Water) {
-            map_.set_tile(tile, continent, Tile_BridgeVertical);
-            set_state(GameState::Unpaused);
-        }
-        else {
-            bridge_fail();
-        }
-    }
-    else if (direction == MOVE_FLAGS_DOWN) {
-        auto tile = map_.get_tile(hero_tile.tx, hero_tile.ty + 1, continent);
-        if (tile.id != -1 && tile.id >= Tile_WaterIRT && tile.id <= Tile_Water) {
-            map_.set_tile(tile, continent, Tile_BridgeVertical);
-            set_state(GameState::Unpaused);
-        }
-        else {
-            bridge_fail();
-        }
+    if (destination.id == -1 || destination.id < Tile_WaterIRT || destination.id > Tile_Water) {
+        bridge_fail();
     }
     else {
+        map_.set_tile({x, y, -1}, continent, horizontal ? Tile_BridgeHorizontal : Tile_BridgeVertical);
     }
 }
 
@@ -2945,21 +2178,17 @@ void Game::teleport_cave(const Tile &tile)
     update_camera();
 }
 
-void Game::join_confirm()
+void Game::join_confirm(int opt)
 {
     auto &state = scene_switcher_->state();
 
-    switch (join_dialog_.get_selection()) {
+    switch (opt) {
         case 0:
-            add_unit_to_army(mobs_[state.continent][join_unit_].army[0], mobs_[state.continent][join_unit_].counts[0]);
+
             break;
         default:
             break;
     }
-
-    mobs_[state.continent][join_unit_].dead = true;
-
-    join_unit_ = -1;
 
     set_state(GameState::Unpaused);
 }
@@ -2991,20 +2220,6 @@ std::string get_descriptor(int count)
     return kDescriptors[descriptor];
 }
 
-void Game::setup_join_dialog()
-{
-    int continent = scene_switcher_->state().continent;
-
-    join_dialog_.set_line(0, fmt::format("{} {}", get_descriptor(mobs_[continent][join_unit_].counts[0]), kUnits[mobs_[continent][join_unit_].army[0]].name_plural));
-}
-
-void Game::setup_join_flee()
-{
-    int continent = scene_switcher_->state().continent;
-
-    join_flee_.set_line(0, fmt::format("{} {}", get_descriptor(mobs_[continent][join_unit_].counts[0]), kUnits[mobs_[continent][join_unit_].army[0]].name_plural));
-}
-
 void Game::shop(const Tile &tile)
 {
     auto &state = scene_switcher_->state();
@@ -3025,193 +2240,49 @@ void Game::shop(const Tile &tile)
 
 void Game::chest(const Tile &tile)
 {
-    chest_ = true;
-
     auto &state = scene_switcher_->state();
 
     map_.set_tile(tile, state.continent, Tile_Grass);
 
-    if (tile.tx == sail_maps_[state.continent].x && tile.ty == sail_maps_[state.continent].y) {
+    if (state.continent < 3 && tile.tx == sail_maps_[state.continent].x && tile.ty == sail_maps_[state.continent].y) {
         state.maps_found[state.continent + 1] = true;
         hud_.set_title("You found a map!");
-        found_map_continent_->set_string(kContinents[state.continent + 1]);
-        set_state(GameState::FoundSailMap);
+        show_dialog({
+            .x = 1,
+            .y = 18,
+            .w = 30,
+            .h = 9,
+            .strings = {
+                {3, 2, "Hidden within an ancient"},
+                {3, 3, "chest, you find maps and"},
+                {1, 4, "charts describing passage to"},
+                {10, 6, kContinents[state.continent + 1]},
+            },
+        });
     }
     else if (tile.tx == local_maps_[state.continent].x && tile.ty == local_maps_[state.continent].y) {
         state.local_maps_found[state.continent] = true;
         view_continent_fog_ = false;
-        set_state(GameState::FoundLocalMap);
+        show_dialog({
+            .x = 1,
+            .y = 18,
+            .w = 30,
+            .h = 9,
+            .strings = {
+                {3, 2, "Perring through a magical"},
+                {1, 3, "orb you are able to view the"},
+                {2, 4, "entire continent. Your map"},
+                {3, 5, "of this area is complete."},
+            },
+            .callbacks = {
+                .confirm = [this](int opt) {
+                    set_state(GameState::ViewContinent);
+                },
+            },
+        });
     }
     else {
-        message_.clear();
-        message_.clear_options();
-
-        static constexpr int kChestChanceGold[] = {
-            61,
-            66,
-            76,
-            71,
-        };
-
-        static constexpr int kChestChanceCommission[] = {
-            81,
-            86,
-            86,
-            81,
-        };
-
-        static constexpr int kChestChanceSpellPower[] = {
-            0,
-            87,
-            88,
-            86,
-        };
-
-        static constexpr int kChestChanceSpellCapacity[] = {
-            86,
-            92,
-            93,
-            91,
-        };
-
-        static constexpr int kChestChanceAddSpell[] = {
-            101,
-            101,
-            101,
-            101,
-        };
-
-        int roll = rand() % 100;
-        if (roll < kChestChanceGold[state.continent]) {
-            static constexpr int kGoldBase[] = {
-                5,
-                16,
-                21,
-                31,
-            };
-
-            static constexpr int kGoldExtra[] = {
-                0,
-                4,
-                9,
-                19,
-            };
-
-            roll = rand() % kGoldBase[state.continent];
-            int gold = kGoldExtra[state.continent] + (roll + 1) * 100;
-            int leadership = state.artifacts_found[ArtiRingOfHeroism] ? gold / 25 : gold / 50;
-
-            message_.set_size(30, 9);
-            message_.set_position(1, 18);
-            message_.clear();
-            message_.add_line(1, 1, R"raw(After scouring the area,
-you fall upon a hidden
-treasure cache. You may:)raw");
-            message_.add_option(3, 4, fmt::format("Take the {} gold.", gold));
-            message_.add_option(3, 5, fmt::format(R"raw(Distribute the gold to the
- peasants, increasing your
- leadership by {}.)raw",
-                                                  leadership));
-            set_state(GameState::Message);
-
-            chest_gold_ = gold;
-            chest_leadership_ = leadership;
-        }
-        else if (roll < kChestChanceCommission[state.continent]) {
-            static constexpr int kCommissionBase[] = {
-                41,
-                51,
-                101,
-                45,
-            };
-
-            static constexpr int kCommissionExtra[] = {
-                9,
-                49,
-                99,
-                199,
-            };
-
-            roll = rand() % kCommissionBase[state.continent];
-            int commission = kCommissionExtra[state.continent] + roll + 1;
-            if (commission > 999) {
-                commission = 999;
-            }
-
-            message_.set_size(30, 9);
-            message_.set_position(1, 18);
-            message_.clear();
-            message_.add_line(1, 1, fmt::format(R"raw(  After surveying the area,
-   you discover that it is
-  rich in mineral deposits.
-
-  The King rewards you for
-   your find by increasing
-  your weekly income by {}.)raw",
-                                                commission));
-            set_state(GameState::Message);
-            state.commission += commission;
-        }
-        else if (roll < kChestChanceSpellPower[state.continent]) {
-            message_.set_size(30, 9);
-            message_.set_position(1, 18);
-            message_.clear();
-            message_.add_line(1, 1, R"raw(  Traversing the area, you
-  stumble upon a timeworn
-   canister. Curious, you
-     unstop the bottle,
- releasing a powerful genie,
-    who raises your Spell
-   Power by 1 and vanishes.)raw");
-            set_state(GameState::Message);
-            state.spell_power++;
-        }
-        else if (roll < kChestChanceSpellCapacity[state.continent]) {
-            static constexpr int kSpellCapacityBase[] = {
-                1,
-                1,
-                2,
-                2,
-            };
-
-            int capacity = state.artifacts_found[ArtiRingOfHeroism] ? kSpellCapacityBase[state.continent] * 2 : kSpellCapacityBase[state.continent];
-
-            message_.set_size(30, 9);
-            message_.set_position(1, 18);
-            message_.clear();
-            message_.add_line(1, 1, fmt::format(R"raw(A tribe of nomads greet you
-and your army warmly. Their
-   shaman, in awe of your
-  prowess, teaches you the
-secret of his tribe's magic.
-Your maximum spell capacity
-     is increased by {}.)raw",
-                                                capacity));
-            set_state(GameState::Message);
-
-            state.max_spells += capacity;
-        }
-        else {    // spell
-            int amount = (rand() % (state.continent + 1)) + 1;
-            int spell = rand() % 14;
-
-            message_.set_size(30, 9);
-            message_.set_position(1, 18);
-            message_.clear();
-            message_.add_line(1, 1, fmt::format(R"raw(     You have captured a
-  mischievous imp which has
-    been terrorizing the
-   region. In exchange for
-  its release, you receive:
-  
-      {} {} spell{}.)raw",
-                                                amount,
-                                                kSpellNames[spell],
-                                                amount == 1 ? "" : "s"));
-            set_state(GameState::Message);
-
-            state.spells[spell] += amount;
-        }
+        chest_roll(state, std::bind(&Game::show_dialog, this, std::placeholders::_1));
     }
 }
 
@@ -3224,24 +2295,680 @@ void Game::view_continent()
         view_continent_fog_ ? scene_switcher_->state().visited_tiles[scene_switcher_->state().continent].data() : map_.get_data(scene_switcher_->state().continent));
 }
 
-void Game::chest_confirm()
+bty::Dialog *Game::show_dialog(const DialogDef &dialog_)
 {
-    if (message_.get_selection() != -1) {
-        auto &state = scene_switcher_->state();
-        if (message_.get_selection() == 0) {
-            state.gold += chest_gold_;
-        }
-        else {
-            state.leadership += chest_leadership_;
-        }
-        chest_gold_ = 0;
-        chest_leadership_ = 0;
+    auto dialog = std::make_shared<bty::Dialog>();
+    dialog->create(dialog_.x, dialog_.y, dialog_.w, dialog_.h, bty::get_box_color(scene_switcher_->state().difficulty_level), *assets_);
+    for (const auto &str : dialog_.strings) {
+        dialog->add_line(str.x, str.y, str.str);
+    }
+    for (const auto &opt : dialog_.options) {
+        dialog->add_option(opt.x, opt.y, opt.str);
+    }
+    for (auto i = 0u; i < dialog_.visible_options.size(); i++) {
+        dialog->set_option_visibility(i++, dialog_.visible_options[i]);
+    }
+    dialogs_.push_back({dialog, dialog_});
+    return dialogs_.back().first.get();
+}
+
+static constexpr int kTownsAlphabetical[] = {
+    0x03,
+    0x0e,
+    0x07,
+    0x10,
+    0x0c,
+    0x16,
+    0x12,
+    0x15,
+    0x11,
+    0x13,
+    0x0d,
+    0x05,
+    0x09,
+    0x0f,
+    0x0b,
+    0x02,
+    0x08,
+    0x00,
+    0x06,
+    0x04,
+    0x01,
+    0x14,
+    0x18,
+    0x0a,
+    0x17,
+    0x19,
+    0x01,
+    0x02,
+    0x04,
+    0x05,
+    0x06,
+    0x08,
+};
+
+void Game::town_gate_confirm(int opt)
+{
+    static constexpr int kTownGateX[] = {
+        0x1d,
+        0x39,
+        0x26,
+        0x23,
+        0x05,
+        0x10,
+        0x0c,
+        0x09,
+        0x0d,
+        0x39,
+        0x33,
+        0x39,
+        0x03,
+        0x10,
+        0x28,
+        0x32,
+        0x3a,
+        0x38,
+        0x09,
+        0x0d,
+        0x06,
+        0x0c,
+        0x2f,
+        0x32,
+        0x03,
+        0x3a,
+    };
+
+    static constexpr int kTownGateY[] = {
+        0x0b,
+        0x04,
+        0x31,
+        0x17,
+        0x31,
+        0x2c,
+        0x3c,
+        0x26,
+        0x1b,
+        0x21,
+        0x1d,
+        0x38,
+        0x24,
+        0x15,
+        0x3a,
+        0x0e,
+        0x3b,
+        0x05,
+        0x3b,
+        0x08,
+        0x03,
+        0x04,
+        0x23,
+        0x08,
+        0x09,
+        0x2f,
+    };
+
+    hero_.move_to_tile(map_.get_tile(kTownGateX[kTownsAlphabetical[opt]], 63 - kTownGateY[kTownsAlphabetical[opt]], kTownInfo[opt].continent));
+    scene_switcher_->state().continent = kTownInfo[kTownsAlphabetical[opt]].continent;
+    update_camera();
+}
+
+void Game::castle_gate_confirm(int opt)
+{
+    spdlog::debug("Castle gate confirmed: {}", opt);
+    hero_.move_to_tile(map_.get_tile(kCastleInfo[opt].x, (63 - kCastleInfo[opt].y) + 1, kCastleInfo[opt].continent));
+    scene_switcher_->state().continent = kCastleInfo[opt].continent;
+    update_camera();
+}
+
+void Game::update_timestop(float dt)
+{
+    timestop_timer_ += dt;
+    if (timestop_timer_ >= 0.25f) {
+        timestop_left_--;
+        timestop_timer_ = 0;
+        hud_.set_timestop(timestop_left_);
+    }
+    if (timestop_left_ == 0) {
+        hud_.clear_timestop();
+        timestop_ = false;
     }
 
+    int continent = scene_switcher_->state().continent;
+
+    for (auto &mob : mobs_[continent]) {
+        mob.entity.animate(dt);
+    }
+}
+
+void Game::update_day_clock(float dt)
+{
+    clock_ += dt;
+    if (clock_ >= 16) {
+        clock_ = 0;
+        int &days = scene_switcher_->state().days;
+        days--;
+        if (days == 0) {
+            set_state(GameState::LoseGame);
+        }
+        else {
+            days_passed_this_week++;
+            if (days_passed_this_week == 5) {
+                days_passed_this_week = 0;
+                weeks_passed_++;
+                end_week_astrology();
+            }
+            hud_.update_state();
+        }
+    }
+}
+
+void Game::update_mobs(float dt)
+{
+    const auto &hero_tile = hero_.get_tile();
+    const auto &hero_pos = hero_.get_position();
+
+    int continent = scene_switcher_->state().continent;
+
+    for (int i = 0; i < mobs_[continent].size(); i++) {
+        auto &mob = mobs_[continent][i];
+        if (mob.dead) {
+            continue;
+        }
+
+        if (std::abs(hero_tile.tx - mob.tile.x) < 4 && std::abs(hero_tile.ty - mob.tile.y) < 4) {
+            auto &mob_pos = mob.entity.get_position();
+
+            float distance_x = std::abs(hero_pos.x - mob_pos.x);
+            float distance_y = std::abs(hero_pos.y - mob_pos.y);
+
+            glm::vec2 dir {0.0f, 0.0f};
+
+            if (distance_x > 3.0f) {
+                dir.x = hero_pos.x > mob_pos.x ? 1.0f : -1.0f;
+            }
+
+            if (distance_y > 3.0f) {
+                dir.y = hero_pos.y > mob_pos.y ? 1.0f : -1.0f;
+            }
+
+            if (hero_.get_mount() == Mount::Walk && distance_x < 12.0f && distance_y < 12.0f) {
+                for (int j = 0; j < friendlies_[continent].size(); j++) {
+                    if (friendlies_[continent][j] == &mob) {
+                        int size = 0;
+                        for (int i = 0; i < 5; i++) {
+                            if (scene_switcher_->state().army[i] != -1) {
+                                size++;
+                            }
+                        }
+
+                        const std::string descriptor = fmt::format("{} {}", get_descriptor(mob.counts[0]), kUnits[mob.army[0]].name_plural);
+
+                        if (size == 5) {
+                            show_dialog({
+                                .x = 1,
+                                .y = 21,
+                                .w = 30,
+                                .h = 6,
+                                .strings = {
+                                    {1, 1, descriptor},
+                                    {3, 3, " flee in terror at the\nsight of your vast army."},
+                                },
+                                .callbacks = {.confirm = [this, &mob](int) {
+                                    mob.dead = true;
+                                }},
+                            });
+                        }
+                        else {
+                            show_dialog({
+                                .x = 1,
+                                .y = 18,
+                                .w = 30,
+                                .h = 9,
+                                .strings = {
+                                    {1, 1, descriptor},
+                                    {3, 3, "with desires of greater\nglory, wish to join you."},
+                                },
+                                .options = {
+                                    {13, 6, "Accept"},
+                                    {13, 7, "Decline"},
+                                },
+                                .callbacks = {.confirm = [this, &mob](int opt) {
+                                    if (opt == 0) {
+                                        add_unit_to_army(mob.army[0], mob.counts[0]);
+                                    }
+                                    mob.dead = true;
+                                }},
+                            });
+                        }
+                        return;
+                    }
+                }
+
+                scene_switcher_->state().enemy_army = mob.army;
+                scene_switcher_->state().enemy_counts = mob.counts;
+                scene_switcher_->state().enemy_index = i;
+                scene_switcher_->fade_to(SceneId::Battle, true);
+                return;
+            }
+
+            mob.entity.animate(dt);
+            mob.entity.set_flip(hero_pos.x < mob_pos.x);
+
+            float speed = 70.0f;
+            float vel = speed * dt;
+            float dx = dir.x * vel;
+            float dy = dir.y * vel;
+
+            auto manifold = mob.entity.move(dx, dy, map_, scene_switcher_->state().continent);
+
+            mob.entity.set_position(manifold.new_position);
+
+            for (auto j = 0u; j < mobs_[continent].size(); j++) {
+                if (i == j || mobs_[continent][j].dead) {
+                    continue;
+                }
+
+                auto &other_mob = mobs_[continent][j];
+                auto &other_mob_pos = other_mob.entity.get_position();
+
+                distance_x = std::abs(mob_pos.x - other_mob_pos.x);
+                distance_y = std::abs(mob_pos.y - other_mob_pos.y);
+
+                if (distance_x > 48.0f * 4 || distance_y > 40.0f * 4) {
+                    continue;
+                }
+
+                if (dir.x > 0.5f && other_mob_pos.x > mob_pos.x && distance_x < 12.0f) {
+                    mob.entity.Transformable::move(-dx, 0.0f);
+                }
+                else if (dir.x < -0.5f && other_mob_pos.x < mob_pos.x && distance_x < 12.0f) {
+                    mob.entity.Transformable::move(-dx, 0.0f);
+                }
+                if (dir.y > 0.5f && other_mob_pos.y > mob_pos.y && distance_y < 8.0f) {
+                    mob.entity.Transformable::move(0.0f, -dy);
+                }
+                else if (dir.y < -0.5f && other_mob_pos.y < mob_pos.y && distance_y < 8.0f) {
+                    mob.entity.Transformable::move(0.0f, -dy);
+                }
+            }
+
+            auto tile = mob.entity.get_tile();
+            mob.tile.x = tile.tx;
+            mob.tile.y = tile.ty;
+        }
+    }
+}
+
+void Game::auto_move(float dt)
+{
+    control_lock_timer_ -= dt;
+    if (control_lock_timer_ <= 0) {
+        controls_locked_ = false;
+    }
+
+    float speed = 100;
+    float vel = speed * dt;
+    float dx = auto_move_dir_.x * vel;
+    float dy = auto_move_dir_.y * vel;
+
+    auto manifold = hero_.move(dx, dy, map_, scene_switcher_->state().continent);
+    hero_.set_position(manifold.new_position);
+    update_visited_tiles();
+    update_camera();
+}
+
+void Game::move_hero(float dt)
+{
+    hero_.set_moving(true);
+
+    if ((move_flags_ & DIR_FLAG_LEFT) && !(move_flags_ & DIR_FLAG_RIGHT)) {
+        hero_.set_flip(true);
+    }
+    else if ((move_flags_ & DIR_FLAG_RIGHT) && !(move_flags_ & DIR_FLAG_LEFT)) {
+        hero_.set_flip(false);
+    }
+
+    glm::vec2 dir {0.0f};
+
+    if (move_flags_ & DIR_FLAG_UP)
+        dir.y -= 1.0f;
+    if (move_flags_ & DIR_FLAG_DOWN)
+        dir.y += 1.0f;
+    if (move_flags_ & DIR_FLAG_LEFT)
+        dir.x -= 1.0f;
+    if (move_flags_ & DIR_FLAG_RIGHT)
+        dir.x += 1.0f;
+
+    float speed = hero_.get_mount() == Mount::Fly ? 200.0f : 100.0f;
+    float vel = speed * dt;
+    float dx = dir.x * vel;
+    float dy = dir.y * vel;
+
+    auto manifold = hero_.move(dx, dy, map_, scene_switcher_->state().continent);
+    hero_.set_position(manifold.new_position);
+
+    if (manifold.collided) {
+        for (auto &tile : manifold.collided_tiles) {
+            collide(tile);
+        }
+    }
+    if (auto ht = hero_.get_center(); !controls_locked_ && (ht.x < 0 || ht.x > 3072 || ht.y < 0 || ht.y > 40 * 64)) {
+        std::vector<DialogDef::StringDef> continents;
+
+        for (int i = 0; i < 4; i++) {
+            if (scene_switcher_->state().maps_found[i]) {
+                continents.push_back({10, 3 + i, kContinents[i]});
+            }
+        }
+
+        show_dialog({
+            .x = 1,
+            .y = 18,
+            .w = 30,
+            .h = 9,
+            .strings = {{3, 1, "Sail to which continent?"}},
+            .options = continents,
+            .callbacks = {
+                .confirm = std::bind(&Game::sail_to, this, std::placeholders::_1),
+            },
+        });
+    }
+    else {
+        if (manifold.changed_tile) {
+            hero_.set_tile_info(manifold.new_tile);
+            if (hero_.get_mount() == Mount::Boat && manifold.new_tile.id == Tile_Grass) {
+                hero_.set_mount(Mount::Walk);
+            }
+            update_visited_tiles();
+        }
+    }
+
+    update_camera();
+}
+
+void Game::pause()
+{
+    show_dialog({
+        .x = 3,
+        .y = 7,
+        .w = 26,
+        .h = 16,
+        .options = {
+            {3, 2, "View your army"},
+            {3, 3, "View your character"},
+            {3, 4, "Look at continent map"},
+            {3, 5, "Use magic"},
+            {3, 6, "Contract information"},
+            {3, 7, "Wait to end of week"},
+            {3, 8, "Look at puzzle pieces"},
+            {3, 9, "Search the area"},
+            {3, 10, "Dismiss army"},
+            {3, 11, "Game controls"},
+            {3, 13, "Save game"},
+        },
+        .callbacks = {
+            .confirm = std::bind(&Game::pause_confirm, this, std::placeholders::_1),
+        },
+    });
+}
+
+void Game::pause_confirm(int opt)
+{
+    switch (opt) {
+        case 0:
+            set_state(GameState::ViewArmy);
+            break;
+        case 1:
+            set_state(GameState::ViewCharacter);
+            break;
+        case 2:
+            set_state(GameState::ViewContinent);
+            break;
+        case 3:
+            use_magic();
+            break;
+        case 4:
+            set_state(GameState::ViewContract);
+            break;
+        case 5:
+            /*
+                                        9 becomes 5
+                                        8 becomes 5
+                                        7 becomes 5
+                                        etc
+                                     */
+            if ((scene_switcher_->state().days % 5) != 0) {
+                scene_switcher_->state().days = (scene_switcher_->state().days / 5) * 5;
+            }
+            /*
+                                        100 becomes 95
+                                        65 becomes 60
+                                        10 becomes 5
+                                        etc
+                                    */
+            else {
+                scene_switcher_->state().days = ((scene_switcher_->state().days / 5) - 1) * 5;
+            }
+            if (scene_switcher_->state().days == 0) {
+                set_state(GameState::LoseGame);
+            }
+            else {
+                weeks_passed_++;
+                end_week_astrology();
+            }
+            clock_ = 0;
+            hud_.update_state();
+            break;
+        case 6:
+            set_state(GameState::ViewPuzzle);
+            break;
+        case 7:
+            break;
+        case 8:
+            dismiss();
+            break;
+        default:
+            break;
+    }
+}
+
+void Game::use_magic()
+{
+    int *spells = scene_switcher_->state().spells;
+    std::vector<DialogDef::StringDef> options;
+
+    for (int i = 7; i < 14; i++) {
+        options.push_back({4, 3 + i - 7, fmt::format("{} {}", spells[i], kSpellNames[i])});
+    }
+
+    for (int i = 0; i < 7; i++) {
+        options.push_back({4, 14 + i, fmt::format("{} {}", spells[i], kSpellNames[i])});
+    }
+
+    auto *dialog = show_dialog({
+        .x = 6,
+        .y = 4,
+        .w = 20,
+        .h = 22,
+        .strings = {
+            {1, 1, "Adventuring Spells"},
+            {3, 12, "Combat Spells"},
+        },
+        .options = options,
+        .callbacks = {
+            .confirm = std::bind(&Game::use_spell, this, std::placeholders::_1),
+        },
+    });
+
+    for (int i = 7; i < 14; i++) {
+        dialog->set_option_disabled(i, true);
+    }
+
+    bool no_spells = true;
+    for (int i = 7; i < 14; i++) {
+        if (spells[i] != 0) {
+            no_spells = false;
+            break;
+        }
+    }
+
+    if (no_spells) {
+        hud_messages({"You have no Adventuring spell to cast!"});
+    }
+}
+
+void Game::spell_bridge()
+{
+    int c = scene_switcher_->state().continent;
+    auto hero_tile = hero_.get_tile();
+    int x = hero_tile.tx;
+    int y = hero_tile.ty;
+
+    show_dialog({
+        .x = 1,
+        .y = 20,
+        .w = 30,
+        .h = 7,
+        .strings = {
+            {2, 1, "Bridge in which direction?"},
+            {14, 3, " \x81\n\x84 \x82\n \x83"},
+        },
+        .callbacks = {
+            .up = {
+                [this, x, y, c](bty::Dialog &) {
+                    set_state(GameState::Unpaused);
+                    place_bridge_at(x, y - 1, c, false);
+                    dialogs_.pop_back();
+                },
+            },
+            .down = {
+                [this, x, y, c](bty::Dialog &) {
+                    set_state(GameState::Unpaused);
+                    place_bridge_at(x, y + 1, c, false);
+                    dialogs_.pop_back();
+                },
+            },
+            .left = {
+                [this, x, y, c](bty::Dialog &) {
+                    set_state(GameState::Unpaused);
+                    place_bridge_at(x - 1, y, c, true);
+                    dialogs_.pop_back();
+                },
+            },
+            .right = {
+                [this, x, y, c](bty::Dialog &) {
+                    set_state(GameState::Unpaused);
+                    place_bridge_at(x + 1, y, c, true);
+                    dialogs_.pop_back();
+                },
+            },
+        },
+    });
+}
+
+void Game::spell_timestop()
+{
+    auto &state = scene_switcher_->state();
+    timestop_ = true;
+    timestop_timer_ = 0;
+    timestop_left_ += state.spell_power * 10;
+    if (timestop_left_ > 9999) {
+        timestop_left_ = 9999;
+    }
+    hud_.set_timestop(timestop_left_);
     set_state(GameState::Unpaused);
 }
 
-void Game::instant_army()
+void Game::spell_find_villain()
+{
+    auto &state = scene_switcher_->state();
+    if (state.contract < 17) {
+        state.known_villains[state.contract] = true;
+    }
+    set_state(GameState::ViewContract);
+}
+
+void tc_gate_left(bty::Dialog &dialog);
+void tc_gate_right(bty::Dialog &dialog);
+
+void Game::spell_tc_gate(bool town)
+{
+    set_state(GameState::Unpaused);
+
+    std::vector<DialogDef::StringDef> options(26);
+    std::vector<bool> visible_options(26);
+
+    int n = 0;
+    for (int x = 0; x < 2; x++) {
+        for (int y = 0; y < 13; y++) {
+            options[n] = {
+                .x = 3 + x * 15,
+                .y = 6 + y,
+                .str = town ? kTownInfo[kTownsAlphabetical[n]].name : kCastleInfo[n].name,
+            };
+            visible_options[n] = town ? visited_towns_[n] : visited_castles_[n];
+            n++;
+        }
+    }
+
+    show_dialog({
+        .x = 1,
+        .y = 3,
+        .w = 30,
+        .h = 24,
+        .strings = {
+            {4, 3, fmt::format("{} you have been to", town ? "Towns" : "Castles")},
+            {6, 20, fmt::format("Revisit which {}?", town ? "town" : "castle")},
+        },
+        .options = options,
+        .visible_options = visible_options,
+        .callbacks = {
+            .confirm = std::bind(town ? &Game::town_gate_confirm : &Game::castle_gate_confirm, this, std::placeholders::_1),
+            .left = &tc_gate_left,
+            .right = &tc_gate_right,
+        },
+    });
+}
+
+void tc_gate_left(bty::Dialog &dialog)
+{
+    int selection = dialog.get_selection();
+    selection = (selection - 13 + 26) % 26;
+    int nearest_index = 0;
+    int nearest_distance = 26;
+    for (int i = 0; i < 13; i++) {
+        int test = selection > 12 ? (13 + i) : (i);
+        int distance = std::abs(selection - test);
+        if (distance < nearest_distance) {
+            if (dialog.get_option_visible(test)) {
+                nearest_index = test;
+                nearest_distance = distance;
+            }
+        }
+    }
+    dialog.set_selection(nearest_index);
+}
+
+void tc_gate_right(bty::Dialog &dialog)
+{
+    int selection = dialog.get_selection();
+    selection = (selection + 13) % 26;
+    int nearest_index = 0;
+    int nearest_distance = 26;
+    for (int i = 0; i < 13; i++) {
+        int test = selection > 12 ? (13 + i) : (i);
+        int distance = std::abs(selection - test);
+        if (distance < nearest_distance) {
+            if (dialog.get_option_visible(test)) {
+                nearest_index = test;
+                nearest_distance = distance;
+            }
+        }
+    }
+    dialog.set_selection(nearest_index);
+}
+
+void Game::spell_instant_army()
 {
     auto &state = scene_switcher_->state();
 
@@ -3274,17 +3001,23 @@ void Game::instant_army()
 
     int unit = kInstantArmyUnits[state.hero_rank][state.hero_id];
     int amt = state.spell_power * 3 + (rand() % state.spell_power + 2);
-
-    message_.clear();
-    message_.clear_options();
-
-    message_.set_size(30, 6);
-    message_.set_position(1, 21);
-
-    message_.add_line(1, 1, fmt::format("{} {}", get_descriptor(amt), kUnits[unit].name_plural));
-    message_.add_line(3, 3, "have joined your army.");
-
     add_unit_to_army(unit, amt);
 
-    set_state(GameState::Message);
+    show_dialog({
+        .x = 1,
+        .y = 21,
+        .w = 30,
+        .h = 6,
+        .strings = {
+            {1, 1, fmt::format("{} {}", get_descriptor(amt), kUnits[unit].name_plural)},
+            {3, 3, "have joined your army."},
+        },
+    });
+}
+
+void Game::spell_raise_control()
+{
+    auto &state = scene_switcher_->state();
+    state.leadership += state.spell_power * 100;
+    state.leadership &= 0xFFFF;
 }

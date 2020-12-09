@@ -40,6 +40,7 @@ set(MBOUNTYGL_SRC
 	src/game/kings-castle.cpp
 	src/game/shop.cpp
 	src/game/recruit-input.cpp
+	src/game/chest.cpp
 	src/battle/battle.cpp
 )
 

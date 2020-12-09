@@ -41,6 +41,8 @@ public:
     void clear_options();
     void set_option_disabled(int index, bool disabled);
     void set_option_visibility(int index, bool visible);
+    void set_cols(int cols, int dividing_index);
+    bool get_option_visible(int index) const;
 
 private:
     void update_arrow();

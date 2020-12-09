@@ -103,8 +103,6 @@ Tile Map::get_tile(int tx, int ty, int continent) const
         return {-1, -1, -1};
     }
 
-    // spdlog::debug("Get tile {} {}", tx, ty);
-
     return {tx, ty, tiles_[continent][ty * 64 + tx]};
 }
 
