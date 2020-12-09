@@ -71,12 +71,6 @@ private:
         Message,
     };
 
-    struct EventTile {
-        int x;
-        int y;
-        int c;
-    };
-
     struct Mob {
         bool dead {false};
         Entity entity;
