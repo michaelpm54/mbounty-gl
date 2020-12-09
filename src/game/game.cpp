@@ -837,7 +837,7 @@ void Game::setup_game()
 
     /* Clear spells */
     for (int i = 0; i < 14; i++) {
-        state.spells[i] = 2;
+        state.spells[i] = 0;
     }
     state.known_spells = 0;
 
@@ -1998,6 +1998,7 @@ void Game::buy_siege()
         hud_messages({"    You do not have enough gold!"});
     }
     else {
+        state.gold -= 3000;
         state.siege = true;
         hud_.update_state();
         town_.update_gold();
@@ -2019,7 +2020,7 @@ void Game::use_spell(int spell)
 {
     auto &state = scene_switcher_->state();
 
-    if (false && !state.magic) {
+    if (!state.magic) {
         show_dialog({
             .x = 6,
             .y = 10,
@@ -2785,6 +2786,16 @@ void Game::use_magic()
         options.push_back({4, 14 + i, fmt::format("{} {}", spells[i], kSpellNames[i])});
     }
 
+    bool no_spells = true;
+    for (int i = 7; i < 14; i++) {
+        if (spells[i] != 0) {
+            no_spells = false;
+            break;
+        }
+    }
+
+    auto confirm = no_spells ? std::function<void(int)>(nullptr) : std::bind(&Game::use_spell, this, std::placeholders::_1);
+
     auto *dialog = show_dialog({
         .x = 6,
         .y = 4,
@@ -2796,7 +2807,7 @@ void Game::use_magic()
         },
         .options = options,
         .callbacks = {
-            .confirm = std::bind(&Game::use_spell, this, std::placeholders::_1),
+            .confirm = confirm,
         },
     });
 
@@ -2804,16 +2815,11 @@ void Game::use_magic()
         dialog->set_option_disabled(i, true);
     }
 
-    bool no_spells = true;
-    for (int i = 7; i < 14; i++) {
-        if (spells[i] != 0) {
-            no_spells = false;
-            break;
-        }
-    }
-
     if (no_spells) {
         hud_messages({"You have no Adventuring spell to cast!"});
+        for (int i = 0; i < 7; i++) {
+            dialog->set_option_disabled(i, true);
+        }
     }
 }
 
