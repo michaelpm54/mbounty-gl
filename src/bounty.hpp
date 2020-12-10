@@ -58,6 +58,7 @@ extern int const kRankVillainsCaptured[4][4];
 
 namespace bty {
 
+int random(int max);
 std::string number_with_ks(int num);
 
 enum class BoxColor {

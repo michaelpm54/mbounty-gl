@@ -633,6 +633,11 @@ int const kVillainRewards[17] = {
 
 namespace bty {
 
+int random(int max)
+{
+    return max == 0 ? 0 : rand() % max;
+}
+
 std::string number_with_ks(int num)
 {
     if (num < 10'000) {

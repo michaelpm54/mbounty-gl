@@ -1135,7 +1135,6 @@ void Game::gen_tiles()
         auto *tiles = map_.get_data(continent);
 
         std::vector<glm::ivec2> random_tiles;
-        std::vector<int> castle_indices;
 
         int num_mobs = 0;
 
@@ -1174,26 +1173,7 @@ void Game::gen_tiles()
                     }
                 }
                 else if (id == Tile_GenCastleGate) {
-                    int castle = -1;
-                    for (int i = 0; i < 26; i++) {
-                        if (kCastleInfo[i].continent == continent && kCastleInfo[i].x == x && 63 - kCastleInfo[i].y == y) {
-                            castle = i;
-                            break;
-                        }
-                    }
-                    if (castle != -1) {
-                        castle_indices.push_back(castle);
-                        tiles[x + y * 64] = Tile_CastleB;
-                    }
-                    else {
-                        /* Not king's castle */
-                        if (continent != 0 && x != 11 && y != 56) {
-                            spdlog::warn("({}) Unknown castle at {}, {}", continent, x, 63 - y);
-                        }
-                        else {
-                            tiles[x + y * 64] = Tile_CastleB;
-                        }
-                    }
+                    tiles[x + y * 64] &= 0x7F;
                 }
                 else if (id == Tile_GenMonster) {
                     auto &mob = mobs_[continent][num_mobs++];
@@ -1224,9 +1204,6 @@ void Game::gen_tiles()
 
         rng_.seed(static_cast<unsigned int>(std::chrono::system_clock::now().time_since_epoch().count()));
         std::shuffle(std::begin(random_tiles), std::end(random_tiles), rng_);
-
-        rng_.seed(static_cast<unsigned int>(std::chrono::system_clock::now().time_since_epoch().count()));
-        std::shuffle(std::begin(castle_indices), std::end(castle_indices), rng_);
 
         int used_tiles = 0;
         glm::ivec2 tile;
@@ -1382,26 +1359,30 @@ void Game::gen_tiles()
         /* Gen castle occupants */
         int used_castles = 0;
         for (int i = 0; i < kVillainsPerContinent[continent]; i++) {
-            int castle = castle_indices[used_castles++];
+            int castle;
+            do {
+                castle = bty::random(26);
+            } while (castle_occupants_[castle] != 0x7F || kCastleInfo[castle].continent != continent);
+
+            int villain = i + kVillainIndices[continent];
 
             auto &state = scene_switcher_->state();
 
-            int villain = i + kVillainIndices[continent];
             castle_occupants_[castle] = villain;
             gen_villain_army(villain, castle_armies_[castle], castle_counts_[castle]);
-
-            /*
-            for (int j = 0; j < 6; j++) {
-                occ.army[j] = unit_gen(rng_);
-                occ.army_counts[j] = (rand() % 100) + 1;
-            }
-			*/
         }
 
         /* Turn the rest of the RNG tiles into chests */
         for (int i = used_tiles; i < random_tiles.size(); i++) {
             tiles[random_tiles[i].x + random_tiles[i].y * 64] = Tile_Chest;
         }
+    }
+
+    for (unsigned int i = 0; i < 26; i++) {
+        if (castle_occupants_[i] != 0x7F) {
+            continue;
+        }
+        gen_castle_army(kCastleInfo[i].continent, castle_armies_[i], castle_counts_[i]);
     }
 
     map_.create_geometry();

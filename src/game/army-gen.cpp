@@ -198,19 +198,14 @@ static constexpr int kVillainArmyCounts[5][17] = {
     },
 };
 
-int random(int max)
-{
-    return max == 0 ? 0 : rand() % max;
-}
-
 void gen_villain_army(int villain, std::array<int, 5> &army, std::array<int, 5> &counts)
 {
     for (int i = 0; i < 5; i++) {
         army[i] = kVillainArmies[i][villain];
         int count = kVillainArmyCounts[i][villain];
-        count += random(kVillainArmyCounts[i][villain] / 16);
-        count += random(kVillainArmyCounts[i][villain] / 32);
-        count += random(4);
+        count += bty::random(kVillainArmyCounts[i][villain] / 16);
+        count += bty::random(kVillainArmyCounts[i][villain] / 32);
+        count += bty::random(4);
         counts[i] = count;
     }
 }
@@ -374,9 +369,9 @@ static constexpr int kMaxMobCounts[4][UnitId::UnitCount] = {
 int gen_mob_count(int continent, int unit)
 {
     int bVar1 = kMaxMobCounts[continent][unit];
-    int cVar3 = ((bVar1 >> 3) ? (rand() % (bVar1 >> 3)) : 0);
-    int uVar2 = rand() % 2;
-    return uVar2 & 0xffffff00 | (unsigned int)(bVar1 + uVar2 + cVar3);
+    int cVar3 = bty::random(bVar1 / 8);
+    int uVar2 = bty::random(2);
+    return uVar2 & 0xffffff00 | (bVar1 + uVar2 + cVar3);
 }
 
 int gen_mob_unit(int continent)
@@ -412,24 +407,24 @@ void gen_mob_army(int continent, std::array<int, 5> &army, std::array<int, 5> &c
     }
 
     /* Cut 1-2 of them in half, or chop the last two off. */
-    int roll = random(3);
+    int roll = bty::random(3);
     if (roll == 0) {
-        int n = random(4);
+        int n = bty::random(4);
         counts[n] /= 2;
         if (counts[n] == 0) {
-            counts[n] = std::max(1, random(2));
+            counts[n] = std::max(1, bty::random(2));
         }
 
         /* Cut 1 of them in half, or chop the last one off. */
         /* Note: modified by me to give a higher chance of chopping one off. */
         /* I seemed to be getting 5 unit armies too often. */
         /* was: rand % 3 */
-        int a = random(4);
+        int a = bty::random(4);
         if (a == 0) {
-            n = random(5);
+            n = bty::random(5);
             counts[n] /= 2;
             if (counts[n] == 0) {
-                counts[n] = std::max(1, random(2));
+                counts[n] = std::max(1, bty::random(2));
             }
         }
         /* Chop the last one off. */
@@ -444,5 +439,22 @@ void gen_mob_army(int continent, std::array<int, 5> &army, std::array<int, 5> &c
         army[4] = -1;
         counts[3] = 0;
         counts[4] = 0;
+    }
+}
+
+void gen_castle_army(int continent, std::array<int, 5> &army, std::array<int, 5> &counts)
+{
+    for (int i = 0; i < 5; i++) {
+        army[i] = -1;
+        counts[i] = 0;
+    regen:
+        int id = gen_mob_unit(continent);
+        for (int j = 0; j < 5; j++) {
+            if (army[j] == id) {
+                goto regen;
+            }
+        }
+        army[i] = id;
+        counts[i] = gen_mob_count(continent, army[i]);
     }
 }

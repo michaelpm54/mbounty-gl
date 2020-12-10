@@ -804,10 +804,14 @@ void Battle::enter(bool reset)
         }
     }
 
+    if (check_end()) {
+        return;
+    }
+
     reset_moves();
     reset_waits();
-    active_ = {-1, -1};
-    next_unit();
+    active_ = {0, 0};
+    update_unit_info();
 
     cx_ = kStartingPositionX[0][type][0];
     cy_ = kStartingPositionY[0][type][0];
@@ -1000,12 +1004,6 @@ void Battle::next_unit()
     }
 
     delay_timer_ = 0;
-
-    if (active_ == glm::ivec2 {-1, -1}) {
-        active_ = {0, 0};
-        update_unit_info();
-        return;
-    }
 
     bool loop_back_for_waits {false};
     bool next_team {false};
@@ -1883,8 +1881,8 @@ void Battle::victory()
     }
 
     int a = gold_total;
-    gold_total += rand() % 10;
-    gold_total += rand() % (a / 8);
+    gold_total += bty::random(10);
+    gold_total += bty::random(a / 8);
 
     static constexpr char const *kShortHeroNames[] = {
         "Sir Crimsaun",
