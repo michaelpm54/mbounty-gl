@@ -33,8 +33,8 @@ struct SharedState {
     bool boat_rented {false};
     std::array<bool, 17> known_villains;
     int known_spells {0};
-    std::array<int, 6> enemy_army;
-    std::array<int, 6> enemy_counts;
+    std::array<int, 5> enemy_army;
+    std::array<int, 5> enemy_counts;
     int enemy_index;
     int followers_killed {0};
     bool disgrace {false};

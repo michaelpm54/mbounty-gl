@@ -65,8 +65,8 @@ private:
         bool dead {false};
         Entity entity;
         glm::ivec2 tile;
-        std::array<int, 6> army {-1};
-        std::array<int, 6> counts;
+        std::array<int, 5> army;
+        std::array<int, 5> counts;
     };
 
     void update_camera();
@@ -76,7 +76,7 @@ private:
     void update_spells();
     void end_week_astrology();
     void end_week_budget();
-    void sort_army(int *army, int *counts, int max);
+    void sort_army(int *army, int *counts);
     void disgrace();
     void lose_game();
     void setup_game();
