@@ -33,7 +33,7 @@ public:
     void key(int key, int action) override;
     void update(float dt) override;
 
-    void show(std::array<int, 5> &enemy_army, std::array<int, 5> &enemy_counts, bool siege);
+    void show(std::array<int, 5> &enemy_army, std::array<int, 5> &enemy_counts, bool siege, int castle_id);
 
 private:
     enum class BattleState {
@@ -181,6 +181,7 @@ private:
     const bty::Texture *siege_bg;
 
     std::array<int, 30> terrain;
+    int castle_id {-1};
 };
 
 #endif    // BTY_GAME_BATTLE_HPP_

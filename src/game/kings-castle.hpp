@@ -12,15 +12,16 @@ class Gfx;
 struct Texture;
 }    // namespace bty
 
-struct Tile;
 class SceneStack;
+class DialogStack;
 class Assets;
 class Hud;
 struct Variables;
+struct GenVariables;
 
 class KingsCastle : public Scene {
 public:
-    KingsCastle(SceneStack &ss, bty::Assets &assets, Hud &hud, Variables &v);
+    KingsCastle(SceneStack &ss, DialogStack &ds, bty::Assets &assets, Hud &hud, Variables &v, GenVariables &gen);
     void draw(bty::Gfx &gfx, glm::mat4 &camera) override;
     void key(int key, int action) override;
     void update(float dt) override;
@@ -32,11 +33,14 @@ public:
 private:
     void recruit_opt();
     void main_opt();
+    void show_audience();
 
 private:
     SceneStack &ss;
+    DialogStack &ds;
     Hud &hud;
     Variables &v;
+    GenVariables &gen;
     bty::Sprite bg_;
     bty::Sprite unit_;
     bty::Dialog dialog_;

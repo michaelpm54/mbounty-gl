@@ -97,7 +97,7 @@ Ingame::Ingame(GLFWwindow *window, SceneStack &ss, DialogStack &ds, bty::Assets 
     , view_continent(ss, assets)
     , view_contract(ss, assets, v, gen, hud.get_contract())
     , view_puzzle(ss, assets)
-    , kings_castle(ss, assets, hud, v)
+    , kings_castle(ss, ds, assets, hud, v, gen)
     , shop(ss, assets, v, gen, hud)
     , town(ss, ds, assets, v, gen, hud, view_contract)
     , s_wizard(ss, assets, v, hud)
@@ -1389,7 +1389,7 @@ void Ingame::move_hero(int move_flags, float dt)
     if (move_flags & DIR_FLAG_RIGHT)
         dir.x += 1.0f;
 
-    float speed = hero.get_mount() == Mount::Fly ? 200.0f : 100.0f;
+    float speed = hero.get_mount() == Mount::Fly ? 500.0f : 100.0f;
     float vel = speed * dt;
     float dx = dir.x * vel;
     float dy = dir.y * vel;
@@ -1654,7 +1654,7 @@ void Ingame::update_mobs(float dt)
                     }
                 }
 
-                s_battle.show(mob.army, mob.counts, false);
+                s_battle.show(mob.army, mob.counts, false, -1);
                 ss.push(&s_battle, std::bind(&Ingame::battle_pop, this, std::placeholders::_1));
                 battle_mob = i;
                 return;
@@ -1889,7 +1889,7 @@ void Ingame::collide_castle(const Tile &tile)
         .callbacks = {
             .confirm = [this, castle_id](int opt) {
                 if (opt == 0) {
-                    s_battle.show(gen.castle_armies[castle_id], gen.castle_counts[castle_id], true);
+                    s_battle.show(gen.castle_armies[castle_id], gen.castle_counts[castle_id], true, castle_id);
                     ss.push(&s_battle, std::bind(&Ingame::battle_pop, this, std::placeholders::_1));
                 }
             },
@@ -1970,6 +1970,9 @@ void Ingame::defeat_pop(int ret)
 
 void Ingame::battle_pop(int ret)
 {
+    hud.set_gold(v.gold);
+    hud.set_contract(v.contract);
+    hud.set_siege(v.siege);
     switch (ret) {
         case 0:    // victory encounter
             gen.mobs[v.continent][battle_mob].dead = true;

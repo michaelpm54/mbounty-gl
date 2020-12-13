@@ -3,6 +3,8 @@
 #include <spdlog/spdlog.h>
 
 #include "assets.hpp"
+#include "game/dialog-stack.hpp"
+#include "game/gen-variables.hpp"
 #include "game/hud.hpp"
 #include "game/scene-stack.hpp"
 #include "game/variables.hpp"
@@ -17,10 +19,12 @@ static constexpr int kKingsCastleUnits[5] = {
     Knights,
 };
 
-KingsCastle::KingsCastle(SceneStack &ss, bty::Assets &assets, Hud &hud, Variables &v)
+KingsCastle::KingsCastle(SceneStack &ss, DialogStack &ds, bty::Assets &assets, Hud &hud, Variables &v, GenVariables &gen)
     : ss(ss)
+    , ds(ds)
     , hud(hud)
     , v(v)
+    , gen(gen)
 {
     dialog_.create(1, 18, 30, 9, bty::BoxColor::Intro, assets);
     dialog_.add_line(1, 1, "Castle of King Maximus");
@@ -258,9 +262,78 @@ void KingsCastle::main_opt()
             show_recruit_ = true;
             break;
         case 1:
-            show_audience_ = true;
+            show_audience();
             break;
         default:
             break;
     }
+}
+
+void KingsCastle::show_audience()
+{
+    int num_captured = 0;
+    for (int i = 0; i < 17; i++) {
+        if (gen.villains_captured[i]) {
+            num_captured++;
+        }
+    }
+
+    int required_villains = 0;
+    if (v.rank < 3) {
+        if (num_captured < kRankVillainsCaptured[v.hero][v.rank + 1]) {
+            required_villains = kRankVillainsCaptured[v.hero][v.rank + 1] - num_captured;
+        }
+    }
+
+    ds.show_dialog({
+        .x = 1,
+        .y = 18,
+        .w = 30,
+        .h = 9,
+        .strings = {
+            {1, 1, R"raw(   Trumpets announce your
+ arrival with regal fanfare.
+
+   King Maximus rises from
+   his throne to greet you
+       and proclaims:)raw"},
+        },
+        .callbacks = {
+            .confirm = [this, required_villains](int opt) {
+                if (required_villains <= 0) {
+                    ds.show_dialog({
+                        .x = 1,
+                        .y = 18,
+                        .w = 30,
+                        .h = 9,
+                        .strings = {
+                            {1, 1, fmt::format("{},", kHeroNames[v.hero][v.rank])},
+                            {1, 3, fmt::format(R"raw(      Congratulations!
+
+    I now promote you to
+          {}.)raw",
+                                               kHeroRankNames[v.hero][v.rank + 1])},
+                        },
+                    });
+                    v.rank++;
+                    hud.set_hero(v.hero, v.rank);
+                }
+                else {
+                    ds.show_dialog({
+                        .x = 1,
+                        .y = 18,
+                        .w = 30,
+                        .h = 9,
+                        .strings = {
+                            {1, 1, fmt::format("{},", kHeroNames[v.hero][0])},
+                            {1, 3, fmt::format(R"raw(    I can aid you better
+   after you've captured {}
+        more villains.)raw",
+                                               required_villains)},
+                        },
+                    });
+                }
+            },
+        },
+    });
 }

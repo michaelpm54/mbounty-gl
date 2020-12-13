@@ -10,7 +10,11 @@ const int kVillainIndices[4] = {
 };
 
 const int kVillainsPerContinent[4] = {
-    6, 4, 4, 3};
+    6,
+    4,
+    4,
+    3,
+};
 
 const char *const kSpellNames[14] = {
     "Clone",
@@ -157,6 +161,33 @@ const int kPuzzleArtifactPositions[8] = {
     24,
     22,
     0,
+};
+
+const char *const kHeroRankNames[4][4] = {
+    {
+        "Knight",
+        "General",
+        "Marshal",
+        "Lord",
+    },
+    {
+        "Paladin",
+        "Crusader",
+        "Avenger",
+        "Champion",
+    },
+    {
+        "Sorceress",
+        "Magician",
+        "Mage",
+        "Archmage",
+    },
+    {
+        "Barbarian",
+        "Chieftain",
+        "Warlord",
+        "Overlord",
+    },
 };
 
 char const *const kHeroNames[][4] =

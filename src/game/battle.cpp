@@ -6,6 +6,7 @@
 
 #include "assets.hpp"
 #include "bounty.hpp"
+#include "game/army-gen.hpp"
 #include "game/dialog-stack.hpp"
 #include "game/gen-variables.hpp"
 #include "game/scene-stack.hpp"
@@ -13,7 +14,42 @@
 #include "gfx/gfx.hpp"
 #include "glfw.hpp"
 
-static constexpr char const *kVictoryMessage = {
+static constexpr char const *kSiegeVictoryMessage = {
+    R"raw(          Victory!
+          ________
+   Well done {},
+    you have successfully
+ vanquished yet another foe.
+
+   Spoils of War: {} gold.
+     And the capture of
+	  {}!
+
+For fulfilling your contract
+  you receive an additional
+     {} gold as bounty
+  and a piece of the map to
+     the stolen sceptre.)raw",
+};
+
+static constexpr char const *kSiegeVictoryMessageNoContract = {
+    R"raw(          Victory!
+          ________
+   Well done {},
+    you have successfully
+ vanquished yet another foe.
+
+   Spoils of War: {} gold.
+     And the capture of
+	  {}!
+
+
+   Since you did not have
+    the proper contract,
+ the Lord has been set free.)raw",
+};
+
+static constexpr char const *kEncounterVictoryMessage = {
     R"raw(          Victory!
           ________
    Well done {},
@@ -234,6 +270,9 @@ void Battle::key(int key, int action)
                         case GLFW_KEY_SPACE:
                             pause();
                             break;
+                        case GLFW_KEY_V:
+                            victory();
+                            break;
                         default:
                             break;
                     }
@@ -353,11 +392,12 @@ void Battle::update(float dt)
     current_.update(dt);
 }
 
-void Battle::show(std::array<int, 5> &enemy_army, std::array<int, 5> &enemy_counts, bool siege)
+void Battle::show(std::array<int, 5> &enemy_army, std::array<int, 5> &enemy_counts, bool siege, int castle_id)
 {
     this->enemy_army = &enemy_army;
     this->enemy_counts = &enemy_counts;
     this->siege = siege;
+    this->castle_id = castle_id;
 
     if (siege) {
         bg_.set_texture(siege_bg);
@@ -1519,6 +1559,9 @@ bool Battle::check_end()
             (*enemy_army)[i] = armies_[1][i];
             (*enemy_counts)[i] = unit_states_[1][i].count;
         }
+        if (siege) {
+            v.siege = false;
+        }
         return true;
     }
     else if (num_dead[1] == 5) {
@@ -1553,22 +1596,100 @@ void Battle::victory()
         "Moham",
     };
 
-    spdlog::debug("Victory");
-    ds.show_dialog({
-        .x = 5,
-        .y = 10,
-        .w = 30,
-        .h = 9,
-        .strings = {
-            {1, 1, fmt::format(kVictoryMessage, kShortHeroNames[v.hero], bty::number_with_ks(gold_total))},
-        },
-        .callbacks = {
-            .confirm = [this](int opt) {
-                spdlog::debug("Confirmed");
-                ss.pop(siege);
+    if (siege) {
+        if (gen.castle_occupants[castle_id] != 0x7F) {
+            int villain = gen.castle_occupants[castle_id];
+
+            if (v.contract == villain) {
+                v.gold += kVillainRewards[v.contract];
+                ds.show_dialog({
+                    .x = 5,
+                    .y = 6,
+                    .w = 30,
+                    .h = 18,
+                    .strings = {
+                        {1, 1, fmt::format(kSiegeVictoryMessage, kShortHeroNames[v.hero], bty::number_with_ks(gold_total), kVillains[villain][0], kVillainRewards[villain])},
+                    },
+                    .callbacks = {
+                        .confirm = [this](int opt) {
+                            ss.pop(siege);
+                        },
+                    },
+                });
+
+                gen.villains_captured[v.contract] = true;
+                v.contract = 17;
+            }
+            else {
+                ds.show_dialog({
+                    .x = 5,
+                    .y = 6,
+                    .w = 30,
+                    .h = 18,
+                    .strings = {
+                        {1, 1, fmt::format(kSiegeVictoryMessageNoContract, kShortHeroNames[v.hero], bty::number_with_ks(gold_total), kVillains[villain][0])},
+                    },
+                    .callbacks = {
+                        .confirm = [this](int opt) {
+                            ss.pop(siege);
+                        },
+                    },
+                });
+
+                std::vector<int> potential_castles;
+
+                /* Relocate the villain. */
+                for (int i = 0; i < 26; i++) {
+                    if (kCastleInfo[i].continent != v.continent) {
+                        continue;
+                    }
+                    if (gen.castle_occupants[i] == 0x7F) {
+                        potential_castles.push_back(i);
+                    }
+                }
+                int new_castle = potential_castles[rand() % potential_castles.size()];
+                gen.castle_occupants[new_castle] = villain;
+
+                /* And their army. */
+                gen_villain_army(villain, gen.castle_armies[new_castle], gen.castle_counts[new_castle]);
+            }
+        }
+        else {
+            ds.show_dialog({
+                .x = 5,
+                .y = 10,
+                .w = 30,
+                .h = 9,
+                .strings = {
+                    {1, 1, fmt::format(kEncounterVictoryMessage, kShortHeroNames[v.hero], bty::number_with_ks(gold_total))},
+                },
+                .callbacks = {
+                    .confirm = [this](int opt) {
+                        ss.pop(siege);
+                    },
+                },
+            });
+        }
+
+        gen.castle_occupants[castle_id] = 0x7F;
+        gen_castle_army(v.continent, gen.castle_armies[castle_id], gen.castle_counts[castle_id]);
+    }
+    else {
+        ds.show_dialog({
+            .x = 5,
+            .y = 10,
+            .w = 30,
+            .h = 9,
+            .strings = {
+                {1, 1, fmt::format(kEncounterVictoryMessage, kShortHeroNames[v.hero], bty::number_with_ks(gold_total))},
             },
-        },
-    });
+            .callbacks = {
+                .confirm = [this](int opt) {
+                    ss.pop(siege);
+                },
+            },
+        });
+    }
 }
 
 bool Battle::any_enemy_around() const

@@ -170,7 +170,7 @@ void Town::gather_information()
     }
 
     int villain_id = gen.castle_occupants[town_id];
-    std::string occupier = villain_id == -1 ? "no one" : ("\n" + std::string(kVillains[villain_id][0]));
+    std::string occupier = villain_id == 0x7F ? "no one" : ("\n" + std::string(kVillains[villain_id][0]));
 
     ds.show_dialog({
         .x = 1,
@@ -193,41 +193,35 @@ void Town::gather_information()
 
 void Town::get_contract()
 {
-    int num_caught = 0;
-    for (int i = 0; i < 17; i++) {
-        if (gen.villains_captured[i]) {
-            num_caught++;
-        }
-    }
-    if (num_caught == 17) {
-        return;
-    }
+    std::array<int, 5> available_contracts;
+    std::fill(available_contracts.begin(), available_contracts.end(), -1);
 
-    int contracts[5];
-    int have = 0;
-
-    /* Get the first five uncaught villains */
+    /* Gather the first five uncaught villains. */
+    int found = 0;
     for (int i = 0; i < 17; i++) {
         if (!gen.villains_captured[i]) {
-            contracts[have++] = i;
-            if (have == 5) {
+            available_contracts[found++] = i;
+            if (found == 5) {
                 break;
             }
         }
     }
 
-    int current = 0;
+    /* Find the current contract amongst the first five uncaught villains. */
+    int current_index_amongst_available = -1;
     for (int i = 0; i < 5; i++) {
-        if (v.contract == contracts[i]) {
-            current = i;
+        if (available_contracts[i] == v.contract) {
+            current_index_amongst_available = i;
+            break;
         }
     }
 
-    if (v.contract == 17 && contracts[0] == 0) {
-        v.contract = 0;
+    /* If we don't have a contract, use the first available one, else use the next one. */
+    if (current_index_amongst_available == -1) {
+        v.contract = available_contracts[0];
     }
     else {
-        v.contract = contracts[(current + 1) % 5];
+        v.contract = available_contracts[(current_index_amongst_available + 1) % 5];
     }
 
     hud.set_contract(v.contract);

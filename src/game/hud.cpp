@@ -217,7 +217,7 @@ void Hud::clear_timestop()
 
 void Hud::set_hero(int hero, int rank)
 {
-    name_.set_string(kHeroNames[hero][0]);
+    name_.set_string(kHeroNames[hero][rank]);
 }
 
 bool Hud::get_error() const
