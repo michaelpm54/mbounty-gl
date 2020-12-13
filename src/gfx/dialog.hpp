@@ -19,6 +19,24 @@ class Gfx;
 class Text;
 struct Texture;
 
+class Option : public Text {
+public:
+    void enable();
+    void disable();
+    bool enabled() const;
+
+    void show();
+    void hide();
+    bool visible() const;
+
+    void set_enabled(bool);
+    void set_visible(bool);
+
+private:
+    bool enabled_ {true};
+    bool visible_ {true};
+};
+
 class Dialog : public TextBox {
 public:
     /* clang-format off */
@@ -30,27 +48,22 @@ public:
 	);
     /* clang-format on */
     void set_position(int x, int y);
-    Text *add_option(int x, int y, const std::string &str);
+    Option *add_option(int x, int y, const std::string &str);
     void set_option(int index, std::string const &str);
     void next();
     void prev();
     void set_selection(int index);
     void draw(Gfx &gfx, glm::mat4 &camera);
-    void animate(float dt);
+    void update(float dt);
     int get_selection() const;
     void clear_options();
-    void set_option_disabled(int index, bool disabled);
-    void set_option_visibility(int index, bool visible);
-    void set_cols(int cols, int dividing_index);
-    bool get_option_visible(int index) const;
+    std::deque<Option> &get_options();
 
 private:
     void update_arrow();
 
 private:
-    std::deque<Text> options_;
-    std::vector<bool> disabled_options_;
-    std::vector<bool> visible_options_;
+    std::deque<Option> options_;
     Sprite arrow_;
     int selection_ {0};
     bool draw_arrow_ {true};

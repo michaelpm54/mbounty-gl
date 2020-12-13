@@ -4,22 +4,31 @@
 
 #include "assets.hpp"
 #include "game/hud.hpp"
+#include "game/scene-stack.hpp"
+#include "game/variables.hpp"
 #include "gfx/gfx.hpp"
 #include "glfw.hpp"
-#include "shared-state.hpp"
 
-void KingsCastle::load(bty::Assets &assets, bty::BoxColor color, SharedState &state, Hud &hud)
+static constexpr int kKingsCastleUnits[5] = {
+    Militias,
+    Archers,
+    Pikemen,
+    Cavalries,
+    Knights,
+};
+
+KingsCastle::KingsCastle(SceneStack &ss, bty::Assets &assets, Hud &hud, Variables &v)
+    : ss(ss)
+    , hud(hud)
+    , v(v)
 {
-    state_ = &state;
-    hud_ = &hud;
-
-    dialog_.create(1, 18, 30, 9, color, assets);
+    dialog_.create(1, 18, 30, 9, bty::BoxColor::Intro, assets);
     dialog_.add_line(1, 1, "Castle of King Maximus");
     dialog_.add_line(22, 2, "");    // Gold
     dialog_.add_option(3, 4, "Recruit soldiers");
     dialog_.add_option(3, 5, "Audience with the King");
 
-    recruit_.create(1, 18, 30, 9, color, assets);
+    recruit_.create(1, 18, 30, 9, bty::BoxColor::Intro, assets);
     recruit_.add_line(1, 1, "Recruit Soldiers");
     recruit_.add_line(22, 1, "");
 
@@ -35,14 +44,6 @@ void KingsCastle::load(bty::Assets &assets, bty::BoxColor color, SharedState &st
     unit_.set_position(56, 104);
     bg_.set_texture(assets.get_texture("bg/castle.png"));
     bg_.set_position(8, 24);
-
-    static constexpr int kKingsCastleUnits[5] = {
-        Militias,
-        Archers,
-        Pikemen,
-        Cavalries,
-        Knights,
-    };
 
     for (int i = 0; i < 5; i++) {
         unit_textures_[i] = assets.get_texture(fmt::format("units/{}.png", kKingsCastleUnits[i]), {2, 2});
@@ -63,57 +64,53 @@ void KingsCastle::draw(bty::Gfx &gfx, glm::mat4 &camera)
 
 void KingsCastle::view()
 {
+    set_color(bty::get_box_color(v.diff));
+
     recruit_input_.clear();
 
     how_many_->set_string("  0");
 
-    update_gold();
+    set_gold(v.gold);
     unit_.set_texture(unit_textures_[rand() % 5]);
 
     recruit_.clear_options();
 
-    switch (state_->hero_rank) {
-        case 0:
-            recruit_.add_option(3, 3, "Militia   50");
-            recruit_.add_option(3, 4, "Archers  250");
-            recruit_.add_option(3, 5, "Pikemen  300");
-            recruit_.add_option(3, 6, "Cavalry  n/a");
-            recruit_.add_option(3, 7, "Knights  n/a");
-            recruit_.set_option_disabled(3, true);
-            recruit_.set_option_disabled(4, true);
-            break;
-        case 1:
-            recruit_.add_option(3, 3, "Militia   50");
-            recruit_.add_option(3, 4, "Archers  250");
-            recruit_.add_option(3, 5, "Pikemen  300");
-            recruit_.add_option(3, 6, "Cavalry  800");
-            recruit_.add_option(3, 7, "Knights  n/a");
-            recruit_.set_option_disabled(4, true);
-            break;
-        case 2:
-            [[fallthrough]];
-        case 3:
-            recruit_.add_option(3, 3, "Militia   50");
-            recruit_.add_option(3, 4, "Archers  250");
-            recruit_.add_option(3, 5, "Pikemen  300");
-            recruit_.add_option(3, 6, "Cavalry  800");
-            recruit_.add_option(3, 7, "Knights  1000");
-            break;
-        default:
-            break;
+    if (v.rank == 0) {
+        recruit_.add_option(3, 3, "Militia   50");
+        recruit_.add_option(3, 4, "Archers  250");
+        recruit_.add_option(3, 5, "Pikemen  300");
+        auto *a = recruit_.add_option(3, 6, "Cavalry  n/a");
+        auto *b = recruit_.add_option(3, 7, "Knights  n/a");
+        a->disable();
+        b->disable();
+    }
+    else if (v.rank == 1) {
+        recruit_.add_option(3, 3, "Militia   50");
+        recruit_.add_option(3, 4, "Archers  250");
+        recruit_.add_option(3, 5, "Pikemen  300");
+        recruit_.add_option(3, 6, "Cavalry  800");
+        auto *a = recruit_.add_option(3, 7, "Knights  n/a");
+        a->disable();
+    }
+    else if (v.rank == 2 || v.rank == 3) {
+        recruit_.add_option(3, 3, "Militia   50");
+        recruit_.add_option(3, 4, "Archers  250");
+        recruit_.add_option(3, 5, "Pikemen  300");
+        recruit_.add_option(3, 6, "Cavalry  800");
+        recruit_.add_option(3, 7, "Knights  1000");
     }
 }
 
 void KingsCastle::update(float dt)
 {
-    dialog_.animate(dt);
-    recruit_.animate(dt);
-    unit_.animate(dt);
+    dialog_.update(dt);
+    recruit_.update(dt);
+    unit_.update(dt);
     recruit_input_.update(dt);
     how_many_->set_string(fmt::format("{:>3}", recruit_input_.get_current()));
 }
 
-int KingsCastle::key(int key, int action)
+void KingsCastle::key(int key, int action)
 {
     if (show_recruit_amount_) {
         recruit_input_.key(key, action);
@@ -146,7 +143,7 @@ int KingsCastle::key(int key, int action)
                     else {
                         main_opt();
                     }
-                    return -1;
+                    break;
                 case GLFW_KEY_BACKSPACE:
                     if (show_recruit_) {
                         if (show_recruit_amount_) {
@@ -160,39 +157,33 @@ int KingsCastle::key(int key, int action)
                         else {
                             show_recruit_ = false;
                         }
-                        return -1;
+                        break;
                     }
-                    return -2;
+                    else {
+                        ss.pop(0);
+                    }
+                    break;
                 default:
                     break;
             }
         default:
             break;
     }
-
-    return -1;
 }
 
-void KingsCastle::update_gold()
+void KingsCastle::set_gold(int gold)
 {
-    recruit_.set_line(1, fmt::format("GP={}", bty::number_with_ks(state_->gold)));
+    recruit_.set_line(1, fmt::format("GP={}", bty::number_with_ks(gold)));
 }
 
 void KingsCastle::set_color(bty::BoxColor color)
 {
     dialog_.set_color(color);
+    recruit_.set_color(color);
 }
 
 void KingsCastle::recruit_opt()
 {
-    static constexpr int kKingsCastleUnits[5] = {
-        Militias,
-        Archers,
-        Pikemen,
-        Cavalries,
-        Knights,
-    };
-
     int current = recruit_input_.get_current();
 
     if (!show_recruit_amount_) {
@@ -203,23 +194,23 @@ void KingsCastle::recruit_opt()
         recruit_.set_line_visible(5, true);
 
         int id = kKingsCastleUnits[recruit_.get_selection()];
-        int potential_amount = state_->leadership / kUnits[id].hp;
+        int potential_amount = v.leadership / kUnits[id].hp;
         int existing_amount = 0;
 
         for (int i = 0; i < 5; i++) {
-            if (state_->army[i] == id) {
-                existing_amount = state_->army_counts[i];
+            if (v.army[i] == id) {
+                existing_amount = v.counts[i];
                 break;
             }
         }
 
         int max_amt = potential_amount > existing_amount ? potential_amount - existing_amount : 0;
-        max_amt = std::min(max_amt, state_->gold / kUnits[id].recruit_cost);
+        max_amt = std::min(max_amt, v.gold / kUnits[id].recruit_cost);
         recruit_input_.set_max(max_amt);
         may_get_->set_string(fmt::format("{}.", max_amt));
 
-        if (kUnits[id].recruit_cost > state_->gold) {
-            hud_->set_title("     You do not have enough gold!");
+        if (kUnits[id].recruit_cost > v.gold) {
+            hud.set_error("     You do not have enough gold!");
         }
 
         how_many_->set_string(fmt::format("{:>3}", current));
@@ -229,9 +220,9 @@ void KingsCastle::recruit_opt()
             int id = kKingsCastleUnits[recruit_.get_selection()];
 
             int cost = current * kUnits[id].recruit_cost;
-            state_->gold -= cost;
-            hud_->update_state();
-            update_gold();
+            v.gold -= cost;
+            hud.set_gold(v.gold);
+            set_gold(v.gold);
             show_recruit_amount_ = false;
             recruit_.set_line_visible(2, true);
             recruit_.set_line_visible(3, false);
@@ -240,8 +231,8 @@ void KingsCastle::recruit_opt()
 
             bool found = false;
             for (int i = 0; i < 5; i++) {
-                if (state_->army[i] == id) {
-                    state_->army_counts[i] += current;
+                if (v.army[i] == id) {
+                    v.counts[i] += current;
                     found = true;
                     break;
                 }
@@ -249,9 +240,9 @@ void KingsCastle::recruit_opt()
 
             if (!found) {
                 for (int i = 0; i < 5; i++) {
-                    if (state_->army[i] == -1) {
-                        state_->army[i] = id;
-                        state_->army_counts[i] = current;
+                    if (v.army[i] == -1) {
+                        v.army[i] = id;
+                        v.counts[i] = current;
                         break;
                     }
                 }

@@ -44,7 +44,7 @@ void Sprite::load_animation()
     animation_.current_frame = rand() % animation_.total_frames;
 }
 
-void Sprite::animate(float dt)
+void Sprite::update(float dt)
 {
     if (!animation_.exists || !animation_.play) {
         return;

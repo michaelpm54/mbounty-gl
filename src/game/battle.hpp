@@ -1,8 +1,9 @@
-#ifndef BTY_BATTLE_BATTLE_HPP_
-#define BTY_BATTLE_BATTLE_HPP_
+#ifndef BTY_GAME_BATTLE_HPP_
+#define BTY_GAME_BATTLE_HPP_
 
 #include <array>
 
+#include "game/scene.hpp"
 #include "game/view-army.hpp"
 #include "game/view-character.hpp"
 #include "gfx/dialog.hpp"
@@ -10,25 +11,29 @@
 #include "gfx/sprite.hpp"
 #include "gfx/text.hpp"
 #include "gfx/textbox.hpp"
-#include "scene.hpp"
 
 namespace bty {
 class Assets;
 class Gfx;
-class SceneSwitcher;
 }    // namespace bty
 
+struct Variables;
+struct GenVariables;
 struct Unit;
+class DialogStack;
+class SceneStack;
+class ViewArmy;
+class ViewCharacter;
 
-class Battle : public bty::Scene {
+class Battle : public Scene {
 public:
-    Battle(bty::SceneSwitcher &scene_switcher);
-    bool load(bty::Assets &assets) override;
-    void draw(bty::Gfx &gfx) override;
-    void key(int key, int scancode, int action, int mods) override;
-    bool loaded() override;
+    Battle(SceneStack &ss, DialogStack &ds, bty::Assets &assets, Variables &v, GenVariables &gen, ViewArmy &view_army, ViewCharacter &view_character);
+
+    void draw(bty::Gfx &gfx, glm::mat4 &camera) override;
+    void key(int key, int action) override;
     void update(float dt) override;
-    void enter(bool reset) override;
+
+    void show(std::array<int, 5> &enemy_army, std::array<int, 5> &enemy_counts, bool siege);
 
 private:
     enum class BattleState {
@@ -44,13 +49,10 @@ private:
         GiveUp,
         ViewArmy,
         ViewCharacter,
-        UseMagic,
         TemporaryMessage,
         Delay,
         IsFrozen,
-        Victory,
         Pass,
-        Controls,
     };
 
     struct UnitState {
@@ -69,10 +71,7 @@ private:
     void confirm();
     void move_confirm();
     void shoot_confirm();
-    void menu_confirm();
-    void give_up_confirm();
     void magic_confirm();
-    void controls_confirm();
     void move_cursor(int dir);
     void status();
     void status_wait(const Unit &unit);
@@ -92,9 +91,7 @@ private:
     void damage(int from_team, int from_unit, int to_team, int to_unit, bool is_ranged, bool is_external, int external_damage, bool retaliation);
     void clear_dead_units();
     void update_counts();
-    void view_army();
     void use_spell(int spell);
-    void update_spells();
     void teleport();
     void clone();
     void freeze();
@@ -104,9 +101,24 @@ private:
     void victory();
     bool any_enemy_around() const;
 
+    /* Pause menu */
+    void pause();
+    void view_army();
+    void use_magic();
+    void controls();
+    void give_up();
+
+    /* Pause menu helpers */
+    void menu_confirm(int opt);
+    void give_up_confirm(int opt);
+
 private:
-    bool loaded_ {false};
-    bty::SceneSwitcher *scene_switcher_;
+    SceneStack &ss;
+    DialogStack &ds;
+    Variables &v;
+    GenVariables &gen;
+    ViewArmy &s_view_army;
+    ViewCharacter &s_view_character;
     BattleState state_ {BattleState::Moving};
     BattleState last_state_ {BattleState::Moving};
     glm::mat4 camera_ {1.0f};
@@ -115,19 +127,19 @@ private:
     bty::Rect bar_;
     bty::Sprite cursor_;
     bty::Sprite current_;
-    std::array<std::array<glm::ivec2, 6>, 2> positions_;
-    std::array<std::array<bty::Text, 6>, 2> counts_;
-    std::array<std::array<bty::Sprite, 6>, 2> sprites_;
+    std::array<std::array<glm::ivec2, 5>, 2> positions_;
+    std::array<std::array<bty::Text, 5>, 2> counts_;
+    std::array<std::array<bty::Sprite, 5>, 2> sprites_;
     std::array<const bty::Texture *, 25> unit_textures_;
     int cx_ {0};
     int cy_ {0};
     bty::Text status_;
     glm::ivec2 active_ {0, 0};
-    std::array<std::array<int, 6>, 2> armies_;
-    std::array<std::array<int, 6>, 2> moves_left_;
-    std::array<std::array<int, 6>, 2> waits_used_;
-    std::array<std::array<bool, 6>, 2> flown_this_turn_;
-    std::array<std::array<bool, 6>, 2> retaliated_this_turn_;
+    std::array<std::array<int, 5>, 2> armies_;
+    std::array<std::array<int, 5>, 2> moves_left_;
+    std::array<std::array<int, 5>, 2> waits_used_;
+    std::array<std::array<bool, 5>, 2> flown_this_turn_;
+    std::array<std::array<bool, 5>, 2> retaliated_this_turn_;
     int cursor_distance_x_ {0};
     int cursor_distance_y_ {0};
     const bty::Texture *move_;
@@ -142,16 +154,9 @@ private:
     int last_attacked_unit_ {-1};
     int last_kills_ {0};
 
-    std::array<std::array<UnitState, 6>, 2> unit_states_;
+    std::array<std::array<UnitState, 5>, 2> unit_states_;
 
-    bty::Dialog menu_;
-    bty::Dialog give_up_;
     BattleState state_before_menu_ {BattleState::Moving};
-
-    ViewArmy view_army_;
-    ViewCharacter view_character_;
-    bty::Dialog use_magic_;
-    bty::Text *magic_spells_[14] {nullptr};
 
     int using_spell_ {-1};
     bool used_spell_this_turn_ {false};
@@ -164,12 +169,13 @@ private:
 
     bool do_retaliate {false};
 
-    bty::TextBox victory_;
-
-    bty::Dialog controls_;
-
     int delay_ {1};
     float delay_duration_ {1.2f};
+
+    bool siege {false};
+
+    std::array<int, 5> *enemy_army;
+    std::array<int, 5> *enemy_counts;
 };
 
-#endif    // BTY_INTRO_BATTLE_HPP_
+#endif    // BTY_GAME_BATTLE_HPP_

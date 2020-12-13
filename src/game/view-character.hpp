@@ -1,6 +1,7 @@
 #ifndef BTY_GAME_VIEW_CHARACTER_HPP_
 #define BTY_GAME_VIEW_CHARACTER_HPP_
 
+#include "game/scene.hpp"
 #include "gfx/rect.hpp"
 #include "gfx/sprite.hpp"
 #include "gfx/text.hpp"
@@ -12,16 +13,21 @@ class Gfx;
 struct Texture;
 }    // namespace bty
 
-struct SharedState;
+class SceneStack;
+struct Variables;
+struct GenVariables;
 
-class ViewCharacter {
+class ViewCharacter : public Scene {
 public:
-    void load(bty::Assets &assets, bty::BoxColor color, int hero_id);
-    void draw(bty::Gfx &gfx, glm::mat4 &camera);
-    void view(const SharedState &state);
+    ViewCharacter(SceneStack &ss, bty::Assets &assets);
+    void draw(bty::Gfx &gfx, glm::mat4 &camera) override;
+    void update(float dt) override;
+    void key(int key, int action) override;
+    void update_info(const Variables &v, const GenVariables &gen);
     void set_color(bty::BoxColor color);
 
 private:
+    SceneStack &ss;
     bty::Sprite frame_;
     bty::Sprite portrait_;
     bty::Rect rect_;

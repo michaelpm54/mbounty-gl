@@ -6,11 +6,14 @@
 
 #include "assets.hpp"
 #include "bounty.hpp"
+#include "game/scene-stack.hpp"
 #include "gfx/gfx.hpp"
 #include "gfx/texture.hpp"
+#include "glfw.hpp"
 #include "shared-state.hpp"
 
-void ViewArmy::load(bty::Assets &assets, bty::BoxColor color)
+ViewArmy::ViewArmy(SceneStack &ss, bty::Assets &assets)
+    : ss(ss)
 {
     for (int i = 0; i < 25; i++) {
         unit_textures_[i] = assets.get_texture(fmt::format("units/{}.png", i), {2, 2});
@@ -22,7 +25,7 @@ void ViewArmy::load(bty::Assets &assets, bty::BoxColor color)
     const auto &font = assets.get_font();
 
     for (int i = 0; i < 5; i++) {
-        rects_[i].set_color(color);
+        rects_[i].set_color(bty::BoxColor::Intro);
         rects_[i].set_size(253, 32);
         rects_[i].set_position(59, 24 + i * 40);
         units_[i].set_position(8, 24 + i * 40);
@@ -57,8 +60,10 @@ void ViewArmy::draw(bty::Gfx &gfx, glm::mat4 &camera)
     }
 }
 
-void ViewArmy::view(int *army, int *counts, int *morales)
+void ViewArmy::update_info(int *army, int *counts, int *morales, int diff)
 {
+    set_color(bty::get_box_color(diff));
+
     num_units_ = 0;
 
     for (int i = 0; i < 5; i++) {
@@ -99,7 +104,7 @@ void ViewArmy::view(int *army, int *counts, int *morales)
 void ViewArmy::update(float dt)
 {
     for (int i = 0; i < num_units_; i++) {
-        units_[i].animate(dt);
+        units_[i].update(dt);
     }
 }
 
@@ -107,5 +112,20 @@ void ViewArmy::set_color(bty::BoxColor color)
 {
     for (int i = 0; i < 5; i++) {
         rects_[i].set_color(color);
+    }
+}
+
+void ViewArmy::key(int key, int action)
+{
+    if (action == GLFW_PRESS) {
+        switch (key) {
+            case GLFW_KEY_BACKSPACE:
+                [[fallthrough]];
+            case GLFW_KEY_ENTER:
+                ss.pop(0);
+                break;
+            default:
+                break;
+        }
     }
 }

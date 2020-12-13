@@ -4,11 +4,16 @@
 
 #include "assets.hpp"
 #include "bounty.hpp"
+#include "game/gen-variables.hpp"
+#include "game/scene-stack.hpp"
+#include "game/variables.hpp"
 #include "gfx/gfx.hpp"
 #include "gfx/texture.hpp"
+#include "glfw.hpp"
 #include "shared-state.hpp"
 
-void ViewCharacter::load(bty::Assets &assets, bty::BoxColor color, int hero_id)
+ViewCharacter::ViewCharacter(SceneStack &ss, bty::Assets &assets)
+    : ss(ss)
 {
     frame_.set_texture(assets.get_texture("frame/character.png"));
     frame_.set_position(0, 16);
@@ -30,10 +35,8 @@ void ViewCharacter::load(bty::Assets &assets, bty::BoxColor color, int hero_id)
         portraits_[i] = assets.get_texture(fmt::format("char-page/{}.png", kPortraitFilenames[i]));
     }
 
-    portrait_.set_texture(portraits_[hero_id]);
     portrait_.set_position(8, 24);
 
-    rect_.set_color(color);
     rect_.set_size(208, 104);
     rect_.set_position(104, 24);
 
@@ -77,26 +80,49 @@ void ViewCharacter::draw(bty::Gfx &gfx, glm::mat4 &camera)
     }
 }
 
-void ViewCharacter::view(const SharedState &state)
+void ViewCharacter::update_info(const Variables &v, const GenVariables &gen)
 {
-    maps_found_ = state.maps_found;
-    artifacts_found_ = state.artifacts_found;
+    set_color(bty::get_box_color(v.diff));
 
-    info_[0].set_string(kHeroNames[state.hero_id][state.hero_rank]);
-    info_[1].set_string(fmt::format("Leadership {:>13}", state.leadership));
-    info_[2].set_string(fmt::format("Commission/Week {:>8}", state.commission));
-    info_[3].set_string(fmt::format("Gold {:>19}", state.gold));
-    info_[4].set_string(fmt::format("Spell Power {:>12}", state.spell_power));
-    info_[5].set_string(fmt::format("Max # of Spells {:>8}", state.max_spells));
+    portrait_.set_texture(portraits_[v.hero]);
+
+    maps_found_ = gen.sail_maps_found.data();
+    artifacts_found_ = gen.artifacts_found.data();
+
+    info_[0].set_string(kHeroNames[v.hero][v.rank]);
+    info_[1].set_string(fmt::format("Leadership {:>13}", v.leadership));
+    info_[2].set_string(fmt::format("Commission/Week {:>8}", v.commission));
+    info_[3].set_string(fmt::format("Gold {:>19}", v.gold));
+    info_[4].set_string(fmt::format("Spell Power {:>12}", v.spell_power));
+    info_[5].set_string(fmt::format("Max # of Spells {:>8}", v.max_spells));
     info_[6].set_string(fmt::format("Villains caught {:>8}", 0));
     info_[7].set_string(fmt::format("Artifacts found {:>8}", 0));
     info_[8].set_string(fmt::format("Castles garrisoned {:>5}", 0));
-    info_[9].set_string(fmt::format("Followers killed {:>7}", state.followers_killed));
+    info_[9].set_string(fmt::format("Followers killed {:>7}", v.followers_killed));
     info_[10].set_string(fmt::format("Current score {:>10}", 0));
-    portrait_.set_texture(portraits_[state.hero_id]);
+    portrait_.set_texture(portraits_[v.hero]);
 }
 
 void ViewCharacter::set_color(bty::BoxColor color)
 {
     rect_.set_color(color);
+}
+
+void ViewCharacter::update(float dt)
+{
+}
+
+void ViewCharacter::key(int key, int action)
+{
+    if (action == GLFW_PRESS) {
+        switch (key) {
+            case GLFW_KEY_BACKSPACE:
+                [[fallthrough]];
+            case GLFW_KEY_ENTER:
+                ss.pop(0);
+                break;
+            default:
+                break;
+        }
+    }
 }

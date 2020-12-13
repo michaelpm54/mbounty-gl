@@ -50,6 +50,7 @@ void Text::set_string(const std::string &string)
         return;
     }
 
+    bool same = string_ == string;
     string_ = string;
 
     if (!font_) {
@@ -57,7 +58,39 @@ void Text::set_string(const std::string &string)
         return;
     }
 
-    num_vertices_ = 6 * string.size();
+    if (!same) {
+        update_vbo();
+    }
+}
+
+const Font *Text::get_font() const
+{
+    return font_;
+}
+
+GLuint Text::get_vao() const
+{
+    return vao_;
+}
+
+GLuint Text::get_num_vertices() const
+{
+    return num_vertices_;
+}
+
+void Text::set_font(const Font &font)
+{
+    font_ = &font;
+}
+
+const std::string Text::get_string() const
+{
+    return string_;
+}
+
+void Text::update_vbo()
+{
+    num_vertices_ = 6 * string_.size();
 
     struct Vertex {
         glm::vec2 pos;
@@ -69,8 +102,8 @@ void Text::set_string(const std::string &string)
     float x = 0;
     float y = 0;
 
-    for (int i = 0, s = string.size(); i < s; i++) {
-        switch (string[i]) {
+    for (int i = 0, s = string_.size(); i < s; i++) {
+        switch (string_[i]) {
             case '\n':
                 x = 0;
                 y += 8;
@@ -82,7 +115,7 @@ void Text::set_string(const std::string &string)
                 break;
         }
 
-        uint16_t char_code = (string[i] - 32) & 0xFF;
+        uint16_t char_code = (string_[i] - 32) & 0xFF;
         const auto texture_coords = font_->get_texture_coordinates(char_code);
 
         auto *vertex = &vertices.data()[i * 6];
@@ -114,31 +147,6 @@ void Text::set_string(const std::string &string)
     glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(1);
     glBindVertexArray(GL_NONE);
-}
-
-const Font *Text::get_font() const
-{
-    return font_;
-}
-
-GLuint Text::get_vao() const
-{
-    return vao_;
-}
-
-GLuint Text::get_num_vertices() const
-{
-    return num_vertices_;
-}
-
-void Text::set_font(const Font &font)
-{
-    font_ = &font;
-}
-
-const std::string Text::get_string() const
-{
-    return string_;
 }
 
 }    // namespace bty

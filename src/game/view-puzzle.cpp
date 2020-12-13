@@ -6,14 +6,19 @@
 
 #include "assets.hpp"
 #include "bounty.hpp"
+#include "game/gen-variables.hpp"
+#include "game/scene-stack.hpp"
+#include "gen-variables.hpp"
 #include "gfx/gfx.hpp"
 #include "gfx/texture.hpp"
+#include "glfw.hpp"
 #include "shared-state.hpp"
 
-void ViewPuzzle::load(bty::Assets &assets)
+ViewPuzzle::ViewPuzzle(SceneStack &ss, bty::Assets &assets)
+    : ss(ss)
 {
     for (int i = 0; i < 17; i++) {
-        textures_[kPuzzleVillainPositions[i]] = assets.get_texture(fmt::format("villains/{}.png", i));
+        textures_[kPuzzleVillainPositions[i]] = assets.get_texture(fmt::format("villains/{}.png", i), {4, 1});
     }
     for (int i = 0; i < 8; i++) {
         textures_[kPuzzleArtifactPositions[i]] = assets.get_texture(fmt::format("artifacts/44x32/{}.png", i));
@@ -69,19 +74,19 @@ void ViewPuzzle::draw(bty::Gfx &gfx, glm::mat4 &camera)
     }
 }
 
-void ViewPuzzle::view(bool *villains, bool *artifacts)
+void ViewPuzzle::update_info(const GenVariables &gen)
 {
     for (int i = 0; i < 25; i++) {
         to_hide_[i] = -1;
     }
     int sprite_index = 0;
     for (int i = 0; i < 17; i++) {
-        if (villains[i]) {
+        if (gen.villains_captured[i]) {
             to_hide_[sprite_index++] = kPuzzleVillainPositions[i];
         }
     }
     for (int i = 0; i < 8; i++) {
-        if (artifacts[i]) {
+        if (gen.artifacts_found[i]) {
             to_hide_[sprite_index++] = kPuzzleArtifactPositions[i];
         }
     }
@@ -100,6 +105,7 @@ void ViewPuzzle::view(bool *villains, bool *artifacts)
 
 void ViewPuzzle::update(float dt)
 {
+    spdlog::debug("Puzzle::update");
     if (!done_) {
         pop_timer_ += dt;
         if (pop_timer_ >= 0.5f) {
@@ -113,7 +119,23 @@ void ViewPuzzle::update(float dt)
 
     for (int i = 0; i < 25; i++) {
         if (!hide_[i]) {
-            sprites_[i].animate(dt);
+            spdlog::debug("Update[{}]", i);
+            sprites_[i].update(dt);
+        }
+    }
+}
+
+void ViewPuzzle::key(int key, int action)
+{
+    if (action == GLFW_PRESS) {
+        switch (key) {
+            case GLFW_KEY_BACKSPACE:
+                [[fallthrough]];
+            case GLFW_KEY_ENTER:
+                ss.pop(0);
+                break;
+            default:
+                break;
         }
     }
 }

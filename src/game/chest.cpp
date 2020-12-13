@@ -3,7 +3,9 @@
 #include <fmt/format.h>
 
 #include "bounty.hpp"
-#include "shared-state.hpp"
+#include "game/dialog-stack.hpp"
+#include "game/gen-variables.hpp"
+#include "game/variables.hpp"
 
 static constexpr int kChestChanceGold[] = {
     61,
@@ -40,7 +42,7 @@ static constexpr int kChestChanceAddSpell[] = {
     101,
 };
 
-void chest_gold(SharedState &state, std::function<void(const DialogDef &)> &show_dialog)
+void chest_gold(Variables &v, GenVariables &gen, DialogStack &ds)
 {
     static constexpr int kGoldBase[] = {
         5,
@@ -56,11 +58,11 @@ void chest_gold(SharedState &state, std::function<void(const DialogDef &)> &show
         19,
     };
 
-    int roll = rand() % kGoldBase[state.continent];
-    int gold = (kGoldExtra[state.continent] + (roll + 1)) * 100;
-    int leadership = state.artifacts_found[ArtiRingOfHeroism] ? gold / 25 : gold / 50;
+    int roll = rand() % kGoldBase[v.continent];
+    int gold = (kGoldExtra[v.continent] + (roll + 1)) * 100;
+    int leadership = gen.artifacts_found[ArtiRingOfHeroism] ? gold / 25 : gold / 50;
 
-    show_dialog({
+    ds.show_dialog({
         .x = 1,
         .y = 18,
         .w = 30,
@@ -75,20 +77,20 @@ void chest_gold(SharedState &state, std::function<void(const DialogDef &)> &show
             {3, 5, fmt::format("Distribute the gold to the\n peasants, increasing your\n leadership by {}.", leadership)},
         },
         .callbacks = {
-            .confirm = [&state, gold, leadership](int opt) {
+            .confirm = [&v, gold, leadership](int opt) {
                 if (opt == 0) {
-                    state.gold += gold;
+                    v.gold += gold;
                 }
                 else {
-                    state.leadership += leadership;
-                    state.permanent_leadership += leadership;
+                    v.leadership += leadership;
+                    v.permanent_leadership += leadership;
                 }
             },
         },
     });
 }
 
-void chest_commission(SharedState &state, std::function<void(const DialogDef &)> &show_dialog)
+void chest_commission(Variables &v, DialogStack &ds)
 {
     static constexpr int kCommissionBase[] = {
         41,
@@ -104,14 +106,14 @@ void chest_commission(SharedState &state, std::function<void(const DialogDef &)>
         199,
     };
 
-    int roll = rand() % kCommissionBase[state.continent];
-    int commission = kCommissionExtra[state.continent] + roll + 1;
+    int roll = rand() % kCommissionBase[v.continent];
+    int commission = kCommissionExtra[v.continent] + roll + 1;
     if (commission > 999) {
         commission = 999;
     }
-    state.commission += commission;
+    v.commission += commission;
 
-    show_dialog({
+    ds.show_dialog({
         .x = 1,
         .y = 18,
         .w = 30,
@@ -127,9 +129,9 @@ void chest_commission(SharedState &state, std::function<void(const DialogDef &)>
     });
 }
 
-void chest_spell_power(SharedState &state, std::function<void(const DialogDef &)> &show_dialog)
+void chest_spell_power(Variables &v, DialogStack &ds)
 {
-    show_dialog({
+    ds.show_dialog({
         .x = 1,
         .y = 18,
         .w = 30,
@@ -146,7 +148,7 @@ void chest_spell_power(SharedState &state, std::function<void(const DialogDef &)
     });
 }
 
-void chest_spell_capacity(SharedState &state, std::function<void(const DialogDef &)> &show_dialog)
+void chest_spell_capacity(Variables &v, GenVariables &gen, DialogStack &ds)
 {
     static constexpr int kSpellCapacityBase[] = {
         1,
@@ -155,10 +157,10 @@ void chest_spell_capacity(SharedState &state, std::function<void(const DialogDef
         2,
     };
 
-    int capacity = state.artifacts_found[ArtiRingOfHeroism] ? kSpellCapacityBase[state.continent] * 2 : kSpellCapacityBase[state.continent];
-    state.max_spells += capacity;
+    int capacity = gen.artifacts_found[ArtiRingOfHeroism] ? kSpellCapacityBase[v.continent] * 2 : kSpellCapacityBase[v.continent];
+    v.max_spells += capacity;
 
-    show_dialog({
+    ds.show_dialog({
         .x = 1,
         .y = 18,
         .w = 30,
@@ -175,13 +177,13 @@ void chest_spell_capacity(SharedState &state, std::function<void(const DialogDef
     });
 }
 
-void chest_spell(SharedState &state, std::function<void(const DialogDef &)> &show_dialog)
+void chest_spell(Variables &v, DialogStack &ds)
 {
-    int amount = (rand() % (state.continent + 1)) + 1;
+    int amount = (rand() % (v.continent + 1)) + 1;
     int spell = rand() % 14;
-    state.spells[spell] += amount;
+    v.spells[spell] += amount;
 
-    show_dialog({
+    ds.show_dialog({
         .x = 1,
         .y = 18,
         .w = 30,
@@ -197,23 +199,23 @@ void chest_spell(SharedState &state, std::function<void(const DialogDef &)> &sho
     });
 }
 
-void chest_roll(SharedState &state, std::function<void(const DialogDef &)> show_dialog)
+void chest_roll(Variables &v, GenVariables &gen, DialogStack &ds)
 {
     int roll = rand() % 100;
 
-    if (roll < kChestChanceGold[state.continent]) {
-        chest_gold(state, show_dialog);
+    if (roll < kChestChanceGold[v.continent]) {
+        chest_gold(v, gen, ds);
     }
-    else if (roll < kChestChanceCommission[state.continent]) {
-        chest_commission(state, show_dialog);
+    else if (roll < kChestChanceCommission[v.continent]) {
+        chest_commission(v, ds);
     }
-    else if (roll < kChestChanceSpellPower[state.continent]) {
-        chest_spell_power(state, show_dialog);
+    else if (roll < kChestChanceSpellPower[v.continent]) {
+        chest_spell_power(v, ds);
     }
-    else if (roll < kChestChanceSpellCapacity[state.continent]) {
-        chest_spell_capacity(state, show_dialog);
+    else if (roll < kChestChanceSpellCapacity[v.continent]) {
+        chest_spell_capacity(v, gen, ds);
     }
     else {
-        chest_spell(state, show_dialog);
+        chest_spell(v, ds);
     }
 }

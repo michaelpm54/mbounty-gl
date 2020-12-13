@@ -633,6 +633,76 @@ int const kVillainRewards[17] = {
 
 namespace bty {
 
+/* clang-format off */
+static constexpr int kMoraleGroups[25] = {
+	0, 2, 0, 3, 4,
+	4, 2, 3, 1, 2,
+	1, 2, 2, 4, 1,
+	3, 2, 3, 1, 2,
+	2, 4, 2, 4, 3,
+};
+
+/* 0 = normal
+   1 = high
+   2 = low
+*/
+static constexpr int kMoraleChart[25] = {
+	0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0,
+	0, 0, 1, 0, 0,
+	2, 0, 2, 1, 0,
+	2, 2, 2, 0, 0,
+};
+/* clang-format on */
+
+int check_morale(int me, int *army)
+{
+    bool normal = false;
+    for (int i = 0; i < 5; i++) {
+        if (army[i] == -1) {
+            continue;
+        }
+        int result = kMoraleChart[kMoraleGroups[army[me]] + kMoraleGroups[army[i]] * 5];
+        if (result == 2) {
+            return 1;
+        }
+        if (result == 0) {
+            normal = true;
+        }
+    }
+    if (normal) {
+        return 0;
+    }
+    return 2;
+}
+
+std::string get_descriptor(int count)
+{
+    static constexpr const char *const kDescriptors[] = {
+        "A few",
+        "Some",
+        "Many",
+        "A lot of",
+        "A horde of",
+        "A multitude of",
+    };
+
+    static constexpr int kThresholds[] = {
+        10,
+        20,
+        50,
+        100,
+        500,
+    };
+
+    int descriptor = 0;
+    while (count >= kThresholds[descriptor] && descriptor < 5) {
+        descriptor++;
+    }
+
+    return kDescriptors[descriptor];
+}
+
 int random(int max)
 {
     return max == 0 ? 0 : rand() % max;
@@ -1126,4 +1196,91 @@ const Unit kUnits[UnitId::UnitCount] =
             kMoraleGroupD,
             AbilityFly | AbilityImmune,
         },
+};
+
+const int kTownsAlphabetical[26] = {
+    3,
+    14,
+    7,
+    16,
+    12,
+    22,
+    18,
+    21,
+    17,
+    19,
+    13,
+    5,
+    9,
+    15,
+    11,
+    2,
+    8,
+    0,
+    6,
+    4,
+    1,
+    20,
+    24,
+    10,
+    23,
+    25,
+};
+
+const int kTownGateX[26] = {
+    0x1d,
+    0x39,
+    0x26,
+    0x23,
+    0x05,
+    0x10,
+    0x0c,
+    0x09,
+    0x0d,
+    0x39,
+    0x33,
+    0x39,
+    0x03,
+    0x10,
+    0x28,
+    0x32,
+    0x3a,
+    0x38,
+    0x09,
+    0x0d,
+    0x06,
+    0x0c,
+    0x2f,
+    0x32,
+    0x03,
+    0x3a,
+};
+
+const int kTownGateY[26] = {
+    0x0b,
+    0x04,
+    0x31,
+    0x17,
+    0x31,
+    0x2c,
+    0x3c,
+    0x26,
+    0x1b,
+    0x21,
+    0x1d,
+    0x38,
+    0x24,
+    0x15,
+    0x3a,
+    0x0e,
+    0x3b,
+    0x05,
+    0x3b,
+    0x08,
+    0x03,
+    0x04,
+    0x23,
+    0x08,
+    0x09,
+    0x2f,
 };

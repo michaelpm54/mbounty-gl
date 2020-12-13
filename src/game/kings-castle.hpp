@@ -3,26 +3,30 @@
 
 #include "bounty.hpp"
 #include "game/recruit-input.hpp"
+#include "game/scene.hpp"
 #include "gfx/dialog.hpp"
 #include "gfx/sprite.hpp"
-
-struct SharedState;
-struct Tile;
-class Hud;
 
 namespace bty {
 class Gfx;
 struct Texture;
 }    // namespace bty
 
-class KingsCastle {
+struct Tile;
+class SceneStack;
+class Assets;
+class Hud;
+struct Variables;
+
+class KingsCastle : public Scene {
 public:
-    void load(bty::Assets &assets, bty::BoxColor color, SharedState &state, Hud &hud_);
-    void draw(bty::Gfx &gfx, glm::mat4 &camera);
+    KingsCastle(SceneStack &ss, bty::Assets &assets, Hud &hud, Variables &v);
+    void draw(bty::Gfx &gfx, glm::mat4 &camera) override;
+    void key(int key, int action) override;
+    void update(float dt) override;
+
     void view();
-    void update(float dt);
-    int key(int key, int action);
-    void update_gold();
+    void set_gold(int gold);
     void set_color(bty::BoxColor color);
 
 private:
@@ -30,8 +34,9 @@ private:
     void main_opt();
 
 private:
-    Hud *hud_;
-    SharedState *state_;
+    SceneStack &ss;
+    Hud &hud;
+    Variables &v;
     bty::Sprite bg_;
     bty::Sprite unit_;
     bty::Dialog dialog_;

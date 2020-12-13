@@ -7,23 +7,18 @@
 #include "assets.hpp"
 #include "bounty.hpp"
 #include "game/map.hpp"
+#include "game/scene-stack.hpp"
+#include "game/variables.hpp"
 #include "gfx/gfx.hpp"
 #include "gfx/texture.hpp"
+#include "glfw.hpp"
 #include "shared-state.hpp"
 
-ViewContinent::ViewContinent()
-    : map_texture_({64, 64, GL_NONE, 1, 1, 64, 64})
+ViewContinent::ViewContinent(SceneStack &ss, bty::Assets &assets)
+    : ss(ss)
+    , map_texture_({64, 64, GL_NONE, 1, 1, 64, 64})
 {
-}
-
-ViewContinent::~ViewContinent()
-{
-    glDeleteTextures(1, &map_texture_.handle);
-}
-
-void ViewContinent::load(bty::Assets &assets, bty::BoxColor color)
-{
-    box_.create(6, 4, 20, 22, color, assets);
+    box_.create(6, 4, 20, 22, bty::BoxColor::Intro, assets);
     continent_ = box_.add_line(5, 1, "");
     coordinates_ = box_.add_line(1, 20, "");
 
@@ -39,32 +34,43 @@ void ViewContinent::load(bty::Assets &assets, bty::BoxColor color)
     map_.set_size(128, 128);
 }
 
+ViewContinent::~ViewContinent()
+{
+    glDeleteTextures(1, &map_texture_.handle);
+}
+
 void ViewContinent::draw(bty::Gfx &gfx, glm::mat4 &camera)
 {
     box_.draw(gfx, camera);
     gfx.draw_sprite(map_, camera);
 }
 
-void ViewContinent::view(int x, int y, int continent, const unsigned char *const map)
+void ViewContinent::update_info(Variables &v)
 {
-    x_ = x;
-    y_ = y;
-    dot_timer_ = 0;
+    this->v = &v;
 
-    continent_->set_string(kContinents[continent]);
-    coordinates_->set_string(fmt::format("X={:>2} Position Y={:>2}", x, 63 - y));
+    set_color(bty::get_box_color(v.diff));
+
+    x_ = v.x;
+    y_ = v.y;
+
+    continent_->set_string(kContinents[v.continent]);
+    coordinates_->set_string(fmt::format("X={:>2} Position Y={:>2}", v.x, 63 - v.y));
 
     std::vector<unsigned char> pixels(64 * 64 * 4);
     unsigned char *p = pixels.data();
 
     /* ARGB */
-    static constexpr uint32_t cyan = 0xFF00AAAA;
-    static constexpr uint32_t green = 0xFF00BB00;
-    static constexpr uint32_t dark_green = 0xFF00AA00;
-    static constexpr uint32_t yellow = 0xFFCCCC00;
-    static constexpr uint32_t brown = 0xFF786316;
-    static constexpr uint32_t grey = 0xFFAAAAAA;
+    static constexpr uint32_t water_edge = 0xFF2161C7;
+    static constexpr uint32_t water_deep = 0xFF002084;
+    static constexpr uint32_t grass = 0xFF21A300;
+    static constexpr uint32_t trees = 0xFF006100;
+    static constexpr uint32_t rocks = 0xFF844100;
     static constexpr uint32_t black = 0xFF000000;
+    static constexpr uint32_t yellow = 0xFFCCCC00;
+    static constexpr uint32_t castle = 0xFFe8E4E8;
+
+    const unsigned char *const map = fog ? v.visited_tiles[v.continent].data() : v.tiles[v.continent];
 
     for (int i = 0; i < 4096; i++) {
         int id = map[i];
@@ -72,25 +78,28 @@ void ViewContinent::view(int x, int y, int continent, const unsigned char *const
             std::memcpy(p + i * 4, &black, 4);
         }
         else if (id <= Tile_GrassInFrontOfCastle) {
-            std::memcpy(p + i * 4, &green, 4);
+            std::memcpy(p + i * 4, &grass, 4);
         }
-        else if (id >= Tile_WaterIRT && id <= Tile_Water) {
-            std::memcpy(p + i * 4, &cyan, 4);
+        else if (id >= Tile_WaterIRT && id < Tile_Water) {
+            std::memcpy(p + i * 4, &water_edge, 4);
+        }
+        else if (id == Tile_Water) {
+            std::memcpy(p + i * 4, &water_deep, 4);
         }
         else if (id >= Tile_TreeERB && id <= Tile_Tree) {
-            std::memcpy(p + i * 4, &dark_green, 4);
+            std::memcpy(p + i * 4, &trees, 4);
         }
         else if (id >= Tile_SandELT && id <= Tile_Sand) {
             std::memcpy(p + i * 4, &yellow, 4);
         }
         else if (id >= Tile_RockELT && id <= Tile_Rock) {
-            std::memcpy(p + i * 4, &brown, 4);
+            std::memcpy(p + i * 4, &rocks, 4);
         }
         else if (id >= Tile_CastleLT && id <= Tile_CastleRB) {
-            std::memcpy(p + i * 4, &grey, 4);
+            std::memcpy(p + i * 4, &castle, 4);
         }
         else {
-            std::memcpy(p + i * 4, &dark_green, 4);
+            std::memcpy(p + i * 4, &trees, 4);
         }
     }
 
@@ -113,7 +122,7 @@ void ViewContinent::update(float dt)
     dot_timer_ += dt;
     dot_alpha_ = glm::abs(glm::cos(dot_timer_ * 4));
 
-    uint8_t val = 0xFF * dot_alpha_;
+    uint8_t val = static_cast<uint8_t>(255 * dot_alpha_);
 
     /* Cyan */
     uint32_t pixel = 0xFF000000 | (val << 8) | val;
@@ -133,4 +142,20 @@ void ViewContinent::update(float dt)
 void ViewContinent::set_color(bty::BoxColor color)
 {
     box_.set_color(color);
+}
+
+void ViewContinent::key(int key, int action)
+{
+    if (action == GLFW_PRESS) {
+        switch (key) {
+            case GLFW_KEY_BACKSPACE:
+                ss.pop(0);
+            case GLFW_KEY_ENTER:
+                fog = !fog;
+                update_info(*v);
+                break;
+            default:
+                break;
+        }
+    }
 }

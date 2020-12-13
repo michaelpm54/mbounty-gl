@@ -17,6 +17,7 @@ struct DialogDef {
     };
     struct Callbacks {
         std::function<void(int)> confirm {nullptr};
+        std::function<void()> back {nullptr};
         std::function<void(bty::Dialog &dialog)> up {nullptr};
         std::function<void(bty::Dialog &dialog)> down {nullptr};
         std::function<void(bty::Dialog &dialog)> left {nullptr};
@@ -31,6 +32,7 @@ struct DialogDef {
     std::vector<bool> visible_options;
     Callbacks callbacks {};
     bool pop_on_confirm {true};
+    bool steals_input {true};
 };
 
 #endif    // BTY_GAME_DIALOG_DEF_HPP_

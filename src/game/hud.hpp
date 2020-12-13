@@ -1,6 +1,7 @@
 #ifndef GAME_HUD_HPP_
 #define GAME_HUD_HPP_
 
+#include <functional>
 #include <glm/mat4x4.hpp>
 #include <vector>
 
@@ -20,25 +21,37 @@ struct SharedState;
 
 class Hud {
 public:
-    void load(bty::Assets &assets, SharedState &state);
+    Hud() = default;
+    Hud(bty::Assets &assets);
+
     void draw(bty::Gfx &gfx, glm::mat4 &camera);
     void update(float dt);
-    void update_state();
     bty::Sprite *get_contract();
     void set_timestop(int amount);
     void clear_timestop();
 
-    /* Temporarily set the text in the box. Intended to be cleared ASAP. */
-    /* Useful for an alert or message. */
-    void set_title(const std::string &msg);
+    void set_error(const std::string &msg, std::function<void()> then = nullptr);
+    void set_title(const std::string &msg); /* Similar to set_error except it doesn't take input. */
+    void clear_error();
+    bool get_error() const;
+
     void set_blank_frame();
     void set_hud_frame();
     void set_color(bty::BoxColor color);
 
-private:
-    SharedState *state_ {nullptr};
-    const bty::Font *font_ {nullptr};
+    void set_hero(int hero, int rank);
+    void set_days(int days);
+    void set_contract(int contract);
+    void set_magic(bool val);
+    void set_siege(bool val);
+    void set_puzzle(bool *villains, bool *artifacts);
+    void set_gold(int gold);
 
+    void update_state()
+    {
+    }
+
+private:
     const bty::Texture *blank_frame_;
     const bty::Texture *hud_frame_;
 
@@ -69,6 +82,10 @@ private:
     int num_copper_coins_ {0};
 
     bool timestop_ {false};
+
+    bty::Text error_text;
+    std::function<void()> error_then_;
+    bool error {false};
 };
 
 #endif    // GAME_HUD_HPP_

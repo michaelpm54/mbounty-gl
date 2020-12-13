@@ -1,6 +1,7 @@
 #ifndef BTY_GAME_VIEW_CONTRACT_HPP_
 #define BTY_GAME_VIEW_CONTRACT_HPP_
 
+#include "game/scene.hpp"
 #include "gfx/rect.hpp"
 #include "gfx/sprite.hpp"
 #include "gfx/text.hpp"
@@ -13,16 +14,24 @@ class Gfx;
 struct Texture;
 }    // namespace bty
 
-struct SharedState;
+class SceneStack;
+struct GenVariables;
+struct Variables;
 
-class ViewContract {
+class ViewContract : public Scene {
 public:
-    void load(bty::Assets &assets, bty::BoxColor color);
-    void draw(bty::Gfx &gfx, glm::mat4 &camera);
+    ViewContract(SceneStack &ss, bty::Assets &assets, Variables &v, GenVariables &gen, bty::Sprite *contract_sprite);
+    void draw(bty::Gfx &gfx, glm::mat4 &camera) override;
     void view(int contract, const std::string &castle, bty::Sprite *contract_sprite);
+    void key(int key, int action);
+    void update(float dt);
+    void update_info();
     void set_color(bty::BoxColor color);
 
 private:
+    SceneStack &ss;
+    Variables &v;
+    GenVariables &gen;
     bty::TextBox box_;
     bty::Text no_contract_text_;
     bool no_contract_ {false};

@@ -1,6 +1,7 @@
 #ifndef BTY_GAME_VIEW_CONTINENT_HPP_
 #define BTY_GAME_VIEW_CONTINENT_HPP_
 
+#include "game/scene.hpp"
 #include "gfx/rect.hpp"
 #include "gfx/sprite.hpp"
 #include "gfx/text.hpp"
@@ -13,19 +14,23 @@ class Gfx;
 struct Texture;
 }    // namespace bty
 
-struct SharedState;
+class SceneStack;
+struct Variables;
 
-class ViewContinent {
+class ViewContinent : public Scene {
 public:
-    ViewContinent();
+    ViewContinent(SceneStack &ss, bty::Assets &assets);
     ~ViewContinent();
-    void load(bty::Assets &assets, bty::BoxColor color);
-    void draw(bty::Gfx &gfx, glm::mat4 &camera);
-    void view(int x, int y, int continent, const unsigned char *const map);
-    void update(float dt);
+    void draw(bty::Gfx &gfx, glm::mat4 &camera) override;
+    void update(float dt) override;
+    void key(int key, int action) override;
+
+    void update_info(Variables &v);
     void set_color(bty::BoxColor color);
 
 private:
+    Variables *v;
+    SceneStack &ss;
     bty::TextBox box_;
     bty::Text *continent_ {nullptr};
     bty::Text *coordinates_ {nullptr};
@@ -35,6 +40,7 @@ private:
     float dot_alpha_ {0};
     int x_ {0};
     int y_ {0};
+    bool fog {true};
 };
 
 #endif    // BTY_GAME_VIEW_CONTINENT_HPP_

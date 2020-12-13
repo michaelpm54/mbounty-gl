@@ -13,7 +13,7 @@ class Font;
 class Text : public Transformable {
 public:
     Text();
-    ~Text();
+    virtual ~Text();
     Text(Text &&other);
 
     void create(int x, int y, const std::string &string, const Font &font);
@@ -25,11 +25,14 @@ public:
     const Font *get_font() const;
 
 private:
+    void update_vbo();
+
+private:
     const Font *font_ {nullptr};
     GLuint vbo_ {GL_NONE};
     GLuint vao_ {GL_NONE};
     GLuint num_vertices_ {0};
-    std::string string_;
+    std::string string_ {""};
 };
 
 }    // namespace bty

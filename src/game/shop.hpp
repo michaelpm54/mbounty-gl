@@ -3,10 +3,14 @@
 
 #include "bounty.hpp"
 #include "game/recruit-input.hpp"
+#include "game/scene.hpp"
 #include "gfx/dialog.hpp"
 #include "gfx/sprite.hpp"
 
-struct SharedState;
+struct Variables;
+struct GenVariables;
+struct SharedVariables;
+class SceneStack;
 struct Tile;
 struct ShopInfo;
 class Hud;
@@ -16,22 +20,26 @@ class Gfx;
 struct Texture;
 }    // namespace bty
 
-class Shop {
+class Shop : public Scene {
 public:
-    void load(bty::Assets &assets, bty::BoxColor color, SharedState &state, Hud &hud);
-    void draw(bty::Gfx &gfx, glm::mat4 &camera);
-    void view(ShopInfo &shop);
-    void update(float dt);
-    int key(int key, int action);
+    Shop(SceneStack &ss, bty::Assets &assets, Variables &v, GenVariables &gen, Hud &hud);
+
+    void draw(bty::Gfx &gfx, glm::mat4 &camera) override;
+    void update(float dt) override;
+    void key(int key, int action) override;
+
     void set_color(bty::BoxColor color);
+    void view(ShopInfo &shop);
 
 private:
     void confirm();
 
 private:
+    SceneStack &ss;
+    Variables &v;
+    GenVariables &gen;
+    Hud &hud;
     ShopInfo *info_ {nullptr};
-    SharedState *state_;
-    Hud *hud_;
     bty::Sprite bg_;
     bty::Sprite unit_;
     bty::TextBox box_;

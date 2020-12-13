@@ -40,7 +40,6 @@ public:
 
 private:
     std::array<Sprite, 8> box_;
-    std::deque<Text> lines_;
     std::vector<bool> lines_visible_;
     Rect background_;
     Rect background_outline_;
@@ -48,6 +47,7 @@ private:
     float height_;
 
 protected:
+    std::deque<Text> lines_;
     const Font *font_;
     int x_;
     int y_;

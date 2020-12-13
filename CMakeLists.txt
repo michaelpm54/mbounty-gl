@@ -25,11 +25,15 @@ set(MBOUNTYGL_SRC
 	src/gfx/text.cpp
 	src/gfx/textbox.cpp
 	src/gfx/transformable.cpp
-	src/intro/intro.cpp
+	src/game/intro.cpp
 	src/game/game.cpp
 	src/game/hud.cpp
 	src/game/map.cpp
+	src/game/scene-stack.cpp
+	src/game/dialog-stack.cpp
+	src/game/ingame.cpp
 	src/game/entity.cpp
+	src/game/defeat.cpp
 	src/game/hero.cpp
 	src/game/view-army.cpp
 	src/game/view-character.cpp
@@ -42,7 +46,7 @@ set(MBOUNTYGL_SRC
 	src/game/recruit-input.cpp
 	src/game/chest.cpp
 	src/game/army-gen.cpp
-	src/battle/battle.cpp
+	src/game/battle.cpp
 )
 
 add_executable(${PROJECT_NAME}

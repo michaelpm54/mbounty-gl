@@ -3,6 +3,7 @@
 
 #include <array>
 
+#include "game/scene.hpp"
 #include "gfx/rect.hpp"
 #include "gfx/sprite.hpp"
 #include "gfx/text.hpp"
@@ -15,16 +16,20 @@ struct Texture;
 }    // namespace bty
 
 struct SharedState;
+class SceneStack;
 
-class ViewArmy {
+class ViewArmy : public Scene {
 public:
-    void load(bty::Assets &assets, bty::BoxColor color);
-    void draw(bty::Gfx &gfx, glm::mat4 &camera);
-    void view(int *army, int *counts, int *morales);
-    void update(float dt);
+    ViewArmy(SceneStack &ss, bty::Assets &assets);
+    void draw(bty::Gfx &gfx, glm::mat4 &camera) override;
+    void update(float dt) override;
+    void key(int key, int action) override;
+
     void set_color(bty::BoxColor color);
+    void update_info(int *army, int *counts, int *morales, int diff);
 
 private:
+    SceneStack &ss;
     bty::Sprite frame_;
     std::array<const bty::Texture *, 25> unit_textures_;
     std::array<bty::Rect, 5> rects_;

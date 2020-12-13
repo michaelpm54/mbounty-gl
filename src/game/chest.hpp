@@ -3,8 +3,10 @@
 
 #include "game/dialog-def.hpp"
 
-struct SharedState;
+struct Variables;
+struct GenVariables;
+class DialogStack;
 
-void chest_roll(SharedState &state, std::function<void(const DialogDef &)> show_dialog);
+void chest_roll(Variables &v, GenVariables &gen, DialogStack &ds);
 
 #endif    // BTY_GAME_CHEST_HPP_

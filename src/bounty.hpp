@@ -55,9 +55,14 @@ extern int const kRankSpells[4][4];
 extern int const kRankSpellPower[4][4];
 extern int const kRankLeadership[4][4];
 extern int const kRankVillainsCaptured[4][4];
+extern const int kTownsAlphabetical[26];    // ? has more than 26
+extern const int kTownGateX[26];
+extern const int kTownGateY[26];
 
 namespace bty {
 
+int check_morale(int me, int *army);
+std::string get_descriptor(int count);
 int random(int max);
 std::string number_with_ks(int num);
 

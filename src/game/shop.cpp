@@ -3,12 +3,14 @@
 #include <spdlog/spdlog.h>
 
 #include "assets.hpp"
+#include "game/gen-variables.hpp"
 #include "game/hud.hpp"
 #include "game/map.hpp"
+#include "game/scene-stack.hpp"
 #include "game/shop-info.hpp"
+#include "game/variables.hpp"
 #include "gfx/gfx.hpp"
 #include "glfw.hpp"
-#include "shared-state.hpp"
 
 enum Dwellings {
     Cave,
@@ -52,12 +54,13 @@ static constexpr const char *const kShopNames[] = {
     "Plains",
 };
 
-void Shop::load(bty::Assets &assets, bty::BoxColor color, SharedState &state, Hud &hud)
+Shop::Shop(SceneStack &ss, bty::Assets &assets, Variables &v, GenVariables &gen, Hud &hud)
+    : ss(ss)
+    , v(v)
+    , gen(gen)
+    , hud(hud)
 {
-    state_ = &state;
-    hud_ = &hud;
-
-    box_.create(1, 18, 30, 9, color, assets);
+    box_.create(1, 18, 30, 9, bty::BoxColor::Intro, assets);
     box_.add_line(1, 1, "");     // Shop name
     box_.add_line(1, 2, "");     // underline
     box_.add_line(1, 4, "");     // available
@@ -99,6 +102,8 @@ void Shop::view(ShopInfo &info)
         return;
     }
 
+    set_color(bty::get_box_color(v.diff));
+
     info_ = &info;
 
     recruit_input_.clear();
@@ -124,14 +129,14 @@ void Shop::view(ShopInfo &info)
 
     int already_have = 0;
     for (int i = 0; i < 5; i++) {
-        if (state_->army[i] == info.unit) {
-            already_have = state_->army_counts[i];
+        if (v.army[i] == info.unit) {
+            already_have = v.counts[i];
             break;
         }
     }
 
-    int recruitable = (state_->leadership / unit.hp) - already_have;
-    recruitable = std::min(state_->gold / unit.recruit_cost, recruitable);
+    int recruitable = (v.leadership / unit.hp) - already_have;
+    recruitable = std::min(v.gold / unit.recruit_cost, recruitable);
 
     const std::string shop_name = kShopNames[shop_type];
     int num_spaces = 14 - (shop_name.size() / 2);
@@ -141,7 +146,7 @@ void Shop::view(ShopInfo &info)
     box_.set_line(1, spaces + std::string(shop_name.size(), '_'));
     box_.set_line(2, fmt::format("{} {} are available.", info.count, kUnits[info.unit].name_plural));
     box_.set_line(3, fmt::format("Cost = {} each.", kUnits[info.unit].recruit_cost));
-    box_.set_line(4, fmt::format("GP={}", bty::number_with_ks(state_->gold)));
+    box_.set_line(4, fmt::format("GP={}", bty::number_with_ks(v.gold)));
     box_.set_line(5, fmt::format("You may recruit up to {}.", recruitable));
     recruit_input_.set_max(recruitable);
 
@@ -150,12 +155,12 @@ void Shop::view(ShopInfo &info)
 
 void Shop::update(float dt)
 {
-    unit_.animate(dt);
+    unit_.update(dt);
     recruit_input_.update(dt);
     box_.set_line(7, fmt::format("{:>3}", recruit_input_.get_current()));
 }
 
-int Shop::key(int key, int action)
+void Shop::key(int key, int action)
 {
     recruit_input_.key(key, action);
 
@@ -164,13 +169,13 @@ int Shop::key(int key, int action)
             if (action == GLFW_PRESS) {
                 confirm();
             }
-            return 0;
+            break;
         case GLFW_KEY_BACKSPACE:
-            return -2;
+            ss.pop(0);
+            break;
         default:
             break;
     }
-    return -1;
 }
 
 void Shop::set_color(bty::BoxColor color)
@@ -187,56 +192,44 @@ void Shop::confirm()
     int recruit_cost = kUnits[info_->unit].recruit_cost;
     int current = recruit_input_.get_current();
 
-    if (recruit_cost > state_->gold) {
-        hud_->set_title("     You do not have enough gold!");
+    if (recruit_cost > v.gold) {
+        hud.set_error("     You do not have enough gold!");
     }
     else if (current > 0) {
         int cost = current * recruit_cost;
-        state_->gold -= cost;
-        hud_->update_state();
+        v.gold -= cost;
+        hud.set_gold(v.gold);
         info_->count -= current;
 
-        int already_have = 0;
+        /* Add the amount to the existing one. */
+        bool already_have = false;
         for (int i = 0; i < 5; i++) {
-            if (state_->army[i] == info_->unit) {
-                already_have = state_->army_counts[i];
+            if (v.army[i] == info_->unit) {
+                v.counts[i] += current;
+                already_have = true;
                 break;
             }
         }
 
-        bool found = false;
-        for (int i = 0; i < 5; i++) {
-            if (state_->army[i] == info_->unit) {
-                state_->army_counts[i] += current;
-                found = true;
-                break;
-            }
-        }
-
-        if (!found) {
+        /* Find the first -1 unit and set it to the new one. */
+        if (!already_have) {
             for (int i = 0; i < 5; i++) {
-                if (state_->army[i] == -1) {
-                    state_->army[i] = info_->unit;
-                    state_->army_counts[i] = current;
+                if (v.army[i] == -1) {
+                    v.army[i] = info_->unit;
+                    v.counts[i] = current;
                     break;
                 }
             }
         }
 
-        for (int i = 0; i < 5; i++) {
-            if (state_->army[i] == info_->unit) {
-                already_have = state_->army_counts[i];
-                break;
-            }
-        }
-
+        /* Update the shop info. */
         const auto &unit = kUnits[info_->unit];
 
-        int recruitable = (state_->leadership / unit.hp) - already_have;
-        recruitable = std::min(state_->gold / unit.recruit_cost, recruitable);
+        int recruitable = (v.leadership / unit.hp) - already_have;
+        recruitable = std::min(v.gold / unit.recruit_cost, recruitable);
 
         box_.set_line(2, fmt::format("{} {} are available.", info_->count, kUnits[info_->unit].name_plural));
-        box_.set_line(4, fmt::format("GP={}", bty::number_with_ks(state_->gold)));
+        box_.set_line(4, fmt::format("GP={}", bty::number_with_ks(v.gold)));
         box_.set_line(5, fmt::format("You may recruit up to {}.", recruitable));
         recruit_input_.set_max(recruitable);
     }

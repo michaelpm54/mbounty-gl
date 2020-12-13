@@ -19,7 +19,7 @@ void Dialog::next()
 
     for (int i = 0; i < options_.size(); i++) {
         int selection = (selection_ + i + 1) % std::max(static_cast<int>(options_.size()), 1);
-        if (!disabled_options_[selection] && visible_options_[selection]) {
+        if (options_[selection].enabled() && options_[selection].visible()) {
             found = selection;
             break;
         }
@@ -44,7 +44,7 @@ void Dialog::prev()
 
     for (int i = 0; i < options_.size(); i++) {
         int selection = (selection_ - i - 1 + options_.size()) % std::max(static_cast<int>(options_.size()), 1);
-        if (!disabled_options_[selection] && visible_options_[selection]) {
+        if (options_[selection].enabled() && options_[selection].visible()) {
             found = selection;
             break;
         }
@@ -82,22 +82,18 @@ void Dialog::create(
     TextBox::set_size(w, h);
 
     options_.clear();
-    disabled_options_.clear();
-    visible_options_.clear();
     arrow_.set_texture(assets.get_texture("arrow.png", {2, 2}));
     selection_ = -1;
 
     set_position(x, y);
 }
 
-Text *Dialog::add_option(int x, int y, const std::string &str)
+Option *Dialog::add_option(int x, int y, const std::string &str)
 {
-    Text text;
-    text.create(x_ + x, y_ + y, str, *font_);
+    Option opt;
+    opt.create(x_ + x, y_ + y, str, *font_);
 
-    options_.push_back(std::move(text));
-    visible_options_.push_back(true);
-    disabled_options_.push_back(false);
+    options_.push_back(std::move(opt));
 
     set_selection(0);
 
@@ -134,9 +130,9 @@ void Dialog::draw(Gfx &gfx, glm::mat4 &camera)
     if (draw_arrow_)
         gfx.draw_sprite(arrow_, camera);
 
-    for (int i = 0; i < options_.size(); i++) {
-        if (visible_options_[i]) {
-            gfx.draw_text(options_[i], camera);
+    for (auto &opt : options_) {
+        if (opt.visible()) {
+            gfx.draw_text(opt, camera);
         }
     }
 }
@@ -149,7 +145,7 @@ void Dialog::update_arrow()
     if (!arrow_.get_texture())
         return;
 
-    if (disabled_options_[selection_] || !visible_options_[selection_]) {
+    if (!options_[selection_].enabled() || !options_[selection_].visible()) {
         draw_arrow_ = false;
         return;
     }
@@ -160,17 +156,9 @@ void Dialog::update_arrow()
     arrow_.set_position(options_[selection_].get_position() - glm::vec2(arrow_.get_texture()->frame_width, 0.0f));
 }
 
-void Dialog::set_option_disabled(int index, bool disabled)
+void Dialog::update(float dt)
 {
-    disabled_options_[index] = disabled;
-
-    if (selection_ == index)
-        next();
-}
-
-void Dialog::animate(float dt)
-{
-    arrow_.animate(dt);
+    arrow_.update(dt);
 }
 
 int Dialog::get_selection() const
@@ -181,26 +169,52 @@ int Dialog::get_selection() const
 void Dialog::clear_options()
 {
     options_.clear();
-    disabled_options_.clear();
-    visible_options_.clear();
     selection_ = -1;
 }
 
-void Dialog::set_option_visibility(int index, bool visible)
+std::deque<Option> &Dialog::get_options()
 {
-    if (index < 0 || index >= options_.size()) {
-        spdlog::warn("Dialog::set_option_visibility: {} out of range", index);
-        return;
-    }
-    visible_options_[index] = visible;
-    if (index == selection_) {
-        next();
-    }
+    return options_;
 }
 
-bool Dialog::get_option_visible(int index) const
+void Option::enable()
 {
-    return index < options_.size() && visible_options_[index];
+    enabled_ = true;
+}
+
+void Option::disable()
+{
+    enabled_ = false;
+}
+
+bool Option::enabled() const
+{
+    return enabled_;
+}
+
+void Option::show()
+{
+    visible_ = true;
+}
+
+void Option::hide()
+{
+    visible_ = false;
+}
+
+bool Option::visible() const
+{
+    return visible_;
+}
+
+void Option::set_enabled(bool val)
+{
+    enabled_ = val;
+}
+
+void Option::set_visible(bool val)
+{
+    visible_ = val;
 }
 
 }    // namespace bty

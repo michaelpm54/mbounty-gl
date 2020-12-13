@@ -28,7 +28,7 @@ public:
     Sprite(const Texture *texture, const glm::vec2 &position);
     void set_texture(const Texture *texture);
     const Texture *get_texture() const;
-    void animate(float dt);
+    void update(float dt);
     int get_frame() const;
     void set_flip(bool val);
     bool get_flip() const;

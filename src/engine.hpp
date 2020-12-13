@@ -3,6 +3,7 @@
 
 #include <memory>
 
+#include "game/game.hpp"
 #include "gfx/gfx.hpp"
 #include "window-engine-interface.hpp"
 
@@ -15,16 +16,16 @@ class SceneSwitcher;
 
 class Engine {
 public:
-    Engine(Window &window, Assets &assets, SceneSwitcher &scene_switcher);
+    Engine(Window &window, Assets &assets);
     void run();
     void key(int key, int scancode, int action, int mods);
     void quit();
 
 private:
+    Game game;
     std::unique_ptr<Gfx> gfx_;
     input::InputHandler input_;
     Window *window_ {nullptr};
-    SceneSwitcher *scene_switcher_;
     bool run_ {true};
 };
 

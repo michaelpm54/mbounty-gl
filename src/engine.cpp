@@ -1,26 +1,19 @@
 #include "engine.hpp"
 
-/* clang-format off */
-#include "gfx/gl.hpp"
-#ifdef _WIN32
-#include <windows.h>
-#endif
-#include <GLFW/glfw3.h>
-/* clang-format on */
-
 #include <spdlog/spdlog.h>
 
 #include "gfx/gfx.hpp"
+#include "glfw.hpp"
 #include "scene-switcher.hpp"
 #include "window.hpp"
 
 namespace bty {
 
-Engine::Engine(Window &window, Assets &assets, SceneSwitcher &scene_switcher)
-    : gfx_(std::make_unique<Gfx>(assets))
+Engine::Engine(Window &window, Assets &assets)
+    : game(window.handle, assets)
+    , gfx_(std::make_unique<Gfx>(assets))
     , input_({.engine = this})
     , window_(&window)
-    , scene_switcher_(&scene_switcher)
 {
     window_init_callbacks(window_, &input_);
 }
@@ -30,9 +23,9 @@ void Engine::run()
     float dt = 1.0f / 60.0f;
     while (run_) {
         window_events(window_);
-        scene_switcher_->update(dt);
+        game.update(dt);
         gfx_->clear();
-        scene_switcher_->draw(*gfx_);
+        game.draw(*gfx_);
         window_swap(window_);
     }
 }
@@ -44,7 +37,7 @@ void Engine::key(int key, int scancode, int action, int mods)
             quit();
             break;
         default:
-            scene_switcher_->key(key, scancode, action, mods);
+            game.key(key, action);
             break;
     }
 }

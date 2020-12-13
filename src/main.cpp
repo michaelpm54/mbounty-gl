@@ -1,21 +1,9 @@
-/* clang-format off */
-#include <GL/glew.h>
-#ifdef _WIN32
-#include <windows.h>
-#endif
-#include <GLFW/glfw3.h>
-/* clang-format on */
+#include <spdlog/spdlog.h>
 
 #include <filesystem>
 
-#include <spdlog/spdlog.h>
-
 #include "engine.hpp"
-#include "game/game.hpp"
-#include "intro/intro.hpp"
-#include "battle/battle.hpp"
-#include "scene-id.hpp"
-#include "scene-switcher.hpp"
+#include "glfw.hpp"
 #include "window.hpp"
 
 void APIENTRY glDebugOutput(GLenum source,
@@ -66,19 +54,8 @@ int main(int argc, char *argv[])
 
     {
         bty::Assets assets(base_path);
-        bty::SceneSwitcher scene_switcher(window, assets);
-        bty::Engine engine(*window, assets, scene_switcher);
-
-        Intro intro(scene_switcher);
-        Game game(scene_switcher);
-        Battle battle(scene_switcher);
-
-        scene_switcher.add_scene(SceneId::Intro, intro);
-        scene_switcher.add_scene(SceneId::Game, game);
-        scene_switcher.add_scene(SceneId::Battle, battle);
-
-        if (scene_switcher.set_scene(SceneId::Intro))
-            engine.run();
+        bty::Engine engine(*window, assets);
+        engine.run();
     }
 
     window_free(window);

@@ -1,4 +1,4 @@
-#include "battle/battle.hpp"
+#include "game/battle.hpp"
 
 #include <spdlog/spdlog.h>
 
@@ -6,10 +6,12 @@
 
 #include "assets.hpp"
 #include "bounty.hpp"
+#include "game/dialog-stack.hpp"
+#include "game/gen-variables.hpp"
+#include "game/scene-stack.hpp"
+#include "game/variables.hpp"
 #include "gfx/gfx.hpp"
 #include "glfw.hpp"
-#include "scene-switcher.hpp"
-#include "shared-state.hpp"
 
 static constexpr char const *kVictoryMessage = {
     R"raw(          Victory!
@@ -108,17 +110,17 @@ static constexpr char const *kStatuses[] = {
     "{} are out of control!",
 };
 
-Battle::Battle(bty::SceneSwitcher &scene_switcher)
-    : scene_switcher_(&scene_switcher)
-{
-}
-
-bool Battle::load(bty::Assets &assets)
+Battle::Battle(SceneStack &ss, DialogStack &ds, bty::Assets &assets, Variables &v, GenVariables &gen, ViewArmy &view_army_, ViewCharacter &view_character_)
+    : ss(ss)
+    , ds(ds)
+    , v(v)
+    , gen(gen)
+    , s_view_army(view_army_)
+    , s_view_character(view_character_)
 {
     camera_ = glm::ortho(0.0f, 320.0f, 224.0f, 0.0f, -1.0f, 1.0f);
 
-    auto &state = scene_switcher_->state();
-    auto color = bty::get_box_color(state.difficulty_level);
+    auto color = bty::get_box_color(v.diff);
     auto &font = assets.get_font();
 
     bg_.set_texture(assets.get_texture("battle/encounter.png"));
@@ -138,81 +140,18 @@ bool Battle::load(bty::Assets &assets)
     shoot_ = assets.get_texture("battle/shoot.png", {4, 1});
     magic_ = assets.get_texture("battle/magic.png", {4, 1});
 
-    menu_.create(8, 9, 24, 12, color, assets);
-    menu_.add_option(3, 2, "View your army");
-    menu_.add_option(3, 3, "View your character");
-    menu_.add_option(3, 4, "Use magic");
-    menu_.add_option(3, 5, "Pass");
-    menu_.add_option(3, 6, "Wait");
-    menu_.add_option(3, 7, "Game controls");
-    menu_.add_option(3, 9, "Give up");
-
-    give_up_.create(9, 10, 22, 9, color, assets);
-    give_up_.add_line(1, 1, R"raw(   Giving up will
- forfeit your armies
-and send you back to
-      the King.)raw");
-    give_up_.add_option(4, 6, "Continue battle");
-    give_up_.add_option(4, 7, "Give up");
-
-    view_army_.load(assets, color);
-    view_character_.load(assets, color, state.hero_id);
-
-    /* Create "Use magic" menu */
-    use_magic_.create(
-        10,
-        4,
-        20,
-        22,
-        color,
-        assets);
-
-    use_magic_.add_line(1, 1, "Adventuring Spells");
-    magic_spells_[0] = use_magic_.add_option(4, 3, "");
-    magic_spells_[1] = use_magic_.add_option(4, 4, "");
-    magic_spells_[2] = use_magic_.add_option(4, 5, "");
-    magic_spells_[3] = use_magic_.add_option(4, 6, "");
-    magic_spells_[4] = use_magic_.add_option(4, 7, "");
-    magic_spells_[5] = use_magic_.add_option(4, 8, "");
-    magic_spells_[6] = use_magic_.add_option(4, 9, "");
-    use_magic_.add_line(3, 12, "Combat Spells");
-    magic_spells_[7] = use_magic_.add_option(4, 14, "");
-    magic_spells_[8] = use_magic_.add_option(4, 15, "");
-    magic_spells_[9] = use_magic_.add_option(4, 16, "");
-    magic_spells_[10] = use_magic_.add_option(4, 17, "");
-    magic_spells_[11] = use_magic_.add_option(4, 18, "");
-    magic_spells_[12] = use_magic_.add_option(4, 19, "");
-    magic_spells_[13] = use_magic_.add_option(4, 20, "");
-
-    victory_.create(5, 10, 30, 9, color, assets);
-    victory_.add_line(1, 1, "");
-
-    controls_.create(10, 10, 20, 9, color, assets);
-    controls_.add_line(4, 1, "Game Control");
-    controls_.add_line(4, 2, "____________");
-    controls_.add_option(4, 4, "Music on");
-    controls_.add_option(4, 5, "Sound on");
-    controls_.add_option(4, 6, "Combat delay 5");
-
-    for (int i = 0; i < 7; i++) {
-        use_magic_.set_option_disabled(i, true);
-    }
-
     for (int i = 0; i < UnitId::UnitCount; i++) {
         unit_textures_[i] = assets.get_texture(fmt::format("units/{}.png", i), {2, 2});
     }
 
     for (int i = 0; i < 2; i++) {
-        for (int j = 0; j < 6; j++) {
+        for (int j = 0; j < 5; j++) {
             counts_[i][j].set_font(font);
         }
     }
-
-    loaded_ = true;
-    return true;
 }
 
-void Battle::draw(bty::Gfx &gfx)
+void Battle::draw(bty::Gfx &gfx, glm::mat4 &camera)
 {
     bool tmp_msg {false};
     BattleState tmp_state_;
@@ -220,21 +159,6 @@ void Battle::draw(bty::Gfx &gfx)
         tmp_msg = true;
         tmp_state_ = state_;
         state_ = last_state_;
-    }
-
-    if (state_ == BattleState::ViewArmy) {
-        gfx.draw_sprite(frame_, camera_);
-        gfx.draw_rect(bar_, camera_);
-        gfx.draw_text(status_, camera_);
-        view_army_.draw(gfx, camera_);
-        return;
-    }
-    else if (state_ == BattleState::ViewCharacter) {
-        gfx.draw_sprite(frame_, camera_);
-        gfx.draw_rect(bar_, camera_);
-        gfx.draw_text(status_, camera_);
-        view_character_.draw(gfx, camera_);
-        return;
     }
 
     gfx.draw_sprite(bg_, camera_);
@@ -245,7 +169,7 @@ void Battle::draw(bty::Gfx &gfx)
     gfx.draw_sprite(current_, camera_);
 
     for (int i = 0; i < 2; i++) {
-        for (int j = 0; j < 6; j++) {
+        for (int j = 0; j < 5; j++) {
             if (armies_[i][j] == -1) {
                 continue;
             }
@@ -253,12 +177,12 @@ void Battle::draw(bty::Gfx &gfx)
         }
     }
 
-    if (state_ == BattleState::Moving || state_ == BattleState::Flying || state_ == BattleState::Waiting || state_ == BattleState::Menu || state_ == BattleState::Shooting || state_ == BattleState::Magic || state_ == BattleState::IsFrozen || state_ == BattleState::Delay || state_ == BattleState::Pass || state_ == BattleState::Controls) {
+    if (state_ == BattleState::Moving || state_ == BattleState::Flying || state_ == BattleState::Waiting || state_ == BattleState::Menu || state_ == BattleState::Shooting || state_ == BattleState::Magic || state_ == BattleState::IsFrozen || state_ == BattleState::Delay || state_ == BattleState::Pass) {
         gfx.draw_sprite(cursor_, camera_);
     }
 
     for (int i = 0; i < 2; i++) {
-        for (int j = 0; j < 6; j++) {
+        for (int j = 0; j < 5; j++) {
             if (armies_[i][j] == -1) {
                 continue;
             }
@@ -270,131 +194,14 @@ void Battle::draw(bty::Gfx &gfx)
         gfx.draw_sprite(hit_marker_, camera_);
     }
 
-    if (state_ == BattleState::Menu) {
-        menu_.draw(gfx, camera_);
-    }
-    else if (state_ == BattleState::GiveUp) {
-        give_up_.draw(gfx, camera_);
-    }
-    else if (state_ == BattleState::UseMagic) {
-        use_magic_.draw(gfx, camera_);
-    }
-    else if (state_ == BattleState::Victory) {
-        victory_.draw(gfx, camera_);
-    }
-    else if (state_ == BattleState::Controls) {
-        controls_.draw(gfx, camera_);
-    }
-
     if (tmp_msg) {
         state_ = tmp_state_;
     }
 }
 
-void Battle::key(int key, int scancode, int action, int mods)
+void Battle::key(int key, int action)
 {
-    (void)scancode;
-    (void)mods;
-
     switch (state_) {
-        case BattleState::Menu:
-            switch (action) {
-                case GLFW_PRESS:
-                    switch (key) {
-                        case GLFW_KEY_W:
-                            for (int i = 0; i < 6; i++) {
-                                armies_[1][i] = -1;
-                            }
-                            if (check_end())
-                                return;
-                            break;
-                        case GLFW_KEY_UP:
-                            menu_.prev();
-                            break;
-                        case GLFW_KEY_DOWN:
-                            menu_.next();
-                            break;
-                        case GLFW_KEY_ENTER:
-                            menu_confirm();
-                            break;
-                        case GLFW_KEY_BACKSPACE:
-                            set_state(last_state_);
-                            break;
-                        default:
-                            break;
-                    }
-                    break;
-                default:
-                    break;
-            }
-            break;
-        case BattleState::GiveUp:
-            switch (action) {
-                case GLFW_PRESS:
-                    switch (key) {
-                        case GLFW_KEY_UP:
-                            give_up_.prev();
-                            break;
-                        case GLFW_KEY_DOWN:
-                            give_up_.next();
-                            break;
-                        case GLFW_KEY_ENTER:
-                            give_up_confirm();
-                            break;
-                        case GLFW_KEY_BACKSPACE:
-                            set_state(state_before_menu_);
-                            break;
-                        default:
-                            break;
-                    }
-                    break;
-                default:
-                    break;
-            }
-            break;
-        case BattleState::ViewCharacter:
-            [[fallthrough]];
-        case BattleState::ViewArmy:
-            switch (action) {
-                case GLFW_PRESS:
-                    switch (key) {
-                        case GLFW_KEY_ENTER:
-                            [[fallthrough]];
-                        case GLFW_KEY_BACKSPACE:
-                            set_state(state_before_menu_);
-                            break;
-                        default:
-                            break;
-                    }
-                    break;
-                default:
-                    break;
-            }
-            break;
-        case BattleState::UseMagic:
-            switch (action) {
-                case GLFW_PRESS:
-                    switch (key) {
-                        case GLFW_KEY_BACKSPACE:
-                            set_state(state_before_menu_);
-                            break;
-                        case GLFW_KEY_UP:
-                            use_magic_.prev();
-                            break;
-                        case GLFW_KEY_DOWN:
-                            use_magic_.next();
-                            break;
-                        case GLFW_KEY_ENTER:
-                            use_spell(use_magic_.get_selection());
-                            break;
-                        default:
-                            break;
-                    }
-                    break;
-                default:
-                    break;
-            }
-            break;
         case BattleState::Magic:
             [[fallthrough]];
         case BattleState::Shooting:
@@ -421,9 +228,7 @@ void Battle::key(int key, int scancode, int action, int mods)
                             confirm();
                             break;
                         case GLFW_KEY_SPACE:
-                            [[fallthrough]];
-                        case GLFW_KEY_BACKSPACE:
-                            set_state(BattleState::Menu);
+                            pause();
                             break;
                         default:
                             break;
@@ -453,77 +258,9 @@ void Battle::key(int key, int scancode, int action, int mods)
                     break;
             }
             break;
-        case BattleState::Victory:
-            switch (action) {
-                case GLFW_PRESS:
-                    switch (key) {
-                        case GLFW_KEY_BACKSPACE:
-                            [[fallthrough]];
-                        case GLFW_KEY_SPACE:
-                            [[fallthrough]];
-                        case GLFW_KEY_ENTER:
-                            scene_switcher_->fade_to(SceneId::Game, false);
-                            break;
-                        default:
-                            break;
-                    }
-                    break;
-                default:
-                    break;
-            }
-            break;
-        case BattleState::Controls:
-            switch (action) {
-                case GLFW_PRESS:
-                    switch (key) {
-                        case GLFW_KEY_UP:
-                            controls_.prev();
-                            break;
-                        case GLFW_KEY_DOWN:
-                            controls_.next();
-                            break;
-                        case GLFW_KEY_LEFT:
-                            if (controls_.get_selection() == 2) {
-                                delay_--;
-                                if (delay_ < 0) {
-                                    delay_ = 9;
-                                }
-                                delay_duration_ = delay_ * 0.24f;
-                            }
-                            controls_.set_option(2, fmt::format("Combat delay {}", delay_));
-                            break;
-                        case GLFW_KEY_RIGHT:
-                            if (controls_.get_selection() == 2) {
-                                delay_++;
-                                if (delay_ >= 10) {
-                                    delay_ = 0;
-                                }
-                                delay_duration_ = delay_ * 0.24f;
-                            }
-                            controls_.set_option(2, fmt::format("Combat delay {}", delay_));
-                            break;
-                        case GLFW_KEY_ENTER:
-                            controls_confirm();
-                            break;
-                        case GLFW_KEY_BACKSPACE:
-                            set_state(state_before_menu_);
-                            break;
-                        default:
-                            break;
-                    }
-                    break;
-                default:
-                    break;
-            }
-            break;
         default:
             break;
     }
-}
-
-bool Battle::loaded()
-{
-    return loaded_;
 }
 
 void Battle::update(float dt)
@@ -543,7 +280,7 @@ void Battle::update(float dt)
                 set_state(BattleState::PauseToDisplayDamage);
             }
             else {
-                hit_marker_.animate(dt);
+                hit_marker_.update(dt);
             }
             break;
         case BattleState::PauseToDisplayDamage:
@@ -578,18 +315,6 @@ void Battle::update(float dt)
                 check_end();
             }
             break;
-        case BattleState::Menu:
-            menu_.animate(dt);
-            break;
-        case BattleState::GiveUp:
-            give_up_.animate(dt);
-            break;
-        case BattleState::ViewArmy:
-            view_army_.update(dt);
-            break;
-        case BattleState::UseMagic:
-            use_magic_.animate(dt);
-            break;
         case BattleState::Delay:
             delay_timer_ += dt;
             if (delay_timer_ >= delay_duration_) {
@@ -607,46 +332,34 @@ void Battle::update(float dt)
                 next_unit();
             }
             break;
-        case BattleState::Controls:
-            controls_.animate(dt);
-            break;
         default:
             break;
     }
 
     for (int i = 0; i < 2; i++) {
-        for (int j = 0; j < 6; j++) {
+        for (int j = 0; j < 5; j++) {
             if (armies_[i][j] == -1) {
                 continue;
             }
-            sprites_[i][j].animate(dt);
+            sprites_[i][j].update(dt);
         }
     }
 
-    cursor_.animate(dt);
-    current_.animate(dt);
+    cursor_.update(dt);
+    current_.update(dt);
 }
 
-void Battle::enter(bool reset)
+void Battle::show(std::array<int, 5> &enemy_army, std::array<int, 5> &enemy_counts, bool siege)
 {
-    if (!reset) {
-        return;
-    }
+    this->enemy_army = &enemy_army;
+    this->enemy_counts = &enemy_counts;
+    this->siege = siege;
 
     /* Can happen when the previous battle ended in a draw. */
     /* The battle immediately ends and the player wins. */
     check_end();
 
-    auto &state = scene_switcher_->state();
-    auto color = bty::get_box_color(state.difficulty_level);
-    bar_.set_color(color);
-    menu_.set_color(color);
-    give_up_.set_color(color);
-    view_army_.set_color(color);
-    view_character_.set_color(color);
-    use_magic_.set_color(color);
-    victory_.set_color(color);
-    controls_.set_color(color);
+    bar_.set_color(bty::get_box_color(v.diff));
 
     delay_timer_ = 0;
     last_state_ = BattleState::Moving;
@@ -658,7 +371,7 @@ void Battle::enter(bool reset)
 
     /* Initialise states */
     for (int i = 0; i < 2; i++) {
-        for (int j = 0; j < 6; j++) {
+        for (int j = 0; j < 5; j++) {
             armies_[i][j] = -1;
 
             auto &us = unit_states_[i][j];
@@ -674,16 +387,12 @@ void Battle::enter(bool reset)
         }
     }
 
-    int *armies[] = {state.army, state.enemy_army.data()};
-    int *counts[] = {state.army_counts, state.enemy_counts.data()};
+    int *armies[] = {v.army.data(), enemy_army.data()};
+    int *counts[] = {v.counts.data(), enemy_counts.data()};
 
-    /* Set armies from shared state. */
+    /* Set armies from shared v. */
     for (int i = 0; i < 2; i++) {
         for (int j = 0; j < 5; j++) {
-            /* Hero has no 6th unit. */
-            if (i == 0 && j == 5) {
-                continue;
-            }
             armies_[i][j] = armies[i][j];
             const auto &unit = kUnits[armies[i][j]];
             auto &us = unit_states_[i][j];
@@ -694,7 +403,7 @@ void Battle::enter(bool reset)
             us.hp = unit.hp;
             us.injury = 0;
             us.ammo = unit.initial_ammo;
-            us.out_of_control = (us.hp * us.count) > state.leadership;
+            us.out_of_control = (us.hp * us.count) > v.leadership;
         }
     }
 
@@ -781,7 +490,7 @@ void Battle::enter(bool reset)
     int type = 0;    // encounter
 
     for (int i = 0; i < 2; i++) {
-        for (int j = 0; j < 6; j++) {
+        for (int j = 0; j < 5; j++) {
             if (armies_[i][j] == -1) {
                 continue;
             }
@@ -1009,8 +718,8 @@ void Battle::next_unit()
     bool next_team {false};
 
     /* There was a unit waiting */
-    for (int i = 0; i < 6; i++) {
-        int index = (i + 1 + active_.y) % 6;
+    for (int i = 0; i < 5; i++) {
+        int index = (i + 1 + active_.y) % 5;
 
         if (armies_[active_.x][index] == -1) {
             continue;
@@ -1026,7 +735,7 @@ void Battle::next_unit()
     /* Nobody on this team has any moves or waits left */
     if (!loop_back_for_waits) {
         active_.x = active_.x == 1 ? 0 : 1;
-        for (int i = 0; i < 6; i++) {
+        for (int i = 0; i < 5; i++) {
             if (armies_[active_.x][i] == -1) {
                 continue;
             }
@@ -1043,11 +752,11 @@ void Battle::next_unit()
 
     /* Next unit in team because somebody hasn't moved or waited yet */
     if (!next_team && !loop_back_for_waits) {
-        for (int i = 0; i < 6; i++) {
+        for (int i = 0; i < 5; i++) {
             if (armies_[active_.x][i] == -1) {
                 continue;
             }
-            int index = (i + 1 + active_.y) % 6;
+            int index = (i + 1 + active_.y) % 5;
             if (waits_used_[active_.x][index] < 2 && moves_left_[active_.x][index] > 0) {
                 active_.y = index;
                 if (unit_states_[active_.x][active_.y].frozen) {
@@ -1174,9 +883,8 @@ void Battle::update_current()
 
 void Battle::reset_moves()
 {
-    const int leadership = scene_switcher_->state().leadership;
     for (int i = 0; i < 2; i++) {
-        for (int j = 0; j < 6; j++) {
+        for (int j = 0; j < 5; j++) {
             if (armies_[i][j] == -1) {
                 continue;
             }
@@ -1190,7 +898,7 @@ void Battle::reset_moves()
             us.turn_count = us.count;
             us.hp = unit.hp;
             us.injury = 0;
-            us.out_of_control = (us.hp * us.count) > leadership;
+            us.out_of_control = (us.hp * us.count) > v.leadership;
         }
     }
 
@@ -1200,7 +908,7 @@ void Battle::reset_moves()
 void Battle::reset_waits()
 {
     for (int i = 0; i < 2; i++) {
-        for (int j = 0; j < 6; j++) {
+        for (int j = 0; j < 5; j++) {
             if (armies_[i][j] == -1) {
                 continue;
             }
@@ -1244,19 +952,6 @@ void Battle::set_state(BattleState state)
             break;
         case BattleState::Retaliation:
             break;
-        case BattleState::ViewArmy:
-            view_army();
-            break;
-        case BattleState::ViewCharacter:
-            view_character_.view(scene_switcher_->state());
-            break;
-        case BattleState::UseMagic:
-            update_spells();
-            if (used_spell_this_turn_) {
-                status_.set_string(kStatuses[ONE_SPELL_PER_TURN]);
-                set_state(BattleState::TemporaryMessage);
-            }
-            break;
         case BattleState::Magic:
             cursor_.set_texture(magic_);
             break;
@@ -1267,9 +962,6 @@ void Battle::set_state(BattleState state)
         case BattleState::Shooting:
             cursor_.set_texture(shoot_);
             status_.set_string(fmt::format(kStatuses[SHOOT], kUnits[armies_[active_.x][active_.y]].name_plural, unit_states_[active_.x][active_.y].ammo));
-            break;
-        case BattleState::Victory:
-            victory();
             break;
         default:
             break;
@@ -1293,7 +985,7 @@ void Battle::attack(int from_team, int from_unit, int to_team, int to_unit)
     }
 
     int spell_damage = 0;
-    int spell_power = scene_switcher_->state().spell_power;
+    int spell_power = v.spell_power;
 
     if (using_spell_ != -1) {
         switch (using_spell_) {
@@ -1321,7 +1013,7 @@ std::tuple<int, bool> Battle::get_unit(int x, int y) const
     const glm::ivec2 pos {x, y};
 
     for (int i = 0; i < 2; i++) {
-        for (int j = 0; j < 6; j++) {
+        for (int j = 0; j < 5; j++) {
             if (armies_[i][j] == -1) {
                 continue;
             }
@@ -1355,8 +1047,8 @@ float morale_modifier(int morale)
 
 void Battle::damage(int from_team, int from_unit, int to_team, int to_unit, bool is_ranged, bool is_external, int external_damage, bool retaliation)
 {
-    bool has_sword = scene_switcher_->state().artifacts_found[ArtiSwordOfProwess];
-    bool has_shield = scene_switcher_->state().artifacts_found[ArtiShieldOfProtection];
+    bool has_sword = gen.artifacts_found[ArtiSwordOfProwess];
+    bool has_shield = gen.artifacts_found[ArtiShieldOfProtection];
 
     const int unit_id_a = armies_[from_team][from_unit];
     const int unit_id_b = armies_[to_team][to_unit];
@@ -1421,7 +1113,7 @@ void Battle::damage(int from_team, int from_unit, int to_team, int to_unit, bool
 
         if (from_team == 0) {
             if (!unit_state_a.out_of_control) {
-                final_damage = static_cast<int>(morale_modifier(scene_switcher_->state().army_morales[from_unit]) * static_cast<float>(final_damage));
+                final_damage = static_cast<int>(morale_modifier(v.morales[from_unit]) * static_cast<float>(final_damage));
             }
         }
 
@@ -1457,7 +1149,7 @@ void Battle::damage(int from_team, int from_unit, int to_team, int to_unit, bool
     last_kills_ = std::min(kills, unit_state_b.turn_count);
 
     if (from_team == 1) {
-        scene_switcher_->state().followers_killed += last_kills_;
+        v.followers_killed += last_kills_;
     }
 
     /* Leech and absorb */
@@ -1482,7 +1174,7 @@ displayed which rely on the unit ID. */
 void Battle::clear_dead_units()
 {
     for (int i = 0; i < 2; i++) {
-        for (int j = 0; j < 6; j++) {
+        for (int j = 0; j < 5; j++) {
             if (armies_[i][j] == -1) {
                 continue;
             }
@@ -1496,7 +1188,7 @@ void Battle::clear_dead_units()
 void Battle::update_counts()
 {
     for (int i = 0; i < 2; i++) {
-        for (int j = 0; j < 6; j++) {
+        for (int j = 0; j < 5; j++) {
             if (armies_[i][j] == -1) {
                 continue;
             }
@@ -1506,17 +1198,38 @@ void Battle::update_counts()
     }
 }
 
-void Battle::menu_confirm()
+void Battle::view_army()
 {
-    switch (menu_.get_selection()) {
+    int army[] = {
+        armies_[0][0],
+        armies_[0][1],
+        armies_[0][2],
+        armies_[0][3],
+        armies_[0][4],
+    };
+    int counts[] = {
+        unit_states_[0][0].count,
+        unit_states_[0][1].count,
+        unit_states_[0][2].count,
+        unit_states_[0][3].count,
+        unit_states_[0][4].count,
+    };
+    s_view_army.update_info(army, counts, v.morales.data(), v.diff);
+    ss.push(&s_view_army, nullptr);
+}
+
+void Battle::menu_confirm(int opt)
+{
+    switch (opt) {
         case 0:
-            set_state(BattleState::ViewArmy);
+            view_army();
             break;
         case 1:
-            set_state(BattleState::ViewCharacter);
+            s_view_character.update_info(v, gen);
+            ss.push(&s_view_character, nullptr);
             break;
         case 2:
-            set_state(BattleState::UseMagic);
+            use_magic();
             break;
         case 3:
             moves_left_[active_.x][active_.y] = 0;
@@ -1528,41 +1241,32 @@ void Battle::menu_confirm()
             set_state(BattleState::Waiting);
             break;
         case 5:
-            set_state(BattleState::Controls);
+            controls();
             break;
         case 6:
-            set_state(BattleState::GiveUp);
+            give_up();
             break;
         default:
             break;
     }
 }
 
-void Battle::give_up_confirm()
+void Battle::give_up_confirm(int opt)
 {
-    switch (give_up_.get_selection()) {
+    switch (opt) {
         case 0:
             set_state(state_before_menu_);
             break;
         case 1:
-            scene_switcher_->state().disgrace = true;
-            scene_switcher_->fade_to(SceneId::Game, false);
+            for (int i = 0; i < 5; i++) {
+                (*enemy_army)[i] = armies_[1][i];
+                (*enemy_counts)[i] = unit_states_[1][i].count;
+            }
+            ss.pop(2);
             break;
         default:
             break;
     }
-}
-
-void Battle::view_army()
-{
-    int counts[] = {
-        unit_states_[0][0].count,
-        unit_states_[0][1].count,
-        unit_states_[0][2].count,
-        unit_states_[0][3].count,
-        unit_states_[0][4].count,
-    };
-    view_army_.view(&armies_[0][0], counts, scene_switcher_->state().army_morales);
 }
 
 void Battle::use_spell(int spell)
@@ -1597,57 +1301,9 @@ void Battle::use_spell(int spell)
             break;
     }
 
-    scene_switcher_->state().spells[spell - 7]--;
+    v.spells[spell - 7]--;
 
     used_spell_this_turn_ = true;
-}
-
-void Battle::update_spells()
-{
-    bool no_spells = true;
-    int *spells = scene_switcher_->state().spells;
-
-    for (int i = 7; i < 14; i++) {
-        use_magic_.set_option_disabled(i, spells[i - 7] == 0);
-        if (spells[i - 7] != 0) {
-            no_spells = false;
-        }
-    }
-
-    if (no_spells) {
-        status_.set_string(kStatuses[NO_COMBAT_SPELL]);
-        set_state(BattleState::TemporaryMessage);
-    }
-
-    int n = 0;
-
-    magic_spells_[n]->set_string(fmt::format("{} Bridge", spells[7]));
-    n++;
-    magic_spells_[n]->set_string(fmt::format("{} Time Stop", spells[8]));
-    n++;
-    magic_spells_[n]->set_string(fmt::format("{} Find Villain", spells[9]));
-    n++;
-    magic_spells_[n]->set_string(fmt::format("{} Castle Gate", spells[10]));
-    n++;
-    magic_spells_[n]->set_string(fmt::format("{} Town Gate", spells[11]));
-    n++;
-    magic_spells_[n]->set_string(fmt::format("{} Instant Army", spells[12]));
-    n++;
-    magic_spells_[n]->set_string(fmt::format("{} Raise Control", spells[13]));
-    n++;
-    magic_spells_[n]->set_string(fmt::format("{} Clone", spells[0]));
-    n++;
-    magic_spells_[n]->set_string(fmt::format("{} Teleport", spells[1]));
-    n++;
-    magic_spells_[n]->set_string(fmt::format("{} Fireball", spells[2]));
-    n++;
-    magic_spells_[n]->set_string(fmt::format("{} Lightning", spells[3]));
-    n++;
-    magic_spells_[n]->set_string(fmt::format("{} Freeze", spells[4]));
-    n++;
-    magic_spells_[n]->set_string(fmt::format("{} Resurrect", spells[5]));
-    n++;
-    magic_spells_[n]->set_string(fmt::format("{} Turn Undead", spells[6]));
 }
 
 void Battle::magic_confirm()
@@ -1786,7 +1442,7 @@ void Battle::teleport()
 
 void Battle::clone()
 {
-    int clone_amount = 10 * scene_switcher_->state().spell_power;
+    int clone_amount = 10 * v.spell_power;
     auto [unit, enemy] = get_unit(cx_, cy_);
     unit_states_[0][unit].count += clone_amount;
     status_.set_string(fmt::format(kStatuses[CLONE_USED], clone_amount, kUnits[armies_[0][unit]].name_plural));
@@ -1803,11 +1459,11 @@ void Battle::freeze()
 void Battle::resurrect()
 {
     auto [unit, enemy] = get_unit(cx_, cy_);
-    int num_resurrected = 20 * scene_switcher_->state().spell_power;
+    int num_resurrected = 20 * v.spell_power;
     auto &us = unit_states_[0][unit];
     num_resurrected = std::min(num_resurrected, us.start_count - us.count);
     us.count += num_resurrected;
-    scene_switcher_->state().followers_killed = std::max(0, scene_switcher_->state().followers_killed - num_resurrected);
+    v.followers_killed = std::max(0, v.followers_killed - num_resurrected);
     status_.set_string(fmt::format(kStatuses[RESURRECT_USED], num_resurrected, kUnits[armies_[0][unit]].name_plural));
     update_counts();
 }
@@ -1843,29 +1499,28 @@ bool Battle::check_end()
 {
     int num_dead[2] = {0, 0};
     for (int i = 0; i < 2; i++) {
-        for (int j = 0; j < 6; j++) {
+        for (int j = 0; j < 5; j++) {
             if (armies_[i][j] == -1) {
                 num_dead[i]++;
             }
         }
     }
 
-    auto &state = scene_switcher_->state();
+    auto &state = v;
 
-    if (num_dead[0] == 6) {
-        state.disgrace = true;
-        for (int i = 0; i < 6; i++) {
-            state.enemy_army[i] = armies_[1][i];
-            state.enemy_counts[i] = unit_states_[1][i].count;
+    if (num_dead[0] == 5) {
+        for (int i = 0; i < 5; i++) {
+            (*enemy_army)[i] = armies_[1][i];
+            (*enemy_counts)[i] = unit_states_[1][i].count;
         }
         return true;
     }
-    else if (num_dead[1] == 6) {
+    else if (num_dead[1] == 5) {
         for (int i = 0; i < 5; i++) {
-            state.army[i] = armies_[0][i];
-            state.army_counts[i] = unit_states_[0][i].count;
+            v.army[i] = armies_[0][i];
+            v.counts[i] = unit_states_[0][i].count;
         }
-        set_state(BattleState::Victory);
+        victory();
         return true;
     }
 
@@ -1875,7 +1530,7 @@ bool Battle::check_end()
 void Battle::victory()
 {
     int gold_total = 0;
-    for (int i = 0; i < 6; i++) {
+    for (int i = 0; i < 5; i++) {
         auto &us = unit_states_[1][i];
         gold_total += us.start_count * kUnits[us.id].weekly_cost * 5;
     }
@@ -1883,6 +1538,7 @@ void Battle::victory()
     int a = gold_total;
     gold_total += bty::random(10);
     gold_total += bty::random(a / 8);
+    v.gold += gold_total;
 
     static constexpr char const *kShortHeroNames[] = {
         "Sir Crimsaun",
@@ -1891,10 +1547,22 @@ void Battle::victory()
         "Moham",
     };
 
-    auto &state = scene_switcher_->state();
-
-    state.gold += gold_total;
-    victory_.set_line(0, fmt::format(kVictoryMessage, kShortHeroNames[state.hero_id], bty::number_with_ks(gold_total)));
+    spdlog::debug("Victory");
+    ds.show_dialog({
+        .x = 5,
+        .y = 10,
+        .w = 30,
+        .h = 9,
+        .strings = {
+            {1, 1, fmt::format(kVictoryMessage, kShortHeroNames[v.hero], bty::number_with_ks(gold_total))},
+        },
+        .callbacks = {
+            .confirm = [this](int opt) {
+                spdlog::debug("Confirmed");
+                ss.pop(siege);
+            },
+        },
+    });
 }
 
 bool Battle::any_enemy_around() const
@@ -1913,6 +1581,156 @@ bool Battle::any_enemy_around() const
     return false;
 }
 
-void Battle::controls_confirm()
+void Battle::controls()
 {
+    ds.show_dialog({
+        .x = 10,
+        .y = 10,
+        .w = 20,
+        .h = 9,
+        .strings = {
+            {4, 1, "Game Control"},
+            {4, 2, "____________"},
+        },
+        .options = {
+            {4, 4, "Music on"},
+            {4, 5, "Sound on"},
+            {4, 6, fmt::format("Combat delay {}", delay_)},
+        },
+        .callbacks = {
+            .confirm = [this](int opt) {
+                switch (opt) {
+                    case 0:
+                        break;
+                    case 1:
+                        break;
+                    case 2:
+                        delay_ = (delay_ + 1) % 10;
+                        break;
+                    default:
+                        break;
+                }
+            },
+            .left = [this](bty::Dialog &d) {
+                delay_ = (delay_ - 1 + 10) % 10;
+                d.get_options()[2].set_string(fmt::format("Combat delay {}", delay_));
+            },
+            .right = [this](bty::Dialog &d) {
+                delay_ = (delay_ + 1) % 10;
+                d.get_options()[2].set_string(fmt::format("Combat delay {}", delay_));
+            },
+        },
+        .pop_on_confirm = false,
+    });
+
+    delay_duration_ = delay_ * 0.24f;
+}
+
+void Battle::pause()
+{
+    ds.show_dialog({
+        .x = 8,
+        .y = 9,
+        .w = 24,
+        .h = 12,
+        .options = {
+            {3, 2, "View your army"},
+            {3, 3, "View your character"},
+            {3, 4, "Use magic"},
+            {3, 5, "Pass"},
+            {3, 6, "Wait"},
+            {3, 7, "Game controls"},
+            {3, 9, "Give up"},
+        },
+        .callbacks = {
+            .confirm = std::bind(&Battle::menu_confirm, this, std::placeholders::_1),
+        },
+    });
+}
+
+void Battle::give_up()
+{
+    ds.show_dialog({
+        .x = 9,
+        .y = 10,
+        .w = 22,
+        .h = 9,
+        .strings = {
+            {1, 1, R"raw(   Giving up will
+ forfeit your armies
+and send you back to
+      the King.)raw"},
+        },
+        .options = {
+            {4, 6, "Continue battle"},
+            {4, 7, "Give up"},
+        },
+        .callbacks = {
+            .confirm = std::bind(&Battle::give_up_confirm, this, std::placeholders::_1),
+        },
+    });
+}
+
+void Battle::use_magic()
+{
+    if (used_spell_this_turn_) {
+        status_.set_string(kStatuses[ONE_SPELL_PER_TURN]);
+        set_state(BattleState::TemporaryMessage);
+        return;
+    }
+
+    std::vector<DialogDef::StringDef> options;
+
+    for (int i = 7; i < 14; i++) {
+        options.push_back({4, 3 + i - 7, fmt::format("{} {}", v.spells[i], kSpellNames[i])});
+    }
+
+    for (int i = 0; i < 7; i++) {
+        options.push_back({4, 14 + i, fmt::format("{} {}", v.spells[i], kSpellNames[i])});
+    }
+
+    bool no_spells = true;
+    for (int i = 7; i < 14; i++) {
+        if (v.spells[i] != 0) {
+            no_spells = false;
+            break;
+        }
+    }
+
+    auto confirm = no_spells ? std::function<void(int)>(nullptr) : std::bind(&Battle::use_spell, this, std::placeholders::_1);
+
+    auto *dialog = ds.show_dialog({
+        .x = 6,
+        .y = 4,
+        .w = 20,
+        .h = 22,
+        .strings = {
+            {1, 1, "Adventuring Spells"},
+            {3, 12, "Combat Spells"},
+        },
+        .options = options,
+        .callbacks = {
+            .confirm = confirm,
+        },
+    });
+
+    dialog->set_selection(7);
+
+    auto &opt = dialog->get_options();
+    for (int i = 0; i < 7; i++) {
+        opt[i].disable();
+    }
+
+    if (no_spells) {
+        ds.show_dialog({
+            .x = 0,
+            .y = 0,
+            .w = 40,
+            .h = 3,
+            .strings = {{1, 1, "You have no Combat spell to cast!"}},
+        });
+        for (int i = 7; i < 14; i++) {
+            opt[i].disable();
+        }
+    }
 }

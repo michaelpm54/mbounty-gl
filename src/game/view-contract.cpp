@@ -4,13 +4,20 @@
 
 #include "assets.hpp"
 #include "bounty.hpp"
+#include "game/gen-variables.hpp"
+#include "game/scene-stack.hpp"
+#include "game/variables.hpp"
 #include "gfx/gfx.hpp"
 #include "gfx/texture.hpp"
-#include "shared-state.hpp"
+#include "glfw.hpp"
 
-void ViewContract::load(bty::Assets &assets, bty::BoxColor color)
+ViewContract::ViewContract(SceneStack &ss, bty::Assets &assets, Variables &v, GenVariables &gen, bty::Sprite *contract_sprite)
+    : ss(ss)
+    , v(v)
+    , gen(gen)
+    , contract_sprite_(contract_sprite)
 {
-    box_.create(1, 3, 30, 24, color, assets);
+    box_.create(1, 3, 30, 24, bty::BoxColor::Intro, assets);
     no_contract_text_.create(6, 14, "You have no contract.", assets.get_font());
     info_.create(2, 9, "", assets.get_font());
 }
@@ -30,21 +37,37 @@ void ViewContract::draw(bty::Gfx &gfx, glm::mat4 &camera)
     }
 }
 
-void ViewContract::view(int contract, const std::string &castle, bty::Sprite *contract_sprite)
+void ViewContract::update_info()
 {
-    no_contract_ = contract == 17;
-    contract_sprite_ = contract_sprite;
+    set_color(bty::get_box_color(v.diff));
 
-    if (!no_contract_) {
-        std::string reward = std::to_string(kVillainRewards[contract]);
-        int n = reward.length() - 3;
-        while (n > 0) {
-            reward.insert(n, ",");
-            n -= 3;
+    if (v.contract == 17) {
+        no_contract_ = true;
+        return;
+    }
+
+    int castle = -1;
+
+    if (v.contract < 17 && gen.villains_found[v.contract]) {
+        for (int i = 0; i < 26; i++) {
+            if (gen.castle_occupants[i] == v.contract) {
+                castle = i;
+                break;
+            }
         }
+    }
 
-        info_.set_string(fmt::format(
-            R"raw(
+    std::string castle_name = castle == -1 ? "Unknown" : kCastleInfo[castle].name;
+
+    std::string reward = std::to_string(kVillainRewards[v.contract]);
+    int n = reward.length() - 3;
+    while (n > 0) {
+        reward.insert(n, ",");
+        n -= 3;
+    }
+
+    info_.set_string(fmt::format(
+        R"raw(
 Name: {}
 Alias: {}
 Reward: {} gold
@@ -53,17 +76,35 @@ Castle: {}
 Distinguishing Features: {}
 Crimes: {}
             )raw",
-            kVillains[contract][0],
-            kVillains[contract][1],
-            reward,
-            kContinents[kVillainContinents[contract]],
-            castle,
-            kVillains[contract][2],
-            kVillains[contract][3]));
-    }
+        kVillains[v.contract][0],
+        kVillains[v.contract][1],
+        reward,
+        kContinents[kVillainContinents[v.contract]],
+        castle_name,
+        kVillains[v.contract][2],
+        kVillains[v.contract][3]));
 }
 
 void ViewContract::set_color(bty::BoxColor color)
 {
     box_.set_color(color);
+}
+
+void ViewContract::key(int key, int action)
+{
+    if (action == GLFW_PRESS) {
+        switch (key) {
+            case GLFW_KEY_ENTER:
+                [[fallthrough]];
+            case GLFW_KEY_BACKSPACE:
+                ss.pop(0);
+                break;
+            default:
+                break;
+        }
+    }
+}
+
+void ViewContract::update(float dt)
+{
 }

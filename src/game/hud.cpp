@@ -8,10 +8,8 @@
 #include "gfx/gfx.hpp"
 #include "shared-state.hpp"
 
-void Hud::load(bty::Assets &assets, SharedState &state)
+Hud::Hud(bty::Assets &assets)
 {
-    state_ = &state;
-
     blank_frame_ = assets.get_texture("frame/game-empty.png");
     hud_frame_ = assets.get_texture("frame/game-hud.png");
 
@@ -20,12 +18,11 @@ void Hud::load(bty::Assets &assets, SharedState &state)
     top_bar_.set_size(304, 9);
     top_bar_.set_position({8, 7});
 
-    top_bar_.set_color(bty::get_box_color(state.difficulty_level));
-
-    font_ = &assets.get_font();
-    name_.create(1, 1, kHeroNames[state.hero_id][state.hero_rank], *font_);
-    days_.create(26, 1, "", *font_);
-    timestop_string_.create(26, 1, "", *font_);
+    const auto &font = assets.get_font();
+    name_.create(1, 1, "", font);
+    days_.create(26, 1, "", font);
+    error_text.create(1, 1, "", font);
+    timestop_string_.create(26, 1, "", font);
 
     contract_textures_.resize(18);
     for (int i = 0, max = static_cast<int>(contract_textures_.size() - 1); i < max; i++) {
@@ -79,20 +76,23 @@ void Hud::load(bty::Assets &assets, SharedState &state)
         gold_[20 + i].set_texture(copper_tex);
         gold_[20 + i].set_position(296, 208 - i * 2);
     }
-
-    update_state();
 }
 
 void Hud::draw(bty::Gfx &gfx, glm::mat4 &camera)
 {
     gfx.draw_sprite(frame_, camera);
     gfx.draw_rect(top_bar_, camera);
-    gfx.draw_text(name_, camera);
-    if (timestop_) {
-        gfx.draw_text(timestop_string_, camera);
+    if (error) {
+        gfx.draw_text(error_text, camera);
     }
     else {
-        gfx.draw_text(days_, camera);
+        gfx.draw_text(name_, camera);
+        if (timestop_) {
+            gfx.draw_text(timestop_string_, camera);
+        }
+        else {
+            gfx.draw_text(days_, camera);
+        }
     }
     gfx.draw_sprite(contract_, camera);
     gfx.draw_sprite(siege_, camera);
@@ -115,20 +115,44 @@ void Hud::draw(bty::Gfx &gfx, glm::mat4 &camera)
     }
 }
 
-void Hud::update_state()
+void Hud::set_contract(int contract)
 {
-    contract_.set_texture(contract_textures_[state_->contract]);
-    name_.set_string(kHeroNames[state_->hero_id][state_->hero_rank]);
-    days_.set_string(fmt::format("Days Left:{}", state_->days));
-    siege_.set_texture(state_->siege ? siege_yes : siege_no);
-    magic_.set_texture(state_->magic ? magic_yes : magic_no);
+    contract_.set_texture(contract_textures_[contract]);
+}
+
+void Hud::set_days(int days)
+{
+    days_.set_string(fmt::format("Days Left:{}", days));
+}
+
+void Hud::set_magic(bool val)
+{
+    magic_.set_texture(val ? magic_yes : magic_no);
+}
+
+void Hud::set_siege(bool val)
+{
+    siege_.set_texture(val ? siege_yes : siege_no);
+}
+
+void Hud::set_puzzle(bool *villains, bool *artifacts)
+{
     for (int i = 0; i < 17; i++) {
-        hide_piece_[kPuzzleVillainPositions[i]] = state_->villains_caught[i];
+        hide_piece_[kPuzzleVillainPositions[i]] = villains[i];
     }
     for (int i = 0; i < 8; i++) {
-        hide_piece_[kPuzzleArtifactPositions[i]] = state_->artifacts_found[i];
+        hide_piece_[kPuzzleArtifactPositions[i]] = artifacts[i];
     }
-    int gold = state_->gold;
+}
+
+void Hud::set_title(const std::string &str)
+{
+    name_.set_string(str);
+    days_.set_string("");
+}
+
+void Hud::set_gold(int gold)
+{
     int num_gold = gold / 10000;
     gold -= (num_gold * 10000);
     int num_silver = gold / 1000;
@@ -141,15 +165,24 @@ void Hud::update_state()
 
 void Hud::update(float dt)
 {
-    contract_.animate(dt);
-    siege_.animate(dt);
-    magic_.animate(dt);
+    contract_.update(dt);
+    siege_.update(dt);
+    magic_.update(dt);
 }
 
-void Hud::set_title(const std::string &msg)
+void Hud::set_error(const std::string &msg, std::function<void()> then)
 {
-    name_.set_string(msg);
-    days_.set_string("");
+    error_then_ = then;
+    error_text.set_string(msg);
+    error = true;
+}
+
+void Hud::clear_error()
+{
+    error = false;
+    if (error_then_) {
+        error_then_();
+    }
 }
 
 bty::Sprite *Hud::get_contract()
@@ -181,4 +214,14 @@ void Hud::set_timestop(int amount)
 void Hud::clear_timestop()
 {
     timestop_ = false;
+}
+
+void Hud::set_hero(int hero, int rank)
+{
+    name_.set_string(kHeroNames[hero][0]);
+}
+
+bool Hud::get_error() const
+{
+    return error;
 }
