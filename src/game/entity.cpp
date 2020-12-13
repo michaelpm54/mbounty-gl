@@ -10,6 +10,73 @@
 #define CUTE_C2_IMPLEMENTATION
 #include "cute_c2.hpp"
 
+c2AABB get_collision_rect(int tile_id, int x, int y)
+{
+    static constexpr float kSmallEntitySize = 12.0f;
+    static constexpr float kSmallEntityOffsetX = (48.0f / 2.0f) - (kSmallEntitySize / 2.0f);
+    static constexpr float kSmallEntityOffsetY = (40.0f / 2.0f) - (kSmallEntitySize / 2.0f);
+
+    static constexpr float kMediumEntitySize = 20.0f;
+    static constexpr float kMediumEntityOffsetX = (48.0f / 2.0f) - (kMediumEntitySize / 2.0f);
+    static constexpr float kMediumEntityOffsetY = (40.0f / 2.0f) - (kMediumEntitySize / 2.0f);
+
+    c2AABB box;
+    box.min.x = x * 48.0f;
+    box.min.y = y * 40.0f;
+
+    switch (tile_id) {
+        case Tile_AfctRing:
+            [[fallthrough]];
+        case Tile_AfctAmulet:
+            [[fallthrough]];
+        case Tile_AfctAnchor:
+            [[fallthrough]];
+        case Tile_AfctCrown:
+            [[fallthrough]];
+        case Tile_AfctScroll:
+            [[fallthrough]];
+        case Tile_AfctShield:
+            [[fallthrough]];
+        case Tile_AfctSword:
+            [[fallthrough]];
+        case Tile_AfctBook:
+        case Tile_Chest:
+            [[fallthrough]];
+        case Tile_Sign:
+            [[fallthrough]];
+        case Tile_GenSign:
+            box.min.x += kSmallEntityOffsetX;
+            box.min.y += kSmallEntityOffsetY;
+            box.max.x = box.min.x + kSmallEntitySize;
+            box.max.y = box.min.y + kSmallEntitySize;
+            break;
+        case Tile_ShopCave:
+            [[fallthrough]];
+        case Tile_ShopDungeon:
+            [[fallthrough]];
+        case Tile_ShopTree:
+            [[fallthrough]];
+        case Tile_ShopWagon:
+            [[fallthrough]];
+        case Tile_GenWizardCave:
+            [[fallthrough]];
+        case Tile_Town:
+            [[fallthrough]];
+        case Tile_GenTown:
+            box.min.x += kMediumEntityOffsetX;
+            box.min.y += kMediumEntityOffsetY;
+            box.max.x = box.min.x + kMediumEntitySize;
+            box.max.y = box.min.y + kMediumEntitySize;
+            break;
+        default:
+            box.max.x = box.min.x + 48.0f;
+            box.max.y = box.min.y + 40.0f;
+            break;
+    }
+
+    return box;
+}
+
 Entity::Entity(const bty::Texture *texture, const glm::vec2 &position)
     : bty::Sprite(texture, position)
 {
@@ -17,7 +84,24 @@ Entity::Entity(const bty::Texture *texture, const glm::vec2 &position)
 
 Entity::CollisionManifold Entity::move(float dx, float dy, Map &map, int continent)
 {
+    static constexpr glm::vec4 kCheckedColour {0.4f, 0.8f, 0.7f, 0.8f};
+    static constexpr glm::vec4 kCollidableColour {0.4f, 0.4f, 0.8f, 0.8f};
+    static constexpr glm::vec4 kCollidedColour {0.8f, 0.3f, 0.2f, 0.8f};
+    static constexpr glm::vec4 kEntColliderColour {0.6f, 0.5f, 0.7f, 0.88f};
+
+    static constexpr float kEntitySizeX = 8.0f;
+    static constexpr float kEntitySizeY = 8.0f;
+    static constexpr float kEntityOffsetX = (44.0f / 2.0f) - (kEntitySizeX / 2.0f);
+    static constexpr float kEntityOffsetY = 8.0f + (32.0f / 2.0f) - (kEntitySizeY / 2.0f);
+
+    c2AABB ent_shape;
+    ent_shape.min.x = position_.x + kEntityOffsetX;
+    ent_shape.min.y = position_.y + kEntityOffsetY;
+    ent_shape.max.x = ent_shape.min.x + kEntitySizeX;
+    ent_shape.max.y = ent_shape.min.y + kEntitySizeY;
+
     if (debug_) {
+        checked_rects_.clear();
         collided_rects_.clear();
     }
 
@@ -29,13 +113,10 @@ Entity::CollisionManifold Entity::move(float dx, float dy, Map &map, int contine
 
     std::vector<glm::ivec2> narrow_phase;
 
-    glm::vec2 ent_offset {12.0f, 24.0f};
-    glm::vec2 ent_size {16.0f, 8.0f};
-
-    auto bb_position = position_ + glm::vec3 {ent_offset, 0} + glm::vec3 {8, 4, 0};
-
-    auto collision_tile = map.get_tile(bb_position.x, bb_position.y, continent);
+    auto collision_tile = map.get_tile(ent_shape.min.x, ent_shape.min.y, continent);
     auto &ct = collision_tile;
+
+    narrow_phase.push_back({ct.tx, ct.ty});
 
     if (dx > 0.5f) {
         narrow_phase.push_back({ct.tx + 1, ct.ty + 1});
@@ -67,97 +148,101 @@ Entity::CollisionManifold Entity::move(float dx, float dy, Map &map, int contine
     bool collide_x {false};
 
     for (const auto &coord : narrow_phase) {
-        if (debug_) {
-            collided_rects_.push_back({
-                {0.2f, 0.3f, 0.6f, 0.3f},
-                {48.0f, 40.0f},
-                {coord.x * 48.0f, coord.y * 40.0f},
-            });
-        }
-
+        /* Get the tile ID of the checked tile. */
         auto tile = map.get_tile(coord, continent);
 
+        /* Skip collision if we can move on this tile. */
         if (can_move(tile.id)) {
+            if (debug_) {
+                auto tile_shape = get_collision_rect(tile.id, tile.tx, tile.ty);
+
+                collided_rects_.push_back({
+                    kCheckedColour,
+                    {tile_shape.max.x - tile_shape.min.x, tile_shape.max.y - tile_shape.min.y},
+                    {tile_shape.min.x, tile_shape.min.y},
+                });
+            }
             continue;
         }
 
-        float l = coord.x * 48.0f;
-        float t = coord.y * 40.0f;
-        float r = l + 48.0f;
-        float b = t + 40.0f;
+        /* Generate a bounding box for the tile. */
+        auto tile_shape = get_collision_rect(tile.id, tile.tx, tile.ty);
 
-        c2AABB tile_shape {l, t, r, b};
-        c2AABB rect_shape {
-            manifold.new_position.x + ent_offset.x + dx,
-            manifold.new_position.y + ent_offset.y,
-            manifold.new_position.x + ent_offset.x + ent_size.x + dx,
-            manifold.new_position.y + ent_offset.y + ent_size.y};
+        /* Generate a bounding box for the entity. */
+        c2AABB collider_shape {
+            ent_shape.min.x + dx,
+            ent_shape.min.y,
+            ent_shape.max.x + dx,
+            ent_shape.max.y,
+        };
 
-        if (c2AABBtoAABB(rect_shape, tile_shape)) {
+        /* Check if the bounding boxes collide. */
+        if (c2AABBtoAABB(collider_shape, tile_shape)) {
             collide_x = true;
 
             if (debug_) {
                 collided_rects_.push_back({
-                    {0.9f, 0.3f, 0.6f, 0.9f},
-                    {48.0f, 40.0f},
-                    {coord.x * 48.0f, coord.y * 40.0f},
+                    kCollidedColour,
+                    {tile_shape.max.x - tile_shape.min.x, tile_shape.max.y - tile_shape.min.y},
+                    {tile_shape.min.x, tile_shape.min.y},
                 });
             }
 
             manifold.collided_tiles.push_back(tile);
 
+            /* Exit the loop on collision. */
             break;
         }
         else if (debug_) {
             collided_rects_.push_back({
-                {0.3f, 1.0f, 0.6f, 0.9f},
-                {48.0f, 40.0f},
-                {coord.x * 48.0f, coord.y * 40.0f},
+                kCollidableColour,
+                {tile_shape.max.x - tile_shape.min.x, tile_shape.max.y - tile_shape.min.y},
+                {tile_shape.min.x, tile_shape.min.y},
             });
         }
     }
 
     if (!collide_x) {
         manifold.new_position.x += dx;
+        ent_shape.min.x += dx;
+        ent_shape.max.x += dx;
     }
 
     bool collide_y {false};
 
     for (const auto &coord : narrow_phase) {
-        if (debug_) {
-            collided_rects_.push_back({
-                {0.2f, 0.3f, 0.6f, 0.3f},
-                {48.0f, 40.0f},
-                {coord.x * 48.0f, coord.y * 40.0f},
-            });
-        }
-
         auto tile = map.get_tile(coord, continent);
 
         if (can_move(tile.id)) {
+            if (debug_) {
+                auto tile_shape = get_collision_rect(tile.id, tile.tx, tile.ty);
+
+                collided_rects_.push_back({
+                    kCheckedColour,
+                    {tile_shape.max.x - tile_shape.min.x, tile_shape.max.y - tile_shape.min.y},
+                    {tile_shape.min.x, tile_shape.min.y},
+                });
+            }
             continue;
         }
 
-        float l = coord.x * 48.0f;
-        float t = coord.y * 40.0f;
-        float r = l + 48.0f;
-        float b = t + 40.0f;
+        auto tile_shape = get_collision_rect(tile.id, tile.tx, tile.ty);
 
-        c2AABB tile_shape {l, t, r, b};
-        c2AABB rect_shape {
-            manifold.new_position.x + ent_offset.x,
-            manifold.new_position.y + ent_offset.y + dy,
-            manifold.new_position.x + ent_offset.x + ent_size.x,
-            manifold.new_position.y + ent_offset.y + ent_size.y + dy};
+        c2AABB collider_shape {
+            ent_shape.min.x,
+            ent_shape.min.y + dy,
+            ent_shape.max.x,
+            ent_shape.max.y + dy,
+        };
 
-        if (c2AABBtoAABB(rect_shape, tile_shape)) {
+        if (c2AABBtoAABB(collider_shape, tile_shape)) {
             collide_y = true;
 
             if (debug_) {
                 collided_rects_.push_back({
-                    {0.9f, 0.3f, 0.6f, 0.9f},
-                    {48.0f, 40.0f},
-                    {coord.x * 48.0f, coord.y * 40.0f},
+                    kCollidedColour,
+                    {tile_shape.max.x - tile_shape.min.x, tile_shape.max.y - tile_shape.min.y},
+                    {tile_shape.min.x, tile_shape.min.y},
                 });
             }
 
@@ -167,21 +252,23 @@ Entity::CollisionManifold Entity::move(float dx, float dy, Map &map, int contine
         }
         else if (debug_) {
             collided_rects_.push_back({
-                {0.3f, 1.0f, 0.6f, 0.9f},
-                {48.0f, 40.0f},
-                {coord.x * 48.0f, coord.y * 40.0f},
+                kCollidableColour,
+                {tile_shape.max.x - tile_shape.min.x, tile_shape.max.y - tile_shape.min.y},
+                {tile_shape.min.x, tile_shape.min.y},
             });
         }
     }
 
     if (!collide_y) {
         manifold.new_position.y += dy;
+        ent_shape.min.y += dy;
+        ent_shape.max.y += dy;
     }
 
     if (debug_) {
-        collision_rect_.set_position(manifold.new_position + ent_offset);
-        collision_rect_.set_color({0.2f, 0.4f, 0.9f, 0.7f});
-        collision_rect_.set_size(ent_size);
+        collision_rect_.set_position(ent_shape.min.x, ent_shape.min.y);
+        collision_rect_.set_color(kEntColliderColour);
+        collision_rect_.set_size(ent_shape.max.x - ent_shape.min.x, ent_shape.max.y - ent_shape.min.y);
     }
 
     auto tile = map.get_tile(manifold.new_position + glm::vec2 {21, 16}, continent);
@@ -246,10 +333,12 @@ void Entity::draw(bty::Gfx &gfx, glm::mat4 &camera)
 {
     gfx.draw_sprite(*this, camera);
     if (debug_) {
-        gfx.draw_rect(collision_rect_, camera);
-        for (int i = 0; i < collided_rects_.size(); i++) {
-            gfx.draw_rect(collided_rects_[i], camera);
+        for (auto &rect : checked_rects_) {
+            gfx.draw_rect(rect, camera);
         }
-        collision_rect_.set_color(glm::vec4(0.2f, 0.4f, 0.9f, 0.7f));
+        for (auto &rect : collided_rects_) {
+            gfx.draw_rect(rect, camera);
+        }
+        gfx.draw_rect(collision_rect_, camera);
     }
 }

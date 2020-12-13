@@ -42,8 +42,9 @@ protected:
     Tile tile_ {-1, -1, -1};
 
 private:
-    bty::Rect collision_rect_;
     bool debug_ {false};
+    bty::Rect collision_rect_;
+    std::vector<bty::Rect> checked_rects_;
     std::vector<bty::Rect> collided_rects_;
 };
 
