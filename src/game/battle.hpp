@@ -179,6 +179,8 @@ private:
 
     const bty::Texture *encounter_bg;
     const bty::Texture *siege_bg;
+
+    std::array<int, 30> terrain;
 };
 
 #endif    // BTY_GAME_BATTLE_HPP_

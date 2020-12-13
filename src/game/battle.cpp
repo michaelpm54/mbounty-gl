@@ -31,7 +31,8 @@ enum StatusId {
     CANT_ATTACK_FRIENDLY,
     WAIT,
     FLY,
-    ERR_OCCUPIED,
+    ERR_FLY_OCCUPIED,
+    ERR_MOVE_OCCUPIED,
     ATTACK,
     RETALIATION,
     NO_COMBAT_SPELL,
@@ -75,6 +76,7 @@ static constexpr char const *kStatuses[] = {
     "{} wait",
     "{} fly",
     " You can't land on an occupied area!",
+    " You can't move to an occupied area!",
     "{} attack {}, {} die",
     "{} retaliate, killing {}",
     "   You have no Combat spell to cast!",
@@ -359,9 +361,29 @@ void Battle::show(std::array<int, 5> &enemy_army, std::array<int, 5> &enemy_coun
 
     if (siege) {
         bg_.set_texture(siege_bg);
+
+        /* clang-format off */
+		terrain = {{
+			1, 0, 0, 0, 0, 1,
+			1, 0, 0, 0, 0, 1,
+			1, 0, 0, 0, 0, 1,
+			1, 0, 0, 0, 0, 1,
+			1, 1, 0, 0, 1, 1,
+		}};
+        /* clang-format on */
     }
     else {
         bg_.set_texture(encounter_bg);
+
+        /* clang-format off */
+		terrain = {{
+			0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0,
+		}};
+        /* clang-format on */
     }
 
     /* Can happen when the previous battle ended in a draw. */
@@ -615,8 +637,15 @@ void Battle::land()
     (void)enemy;
 
     if (unit != -1 && unit != active_.y) {
-        status_.set_string(kStatuses[ERR_OCCUPIED]);
+        status_.set_string(kStatuses[ERR_FLY_OCCUPIED]);
         return;
+    }
+
+    for (int i = 0; i < 30; i++) {
+        if (terrain[cx_ + cy_ * 6] != 0) {
+            status_.set_string(kStatuses[ERR_FLY_OCCUPIED]);
+            return;
+        }
     }
 
     /* Don't count landing in place as flying. */
@@ -651,7 +680,14 @@ void Battle::move_confirm()
     }
     else {
         if (unit != -1) {
-            status_.set_string(kStatuses[ERR_OCCUPIED]);
+            status_.set_string(kStatuses[ERR_MOVE_OCCUPIED]);
+            return;
+        }
+    }
+
+    for (int i = 0; i < 30; i++) {
+        if (terrain[cx_ + cy_ * 6] != 0) {
+            status_.set_string(kStatuses[ERR_MOVE_OCCUPIED]);
             return;
         }
     }
