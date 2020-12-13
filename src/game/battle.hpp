@@ -105,7 +105,7 @@ private:
     void pause();
     void view_army();
     void use_magic();
-    void controls();
+    void controls(int selection = 0);
     void give_up();
 
     /* Pause menu helpers */
@@ -176,6 +176,9 @@ private:
 
     std::array<int, 5> *enemy_army;
     std::array<int, 5> *enemy_counts;
+
+    const bty::Texture *encounter_bg;
+    const bty::Texture *siege_bg;
 };
 
 #endif    // BTY_GAME_BATTLE_HPP_

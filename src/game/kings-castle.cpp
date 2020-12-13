@@ -41,7 +41,7 @@ KingsCastle::KingsCastle(SceneStack &ss, bty::Assets &assets, Hud &hud, Variable
     how_many_ = recruit_.add_line(25, 7, "");
     recruit_.set_line_visible(5, false);
 
-    unit_.set_position(56, 104);
+    unit_.set_position(64, 104);
     bg_.set_texture(assets.get_texture("bg/castle.png"));
     bg_.set_position(8, 24);
 

@@ -123,7 +123,9 @@ Battle::Battle(SceneStack &ss, DialogStack &ds, bty::Assets &assets, Variables &
     auto color = bty::get_box_color(v.diff);
     auto &font = assets.get_font();
 
-    bg_.set_texture(assets.get_texture("battle/encounter.png"));
+    encounter_bg = assets.get_texture("battle/encounter.png");
+    siege_bg = assets.get_texture("battle/siege.png");
+
     bg_.set_position(8, 24);
     frame_.set_texture(assets.get_texture("frame/game-empty.png"));
     bar_.set_color(color);
@@ -355,6 +357,13 @@ void Battle::show(std::array<int, 5> &enemy_army, std::array<int, 5> &enemy_coun
     this->enemy_counts = &enemy_counts;
     this->siege = siege;
 
+    if (siege) {
+        bg_.set_texture(siege_bg);
+    }
+    else {
+        bg_.set_texture(encounter_bg);
+    }
+
     /* Can happen when the previous battle ended in a draw. */
     /* The battle immediately ends and the player wins. */
     check_end();
@@ -407,87 +416,48 @@ void Battle::show(std::array<int, 5> &enemy_army, std::array<int, 5> &enemy_coun
         }
     }
 
-    static constexpr int kStartingPositionY[2][2][6] = {
-        {// Team 0
-         {
-             // Encounter
-             0,
-             1,
-             2,
-             3,
-             4,
-             -1,
-         },
-         {
-             // Siege
-             4,
-             4,
-             3,
-             3,
-             3,
-             -1,
-         }},
-        {// Team 1
-         {
-             // Encounter
-             0,
-             1,
-             2,
-             3,
-             4,
-         },
-         {
-             // Siege
-             1,
-             1,
-             0,
-             0,
-             0,
-             0,
-         }},
+    static const glm::ivec2 kStartingPositions[2][2][5] = {
+        {
+            // Encounter
+            {
+                // Team 0
+                {0, 0},
+                {0, 1},
+                {0, 2},
+                {0, 3},
+                {0, 4},
+            },
+            {
+                // Team 1
+                {5, 0},
+                {5, 1},
+                {5, 2},
+                {5, 3},
+                {5, 4},
+            },
+        },
+        {
+            // Siege
+            {
+                // Team 0
+                {2, 4},
+                {3, 4},
+                {1, 3},
+                {2, 3},
+                {3, 3},
+            },
+            {
+                // Team 1
+                {1, 0},
+                {2, 0},
+                {3, 0},
+                {4, 0},
+                {2, 1},
+            },
+        },
     };
 
-    static constexpr int kStartingPositionX[2][2][6] = {
-        {// Team 0
-         {
-             // Encounter
-             0,
-             0,
-             0,
-             0,
-             0,
-             -1,
-         },
-         {
-             // Siege
-             2,
-             3,
-             1,
-             2,
-             3,
-             -1,
-         }},
-        {// Team 1
-         {
-             // Encounter
-             5,
-             5,
-             5,
-             5,
-             5,
-         },
-         {
-             // Siege
-             2,
-             3,
-             1,
-             2,
-             2,
-             3,
-         }},
-    };
-
-    int type = 0;    // encounter
+    int type = static_cast<int>(siege);    // encounter
 
     for (int i = 0; i < 2; i++) {
         for (int j = 0; j < 5; j++) {
@@ -496,7 +466,7 @@ void Battle::show(std::array<int, 5> &enemy_army, std::array<int, 5> &enemy_coun
             }
 
             /* Set sprites */
-            move_unit_to(i, j, kStartingPositionX[i][type][j], kStartingPositionY[i][type][j]);
+            move_unit_to(i, j, kStartingPositions[type][i][j].x, kStartingPositions[type][i][j].y);
             sprites_[i][j].set_texture(unit_textures_[armies_[i][j]]);
             if (i == 1) {
                 sprites_[i][j].set_flip(true);
@@ -522,8 +492,8 @@ void Battle::show(std::array<int, 5> &enemy_army, std::array<int, 5> &enemy_coun
     active_ = {0, 0};
     update_unit_info();
 
-    cx_ = kStartingPositionX[0][type][0];
-    cy_ = kStartingPositionY[0][type][0];
+    cx_ = kStartingPositions[type][0][0].x;
+    cy_ = kStartingPositions[type][0][0].y;
     update_cursor();
     update_current();
     status();
@@ -1581,9 +1551,9 @@ bool Battle::any_enemy_around() const
     return false;
 }
 
-void Battle::controls()
+void Battle::controls(int selection)
 {
-    ds.show_dialog({
+    auto *dialog = ds.show_dialog({
         .x = 10,
         .y = 10,
         .w = 20,
@@ -1606,6 +1576,7 @@ void Battle::controls()
                         break;
                     case 2:
                         delay_ = (delay_ + 1) % 10;
+                        controls(opt);
                         break;
                     default:
                         break;
@@ -1620,8 +1591,9 @@ void Battle::controls()
                 d.get_options()[2].set_string(fmt::format("Combat delay {}", delay_));
             },
         },
-        .pop_on_confirm = false,
     });
+
+    dialog->set_selection(selection);
 
     delay_duration_ = delay_ * 0.24f;
 }
