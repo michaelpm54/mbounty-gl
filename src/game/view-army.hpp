@@ -15,7 +15,6 @@ class Gfx;
 struct Texture;
 }    // namespace bty
 
-struct SharedState;
 class SceneStack;
 
 class ViewArmy : public Scene {

@@ -12,7 +12,6 @@
 #include "game/view-contract.hpp"
 #include "gfx/gfx.hpp"
 #include "glfw.hpp"
-#include "shared-state.hpp"
 
 Town::Town(SceneStack &ss, DialogStack &ds, bty::Assets &assets, Variables &v, GenVariables &gen, Hud &hud, ViewContract &view_contract)
     : ss(ss)

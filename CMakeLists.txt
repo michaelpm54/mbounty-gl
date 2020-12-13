@@ -12,7 +12,6 @@ set(MBOUNTYGL_SRC
 	src/main.cpp
 	src/assets.cpp
 	src/engine.cpp
-	src/scene-switcher.cpp
 	src/bounty.cpp
 	src/window.cpp
 	src/window-engine-interface.cpp

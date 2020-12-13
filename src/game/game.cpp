@@ -13,7 +13,6 @@
 #include "game/shop-info.hpp"
 #include "gfx/gfx.hpp"
 #include "glfw.hpp"
-#include "shared-state.hpp"
 
 void Game::intro_pop(int ret)
 {

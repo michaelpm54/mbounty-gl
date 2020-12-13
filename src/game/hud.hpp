@@ -17,8 +17,6 @@ class Gfx;
 struct Texture;
 }    // namespace bty
 
-struct SharedState;
-
 class Hud {
 public:
     Hud() = default;

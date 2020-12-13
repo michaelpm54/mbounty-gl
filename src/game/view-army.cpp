@@ -10,7 +10,6 @@
 #include "gfx/gfx.hpp"
 #include "gfx/texture.hpp"
 #include "glfw.hpp"
-#include "shared-state.hpp"
 
 ViewArmy::ViewArmy(SceneStack &ss, bty::Assets &assets)
     : ss(ss)

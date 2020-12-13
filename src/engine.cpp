@@ -4,7 +4,6 @@
 
 #include "gfx/gfx.hpp"
 #include "glfw.hpp"
-#include "scene-switcher.hpp"
 #include "window.hpp"
 
 namespace bty {

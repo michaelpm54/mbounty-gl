@@ -12,7 +12,6 @@
 #include "gfx/gfx.hpp"
 #include "gfx/texture.hpp"
 #include "glfw.hpp"
-#include "shared-state.hpp"
 
 ViewContinent::ViewContinent(SceneStack &ss, bty::Assets &assets)
     : ss(ss)

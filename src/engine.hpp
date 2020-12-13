@@ -12,7 +12,6 @@ namespace bty {
 class Scene;
 struct Window;
 class Assets;
-class SceneSwitcher;
 
 class Engine {
 public:

@@ -12,7 +12,6 @@
 namespace bty {
 class Assets;
 class Gfx;
-class SceneSwitcher;
 }    // namespace bty
 
 class SceneStack;

@@ -6,7 +6,6 @@
 #include "bounty.hpp"
 #include "gfx/font.hpp"
 #include "gfx/gfx.hpp"
-#include "shared-state.hpp"
 
 Hud::Hud(bty::Assets &assets)
 {

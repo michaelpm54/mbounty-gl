@@ -31,12 +31,10 @@
 #include "gfx/sprite.hpp"
 #include "gfx/text.hpp"
 #include "gfx/textbox.hpp"
-#include "shared-state.hpp"
 
 namespace bty {
 class Assets;
 class Gfx;
-class SceneSwitcher;
 }    // namespace bty
 
 struct GLFWwindow;
