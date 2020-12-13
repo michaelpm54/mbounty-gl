@@ -100,6 +100,7 @@ Ingame::Ingame(GLFWwindow *window, SceneStack &ss, DialogStack &ds, bty::Assets 
     , kings_castle(ss, assets, hud, v)
     , shop(ss, assets, v, gen, hud)
     , town(ss, ds, assets, v, gen, hud, view_contract)
+    , s_wizard(ss, assets, v, hud)
     , s_defeat(ss, ds, assets, hud)
     , s_battle(ss, ds, assets, v, gen, view_army, view_char)
 {
@@ -1425,6 +1426,8 @@ void Ingame::move_hero(int move_flags, float dt)
     }
     else {
         if (manifold.changed_tile) {
+            v.x = manifold.new_tile.tx;
+            v.y = manifold.new_tile.ty;
             hero.set_tile_info(manifold.new_tile);
             if (hero.get_mount() == Mount::Boat && manifold.new_tile.id == Tile_Grass) {
                 hero.set_mount(Mount::Walk);
@@ -1758,6 +1761,9 @@ void Ingame::collide(const Tile &tile)
         case Tile_AfctBook:
             collide_artifact(tile);
             break;
+        case Tile_GenWizardCave:
+            wizard();
+            break;
         case Tile_ShopCave:
             if (glm::ivec2 {tile.tx, tile.ty} == gen.teleport_cave_tiles[v.continent][0] || glm::ivec2 {tile.tx, tile.ty} == gen.teleport_cave_tiles[v.continent][1]) {
                 collide_teleport_cave(tile);
@@ -1976,4 +1982,14 @@ void Ingame::battle_pop(int ret)
         default:
             break;
     }
+}
+
+void Ingame::wizard()
+{
+    s_wizard.view(ds);
+    ss.push(&s_wizard, [this](int ret) {
+        if (ret == 0) {
+            map.set_tile({11, 63 - 19}, 0, Tile_Grass);
+        }
+    });
 }

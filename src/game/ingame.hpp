@@ -20,6 +20,7 @@
 #include "game/view-continent.hpp"
 #include "game/view-contract.hpp"
 #include "game/view-puzzle.hpp"
+#include "game/wizard.hpp"
 #include "gfx/dialog.hpp"
 #include "gfx/font.hpp"
 #include "gfx/sprite.hpp"
@@ -99,6 +100,7 @@ private:
     void collide_castle(const Tile &tile);
     void collide_artifact(const Tile &tile);
     void collide_teleport_cave(const Tile &tile);
+    void wizard();
 
     void defeat_pop(int ret);
     void battle_pop(int ret);
@@ -133,6 +135,7 @@ private:
     KingsCastle kings_castle;
     Shop shop;
     Town town;
+    Wizard s_wizard;
 
     Defeat s_defeat;
     Battle s_battle;

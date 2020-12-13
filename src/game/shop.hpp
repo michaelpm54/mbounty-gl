@@ -9,7 +9,6 @@
 
 struct Variables;
 struct GenVariables;
-struct SharedVariables;
 class SceneStack;
 struct Tile;
 struct ShopInfo;

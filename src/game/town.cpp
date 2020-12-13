@@ -21,7 +21,7 @@ Town::Town(SceneStack &ss, DialogStack &ds, bty::Assets &assets, Variables &v, G
     , hud(hud)
     , view_contract(view_contract)
 {
-    unit_.set_position(56, 104);
+    unit_.set_position(64, 104);
     bg_.set_texture(assets.get_texture("bg/town.png"));
     bg_.set_position(8, 24);
     for (int i = 0; i < 25; i++) {

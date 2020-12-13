@@ -70,7 +70,7 @@ Shop::Shop(SceneStack &ss, bty::Assets &assets, Variables &v, GenVariables &gen,
     box_.add_line(1, 7, "Recruit how many?");
     box_.add_line(25, 7, "");    // current
 
-    unit_.set_position(56, 104);
+    unit_.set_position(64, 104);
     bg_.set_position(8, 24);
     for (int i = 0; i < 25; i++) {
         unit_textures_[i] = assets.get_texture(fmt::format("units/{}.png", i), {2, 2});
