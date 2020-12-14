@@ -18,6 +18,7 @@
 	- B to toggle boat
 - Use proper update timing (dt) instead of fixed 1/60
 - Add fading between battle, victory, loss, intro, etc.
+- GLFW doesn't allow pressing two keys at the same time for diagonal movement, or mabye I just don't understand how.
 
 ### In-game
 
@@ -29,6 +30,7 @@
 - Continent map should only reveal when you have the map
 - Add flying hero texture
 - Add flying key when all army can fly
+- Add info about your garrisoned castles in "Gather information"
 
 ### Battle
 
