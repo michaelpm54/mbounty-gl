@@ -73,7 +73,7 @@ int SceneStack::size() const
     return static_cast<int>(stack_.size());
 }
 
-const Scene *const SceneStack::get() const
+const Scene* SceneStack::get() const
 {
     return stack_.size() ? stack_.back() : nullptr;
 }

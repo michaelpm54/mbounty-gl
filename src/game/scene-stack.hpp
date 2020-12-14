@@ -22,7 +22,7 @@ public:
     void push(Scene *scene, std::function<void(int)> callback);
     void pop(int ret);
     int size() const;
-    const Scene *const get() const;
+    const Scene *get() const;
 
 private:
     bty::Assets &assets_;

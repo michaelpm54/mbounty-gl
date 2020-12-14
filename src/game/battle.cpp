@@ -158,7 +158,7 @@ Battle::Battle(SceneStack &ss, DialogStack &ds, bty::Assets &assets, Variables &
 {
     camera_ = glm::ortho(0.0f, 320.0f, 224.0f, 0.0f, -1.0f, 1.0f);
 
-    auto color = bty::get_box_color(v.diff);
+    auto color = bty::BoxColor::Intro;
     auto &font = assets.get_font();
 
     encounter_bg = assets.get_texture("battle/encounter.png");

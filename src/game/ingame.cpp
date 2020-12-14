@@ -14,6 +14,7 @@
 #include "game/scene-stack.hpp"
 #include "gfx/gfx.hpp"
 #include "glfw.hpp"
+#include "signs.hpp"
 
 static constexpr int kShopUnits[24] = {
     0x00,
@@ -148,9 +149,15 @@ void Ingame::setup(int hero, int diff)
         v.visited_tiles[i].clear();
         v.visited_tiles[i].resize(4096);
         std::fill(v.visited_tiles[i].begin(), v.visited_tiles[i].end(), 0xFF);
-        gen.sail_maps_found[i] = i == 0;
+        gen.sail_maps_found[i] = true;
         gen.continent_maps_found[i] = false;
         v.tiles[i] = map.get_data(i);
+        for (auto j = 0u; j < gen.mobs[i].size(); j++) {
+            for (int k = 0; k < 5; k++) {
+                gen.mobs[i][j].army[k] = -1;
+                gen.mobs[i][j].counts[k] = 0;
+            }
+        }
     }
 
     for (int i = 0; i < 5; i++) {
@@ -1397,10 +1404,8 @@ void Ingame::move_hero(int move_flags, float dt)
     auto manifold = hero.move(dx, dy, map, v.continent);
     hero.set_position(manifold.new_position);
 
-    if (manifold.collided) {
-        for (auto &tile : manifold.collided_tiles) {
-            collide(tile);
-        }
+    for (auto &tile : manifold.collided_tiles) {
+        collide(tile);
     }
 
     if (auto ht = hero.get_center(); !v.auto_move && (ht.x < 0 || ht.x > 3072 || ht.y < 0 || ht.y > 40 * 64)) {
@@ -1586,7 +1591,7 @@ void Ingame::update_mobs(float dt)
         }
 
         if (std::abs(hero_tile.tx - mob.tile.x) < 4 && std::abs(hero_tile.ty - mob.tile.y) < 4) {
-            auto &mob_pos = mob.entity.get_position();
+            const auto mob_pos = mob.entity.get_position();
 
             float distance_x = std::abs(hero_pos.x - mob_pos.x);
             float distance_y = std::abs(hero_pos.y - mob_pos.y);
@@ -1678,7 +1683,7 @@ void Ingame::update_mobs(float dt)
                 }
 
                 auto &other_mob = gen.mobs[continent][j];
-                auto &other_mob_pos = other_mob.entity.get_position();
+                const auto other_mob_pos = other_mob.entity.get_position();
 
                 distance_x = std::abs(mob_pos.x - other_mob_pos.x);
                 distance_y = std::abs(mob_pos.y - other_mob_pos.y);
@@ -1726,9 +1731,40 @@ void Ingame::auto_move(float dt)
     update_camera();
 }
 
+void Ingame::collide_sign(const Tile &tile)
+{
+    int index = 0;
+    auto *tiles = map.get_data(v.continent);
+    for (int y = 63; y >= 0; y--) {
+        for (int x = 0; x < 64; x++) {
+            if (tiles[y * 64 + x] == Tile_GenSign) {
+                if (x == tile.tx && y == tile.ty) {
+                    ds.show_dialog({
+                        .x = 1,
+                        .y = 21,
+                        .w = 30,
+                        .h = 6,
+                        .strings = {
+                            {1, 1, fmt::format("A sign reads\n\n{}", kSigns[index + v.continent * 22])},
+                        },
+                    });
+                    break;
+                }
+                index++;
+            }
+        }
+    }
+}
+
 void Ingame::collide(const Tile &tile)
 {
+    spdlog::debug("Collide ID {}", tile.id);
     switch (tile.id) {
+        case Tile_Sign:
+            [[fallthrough]];
+        case Tile_GenSign:
+            collide_sign(tile);
+            break;
         case Tile_Chest:
             collide_chest(tile);
             break;

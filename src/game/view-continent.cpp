@@ -149,6 +149,7 @@ void ViewContinent::key(int key, int action)
         switch (key) {
             case GLFW_KEY_BACKSPACE:
                 ss.pop(0);
+                break;
             case GLFW_KEY_ENTER:
                 fog = !fog;
                 update_info(*v);

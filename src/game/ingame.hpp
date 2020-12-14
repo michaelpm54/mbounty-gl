@@ -94,6 +94,7 @@ private:
 
     /* Collision */
     void collide(const Tile &tile);
+    void collide_sign(const Tile &tile);
     void collide_town(const Tile &tile);
     void collide_shop(const Tile &tile);
     void collide_chest(const Tile &tile);

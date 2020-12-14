@@ -34,6 +34,7 @@ public:
     void set_debug(bool val);
     bool get_debug() const;
     void draw(bty::Gfx &gfx, glm::mat4 &camera);
+    void set_collision_enabled(bool val);
 
 protected:
     virtual bool can_move(int id);
@@ -46,6 +47,8 @@ private:
     bty::Rect collision_rect_;
     std::vector<bty::Rect> checked_rects_;
     std::vector<bty::Rect> collided_rects_;
+    bool collision_enabled {true};
+    bool collided_event_on_this_tile {false};
 };
 
 #endif    // BTY_GAME_ENTITY_HPP_

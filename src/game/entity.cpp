@@ -10,6 +10,33 @@
 #define CUTE_C2_IMPLEMENTATION
 #include "cute_c2.hpp"
 
+bool is_event_tile(int tile_id)
+{
+    static constexpr int kEventTiles[] = {
+        Tile_Sign,
+        Tile_GenSign,
+        Tile_Town,
+        Tile_GenTown,
+        Tile_Chest,
+        Tile_AfctRing,
+        Tile_AfctAmulet,
+        Tile_AfctAnchor,
+        Tile_AfctCrown,
+        Tile_AfctScroll,
+        Tile_AfctShield,
+        Tile_AfctSword,
+        Tile_AfctBook,
+    };
+
+    for (int i = 0; i < 13; i++) {
+        if (kEventTiles[i] == tile_id) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 c2AABB get_collision_rect(int tile_id, int x, int y)
 {
     static constexpr float kSmallEntitySize = 12.0f;
@@ -177,9 +204,7 @@ Entity::CollisionManifold Entity::move(float dx, float dy, Map &map, int contine
         };
 
         /* Check if the bounding boxes collide. */
-        if (c2AABBtoAABB(collider_shape, tile_shape)) {
-            collide_x = true;
-
+        if (collision_enabled && c2AABBtoAABB(collider_shape, tile_shape)) {
             if (debug_) {
                 collided_rects_.push_back({
                     kCollidedColour,
@@ -188,7 +213,16 @@ Entity::CollisionManifold Entity::move(float dx, float dy, Map &map, int contine
                 });
             }
 
-            manifold.collided_tiles.push_back(tile);
+            if (is_event_tile(tile.id)) {
+                if (!collided_event_on_this_tile) {
+                    manifold.collided_tiles.push_back(tile);
+                }
+                collided_event_on_this_tile = true;
+            }
+            else {
+                manifold.collided_tiles.push_back(tile);
+                collide_x = true;
+            }
 
             /* Exit the loop on collision. */
             break;
@@ -236,8 +270,6 @@ Entity::CollisionManifold Entity::move(float dx, float dy, Map &map, int contine
         };
 
         if (c2AABBtoAABB(collider_shape, tile_shape)) {
-            collide_y = true;
-
             if (debug_) {
                 collided_rects_.push_back({
                     kCollidedColour,
@@ -246,7 +278,16 @@ Entity::CollisionManifold Entity::move(float dx, float dy, Map &map, int contine
                 });
             }
 
-            manifold.collided_tiles.push_back(tile);
+            if (is_event_tile(tile.id)) {
+                if (!collided_event_on_this_tile) {
+                    manifold.collided_tiles.push_back(tile);
+                }
+                collided_event_on_this_tile = true;
+            }
+            else {
+                manifold.collided_tiles.push_back(tile);
+                collide_y = true;
+            }
 
             break;
         }
@@ -279,6 +320,7 @@ Entity::CollisionManifold Entity::move(float dx, float dy, Map &map, int contine
     }
 
     if (tile.tx != tile_.tx || tile.ty != tile_.ty) {
+        collided_event_on_this_tile = false;
         manifold.changed_tile = true;
         manifold.new_tile = tile;
         tile_ = tile;
@@ -341,4 +383,9 @@ void Entity::draw(bty::Gfx &gfx, glm::mat4 &camera)
         }
         gfx.draw_rect(collision_rect_, camera);
     }
+}
+
+void Entity::set_collision_enabled(bool val)
+{
+    collision_enabled = val;
 }

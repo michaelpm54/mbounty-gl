@@ -25,6 +25,7 @@ set(MBOUNTYGL_SRC
 	src/gfx/textbox.cpp
 	src/gfx/transformable.cpp
 	src/game/wizard.cpp
+	src/signs.cpp
 	src/game/intro.cpp
 	src/game/game.cpp
 	src/game/hud.cpp

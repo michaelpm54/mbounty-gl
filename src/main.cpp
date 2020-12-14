@@ -20,7 +20,7 @@ int main(int argc, char *argv[])
 
     spdlog::set_level(spdlog::level::debug);
 
-    spdlog::info("Running from '{}'", std::filesystem::current_path().string());
+    spdlog::info("Running from '{}'", std::filesystem::current_path().generic_string());
 
     std::string base_path {""};
 

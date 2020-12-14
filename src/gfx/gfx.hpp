@@ -49,12 +49,12 @@ private:
     void create_quad_vao();
 
 private:
-    GLuint sprite_shader_;
-    GLuint sprite_single_texture_shader_;
-    GLuint rect_shader_;
-    GLuint text_shader_;
-    GLuint quad_vao_;
-    GLuint quad_vbo_;
+    GLuint sprite_shader_{GL_NONE};
+    GLuint sprite_single_texture_shader_{GL_NONE};
+    GLuint rect_shader_{GL_NONE};
+    GLuint text_shader_{GL_NONE};
+    GLuint quad_vao_{GL_NONE};
+    GLuint quad_vbo_{GL_NONE};
     GLint locations_[Locations::Count];
 };
 
