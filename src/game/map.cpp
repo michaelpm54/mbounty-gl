@@ -29,10 +29,10 @@ void Map::load(bty::Assets &assets)
     num_vertices_ = 4096 * 6;
 
     static constexpr const char *const kContinentNames[4] = {
-        "maps/genesis/continentia.bin",
-        "maps/genesis/forestria.bin",
-        "maps/genesis/archipelia.bin",
-        "maps/genesis/saharia.bin",
+        "maps/continentia.bin",
+        "maps/forestria.bin",
+        "maps/archipelia.bin",
+        "maps/saharia.bin",
     };
 
     glCreateBuffers(4, vbos_);

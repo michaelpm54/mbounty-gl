@@ -1478,9 +1478,7 @@ void Ingame::move_hero(int move_flags, float dt)
         auto hero_tile = hero.get_tile();
 
         if (manifold.changed_tile) {
-            spdlog::debug("Changed from {} to {}", hero_tile.id, manifold.new_tile.id);
             if (manifold.new_tile.id == Tile_Grass && hero_tile.id >= Tile_WaterIRT && hero_tile.id <= Tile_Water) {
-                spdlog::debug("Going from water to land, setting last boat tile to {}, {}", hero_tile.tx, hero_tile.ty);
                 last_water_x = hero_tile.tx;
                 last_water_y = hero_tile.ty;
             }
@@ -2091,8 +2089,6 @@ void Ingame::battle_pop(int ret)
     switch (ret) {
         case 0:    // victory encounter
             gen.mobs[v.continent][battle_mob].dead = true;
-            s_garrison.view(garrison_castle_id);
-            ss.push(&s_garrison, nullptr);
             break;
         case 1:    // victory siege
             s_garrison.view(garrison_castle_id);
