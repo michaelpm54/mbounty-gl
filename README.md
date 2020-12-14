@@ -16,6 +16,7 @@
 	- V in battle to win
 	- G to toggle flying
 	- B to toggle boat
+	- D to toggle puzzle pieces
 - Use proper update timing (dt) instead of fixed 1/60
 - Add fading between battle, victory, loss, intro, etc.
 - GLFW doesn't allow pressing two keys at the same time for diagonal movement, or mabye I just don't understand how.
