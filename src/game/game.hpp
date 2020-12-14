@@ -42,13 +42,11 @@ struct GLFWwindow;
 class Game {
 public:
     Game(GLFWwindow *window, bty::Assets &assets);
-    void load(bty::Assets &assets, int difficulty);
     void draw(bty::Gfx &gfx);
     void key(int key, int action);
     void update(float dt);
 
 private:
-    void lose_game();
     void intro_pop(int ret);
     void ingame_pop(int ret);
 
@@ -65,11 +63,6 @@ private:
     DialogStack ds;
 
     Hud hud_;
-
-    bty::TextBox lose_msg_;
-    bty::Sprite lose_pic_;
-    bty::Text *lose_msg_name_;
-    int lose_state_ {0};
 
     glm::mat4 camera_ {1.0f};
 };
