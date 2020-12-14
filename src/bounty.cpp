@@ -190,6 +190,13 @@ const char *const kHeroRankNames[4][4] = {
     },
 };
 
+char const *const kShortHeroNames[4] = {
+    "Sir Crimsaun",
+    "Lord Palmer",
+    "Tynnestra",
+    "Moham",
+};
+
 char const *const kHeroNames[][4] =
     {
         {

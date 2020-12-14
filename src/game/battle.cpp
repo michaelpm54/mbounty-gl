@@ -1589,13 +1589,6 @@ void Battle::victory()
     gold_total += bty::random(a / 8);
     v.gold += gold_total;
 
-    static constexpr char const *kShortHeroNames[] = {
-        "Sir Crimsaun",
-        "Lord Palmer",
-        "Tynnestra",
-        "Moham",
-    };
-
     if (siege) {
         if (gen.castle_occupants[castle_id] != 0x7F) {
             int villain = gen.castle_occupants[castle_id];

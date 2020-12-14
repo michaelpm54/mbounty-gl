@@ -93,6 +93,9 @@ void Hud::draw(bty::Gfx &gfx, glm::mat4 &camera)
             gfx.draw_text(days_, camera);
         }
     }
+    if (no_sprites) {
+        return;
+    }
     gfx.draw_sprite(contract_, camera);
     gfx.draw_sprite(siege_, camera);
     gfx.draw_sprite(magic_, camera);
@@ -192,11 +195,13 @@ bty::Sprite *Hud::get_contract()
 void Hud::set_blank_frame()
 {
     frame_.set_texture(blank_frame_);
+    no_sprites = true;
 }
 
 void Hud::set_hud_frame()
 {
     frame_.set_texture(hud_frame_);
+    no_sprites = false;
 }
 
 void Hud::set_color(bty::BoxColor color)

@@ -84,6 +84,8 @@ private:
     bty::Text error_text;
     std::function<void()> error_then_;
     bool error {false};
+
+    bool no_sprites {false};
 };
 
 #endif    // GAME_HUD_HPP_

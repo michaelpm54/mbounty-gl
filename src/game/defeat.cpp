@@ -31,13 +31,6 @@ void Defeat::update(float dt)
 
 void Defeat::show(int hero)
 {
-    static constexpr const char *const kNames[] = {
-        "Sir Crimsaun",
-        "Lord Palmer",
-        "Tynnestra",
-        "Moham",
-    };
-
     hud.set_blank_frame();
 
     ds.show_dialog({
@@ -46,7 +39,7 @@ void Defeat::show(int hero)
         .w = 20,
         .h = 24,
         .strings = {
-            {1, 2, fmt::format("Oh, {},", kNames[hero])},
+            {1, 2, fmt::format("Oh, {},", kShortHeroNames[hero])},
             {1, 4, R"raw(you have failed to
 recover the
 Sceptre of Order

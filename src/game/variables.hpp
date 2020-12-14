@@ -13,6 +13,7 @@ struct Variables {
     int contract;
     int continent;
     int num_spells;
+    int score;
     int gold;
     int leadership;
     int permanent_leadership;

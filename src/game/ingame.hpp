@@ -16,6 +16,7 @@
 #include "game/shop.hpp"
 #include "game/town.hpp"
 #include "game/variables.hpp"
+#include "game/victory.hpp"
 #include "game/view-army.hpp"
 #include "game/view-character.hpp"
 #include "game/view-continent.hpp"
@@ -79,8 +80,8 @@ private:
     void dismiss_slot(int slot);
 
     /* Clocks */
-    void end_week_budget();
-    void end_week_astrology();
+    void end_week_budget(bool search);
+    void end_week_astrology(bool search);
     void update_day_clock(float dt);
     void update_timestop_clock(float dt);
 
@@ -106,6 +107,12 @@ private:
 
     void defeat_pop(int ret);
     void battle_pop(int ret);
+
+    void search_area();
+    void do_search();
+    void search_fail();
+
+    void end_week(bool search);
 
 private:
     Variables v;
@@ -142,8 +149,16 @@ private:
     Defeat s_defeat;
     Battle s_battle;
     Garrison s_garrison;
+    Victory s_victory;
+
     int battle_mob {-1};
     int garrison_castle_id {-1};
+
+    int sceptre_continent {-1};
+    int sceptre_x {-1};
+    int sceptre_y {-1};
+
+    int temp_continent = -1;
 };
 
 #endif    // BTY_INGAME_INGAME_HPP_

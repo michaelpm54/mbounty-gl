@@ -36,6 +36,7 @@ private:
     float pop_timer_ {0};
     int next_pop_ {-1};
     bool done_ {false};
+    bool debug {false};
 };
 
 #endif    // BTY_GAME_VIEW_PUZZLE_HPP_

@@ -88,6 +88,7 @@ Ingame::Ingame(GLFWwindow *window, SceneStack &ss, DialogStack &ds, bty::Assets 
     , s_defeat(ss, ds, assets, hud)
     , s_battle(ss, ds, assets, v, gen, view_army, view_char)
     , s_garrison(ss, ds, assets, hud, v, gen)
+    , s_victory(ss, ds, assets, v, hud)
 {
     for (int i = 0; i < UnitId::UnitCount; i++) {
         unit_textures[i] = assets.get_texture(fmt::format("units/{}.png", i), {2, 2});
@@ -104,6 +105,9 @@ void Ingame::setup(int hero, int diff)
 {
     auto color = bty::get_box_color(diff);
 
+    this->hero.set_moving(false);
+    this->hero.set_flip(false);
+    this->hero.set_mount(Mount::Walk);
     ds.set_default_color(color);
     hud.set_color(color);
     hud.set_hud_frame();
@@ -161,6 +165,7 @@ void Ingame::setup(int hero, int diff)
     v.diff = diff;
     v.known_spells = 0;
     v.contract = 17;
+    v.score = 0;
     v.gold = kStartingGold[hero];
     v.commission = kRankCommission[hero][0];
     v.permanent_leadership = kRankLeadership[hero][0];
@@ -228,6 +233,12 @@ void Ingame::key(int key, int action)
     if (action == GLFW_PRESS) {
         if (key == GLFW_KEY_SPACE) {
             pause();
+        }
+        else if (key == GLFW_KEY_K) {
+            victory();
+        }
+        else if (key == GLFW_KEY_R) {
+            gen_tiles();
         }
         else if (key == GLFW_KEY_G) {
             hero.set_mount(hero.get_mount() == Mount::Fly ? Mount::Walk : Mount::Fly);
@@ -409,6 +420,13 @@ void Ingame::gen_tiles()
 
     std::uniform_int_distribution<int> unit_gen(0, UnitId::UnitCount - 1);
     std::uniform_int_distribution<int> spell_gen(0, 13);
+
+    /* Gen sceptre location */
+    do {
+        sceptre_continent = rand() % 4;
+        sceptre_x = rand() % 64;
+        sceptre_y = rand() % 64;
+    } while (map.get_data(sceptre_continent)[sceptre_y * 64 + sceptre_x] != Tile_Grass);
 
     for (int continent = 0; continent < 4; continent++) {
         auto *tiles = map.get_data(continent);
@@ -1067,7 +1085,7 @@ void Ingame::spell_raise_control()
     v.leadership &= 0xFFFF;
 }
 
-void Ingame::end_week_astrology()
+void Ingame::end_week_astrology(bool search)
 {
     int unit = rand() % UnitId::UnitCount;
     const auto &name = kUnits[unit].name_singular;
@@ -1082,8 +1100,8 @@ void Ingame::end_week_astrology()
             {1, 3, fmt::format("Astrologers proclaim:\nWeek of the {}\n\nAll {} dwellings are\nrepopulated.", name, name)},
         },
         .callbacks = {
-            .confirm = [this](int) {
-                end_week_budget();
+            .confirm = [this, search](int) {
+                end_week_budget(search);
             },
         },
     });
@@ -1106,7 +1124,7 @@ void Ingame::end_week_astrology()
     }
 }
 
-void Ingame::end_week_budget()
+void Ingame::end_week_budget(bool search)
 {
     int army_total = 0;
     int commission = v.commission;
@@ -1177,6 +1195,13 @@ void Ingame::end_week_budget()
         .w = 30,
         .h = 9,
         .strings = strings,
+        .callbacks = {
+            .confirm = [this, search](int) {
+                if (search) {
+                    end_week(false);
+                }
+            },
+        },
     });
 
     if (v.army[0] == -1 || out_of_money) {
@@ -1225,6 +1250,10 @@ void Ingame::defeat()
 
 void Ingame::victory()
 {
+    hud.set_blank_frame();
+    ss.push(&s_victory, [this](int) {
+        ss.pop(0);
+    });
 }
 
 void Ingame::dismiss()
@@ -1323,26 +1352,20 @@ void Ingame::pause()
                         ss.push(&view_contract, nullptr);
                         break;
                     case 5:
-                        if ((v.days % 5) != 0) {
-                            v.days = (v.days / 5) * 5;
-                        }
-                        else {
-                            v.days = ((v.days / 5) - 1) * 5;
-                        }
-                        if (v.days == 0) {
-                            defeat();
-                        }
-                        else {
-                            v.weeks_passed++;
-                            end_week_astrology();
-                            hud.set_gold(v.gold);
-                        }
-                        day_clock = 0;
-                        hud.set_days(v.days);
+                        end_week(false);
                         break;
                     case 6:
+                        map_cam = ui_cam * glm::translate(-glm::vec3 {sceptre_x * 48.0f + 24.0f - 120, sceptre_y * 40.0f + 20.0f - 120, 0.0f});
+                        temp_continent = v.continent;
+                        v.continent = sceptre_continent;
                         view_puzzle.update_info(gen);
-                        ss.push(&view_puzzle, nullptr);
+                        ss.push(&view_puzzle, [this](int) {
+                            update_camera();
+                            v.continent = temp_continent;
+                        });
+                        break;
+                    case 7:
+                        search_area();
                         break;
                     case 8:
                         dismiss();
@@ -1467,7 +1490,7 @@ void Ingame::update_day_clock(float dt)
             if (v.days_passed_this_week == 5) {
                 v.days_passed_this_week = 0;
                 v.weeks_passed++;
-                end_week_astrology();
+                end_week_astrology(false);
                 hud.set_gold(v.gold);
             }
             hud.set_days(v.days);
@@ -2043,4 +2066,104 @@ void Ingame::wizard()
             map.set_tile({11, 63 - 19}, 0, Tile_Grass);
         }
     });
+}
+
+void Ingame::search_area()
+{
+    ds.show_dialog({
+        .x = 1,
+        .y = 18,
+        .w = 30,
+        .h = 9,
+        .strings = {
+            {1, 1, "Search..."},
+            {1, 3, "It will take 10 days to do a"},
+            {1, 4, "search of this area, search?"},
+        },
+        .options = {
+            {14, 6, "No"},
+            {14, 7, "Yes"},
+        },
+        .callbacks = {
+            .confirm = [this](int opt) {
+                if (opt == 1) {
+                    do_search();
+                }
+            },
+        },
+    });
+}
+
+void Ingame::do_search()
+{
+    if (sceptre_continent != v.continent) {
+        search_fail();
+        return;
+    }
+
+    int range = 3;
+    int offset = range / 2;
+
+    auto tile = hero.get_tile();
+    bool found = false;
+    for (int i = 0; i <= range; i++) {
+        for (int j = 0; j <= range; j++) {
+            int x = tile.tx - offset + i;
+            int y = tile.ty - offset + j;
+
+            if (x < 0 || x > 63 || y < 0 || y > 63) {
+                continue;
+            }
+
+            if (x == sceptre_x && y == sceptre_y) {
+                found = true;
+                break;
+            }
+        }
+    }
+
+    if (!found) {
+        search_fail();
+    }
+    else {
+        victory();
+    }
+}
+
+void Ingame::search_fail()
+{
+    ds.show_dialog({
+        .x = 1,
+        .y = 18,
+        .w = 30,
+        .h = 9,
+        .strings = {
+            {1, 3, "Your search of this area has\n      revealed nothing."},
+        },
+        .callbacks = {
+            .confirm = [this](int opt) {
+                end_week(true);
+            },
+        },
+    });
+}
+
+void Ingame::end_week(bool search)
+{
+    if ((v.days % 5) != 0) {
+        v.days = (v.days / 5) * 5;
+    }
+    else {
+        v.days = ((v.days / 5) - 1) * 5;
+    }
+    if (v.days == 0) {
+        defeat();
+    }
+    else {
+        v.weeks_passed++;
+        end_week_astrology(search);
+        hud.set_gold(v.gold);
+    }
+    day_clock = 0;
+    hud.set_days(v.days);
 }

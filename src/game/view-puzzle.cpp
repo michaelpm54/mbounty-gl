@@ -67,7 +67,7 @@ void ViewPuzzle::draw(bty::Gfx &gfx, glm::mat4 &camera)
         gfx.draw_sprite(border_[i], camera);
     }
     for (int i = 0; i < 25; i++) {
-        if (!hide_[i]) {
+        if (!debug && !hide_[i]) {
             gfx.draw_sprite(sprites_[i], camera);
         }
     }
@@ -104,7 +104,6 @@ void ViewPuzzle::update_info(const GenVariables &gen)
 
 void ViewPuzzle::update(float dt)
 {
-    spdlog::debug("Puzzle::update");
     if (!done_) {
         pop_timer_ += dt;
         if (pop_timer_ >= 0.5f) {
@@ -118,7 +117,6 @@ void ViewPuzzle::update(float dt)
 
     for (int i = 0; i < 25; i++) {
         if (!hide_[i]) {
-            spdlog::debug("Update[{}]", i);
             sprites_[i].update(dt);
         }
     }
@@ -132,6 +130,9 @@ void ViewPuzzle::key(int key, int action)
                 [[fallthrough]];
             case GLFW_KEY_ENTER:
                 ss.pop(0);
+                break;
+            case GLFW_KEY_D:
+                debug = !debug;
                 break;
             default:
                 break;
