@@ -18,6 +18,8 @@ struct GenVariables {
     std::array<int, 26> town_units;
     std::array<int, 26> town_spells;
     std::array<int, 26> castle_occupants;
+    std::array<std::array<int, 5>, 26> garrison_armies;
+    std::array<std::array<int, 5>, 26> garrison_counts;
     std::array<std::array<int, 5>, 26> castle_armies;
     std::array<std::array<int, 5>, 26> castle_counts;
     std::array<glm::ivec2, 3> sail_map_tiles;

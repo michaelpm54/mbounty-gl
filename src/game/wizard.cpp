@@ -80,6 +80,9 @@ the required amount of gold?
                     ss.pop(1);
                 }
             },
+            .back = [this]() {
+                ss.pop(1);
+            },
         },
     });
 }

@@ -5,6 +5,7 @@
 #include "game/defeat.hpp"
 #include "game/dialog-stack.hpp"
 #include "game/dir-flags.hpp"
+#include "game/garrison.hpp"
 #include "game/gen-variables.hpp"
 #include "game/hero.hpp"
 #include "game/kings-castle.hpp"
@@ -140,7 +141,9 @@ private:
 
     Defeat s_defeat;
     Battle s_battle;
+    Garrison s_garrison;
     int battle_mob {-1};
+    int garrison_castle_id {-1};
 };
 
 #endif    // BTY_INGAME_INGAME_HPP_

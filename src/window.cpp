@@ -23,7 +23,7 @@ void window_center(Window *window)
 
     glfwSetWindowPos(window->handle,
                      monitor_x + (mode->width - window_width) / 2,
-                     monitor_y + (mode->height - window_height) / 2 - 200);
+                     monitor_y + (mode->height - window_height) / 2 - 125);
 }
 
 void window_error(int error_code, const char *description)

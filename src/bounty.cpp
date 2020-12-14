@@ -664,6 +664,23 @@ int const kVillainRewards[17] = {
 
 namespace bty {
 
+void sort_army(std::array<int, 5> &army, std::array<int, 5> &counts)
+{
+    int last_free = -1;
+    for (int i = 0; i < 5; i++) {
+        if (last_free == -1 && army[i] == -1) {
+            last_free = i;
+        }
+        else if (last_free != -1 && army[i] != -1) {
+            army[last_free] = army[i];
+            army[i] = -1;
+            counts[last_free] = counts[i];
+            counts[i] = -1;
+            last_free = i;
+        }
+    }
+}
+
 /* clang-format off */
 static constexpr int kMoraleGroups[25] = {
 	0, 2, 0, 3, 4,

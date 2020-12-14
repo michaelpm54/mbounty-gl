@@ -1,6 +1,7 @@
 #ifndef BTY_BOUNTY_HPP_
 #define BTY_BOUNTY_HPP_
 
+#include <array>
 #include <glm/vec4.hpp>
 #include <string>
 
@@ -62,6 +63,7 @@ extern const int kTownGateY[26];
 
 namespace bty {
 
+void sort_army(std::array<int, 5> &army, std::array<int, 5> &counts);
 int check_morale(int me, int *army);
 std::string get_descriptor(int count);
 int random(int max);

@@ -71,23 +71,6 @@ static constexpr int kMaxShopCounts[25] = {
     25,
 };
 
-void sort_army(std::array<int, 5> &army, std::array<int, 5> &counts)
-{
-    int last_free = -1;
-    for (int i = 0; i < 5; i++) {
-        if (last_free == -1 && army[i] == -1) {
-            last_free = i;
-        }
-        else if (last_free != -1 && army[i] != -1) {
-            army[last_free] = army[i];
-            army[i] = -1;
-            counts[last_free] = counts[i];
-            counts[i] = -1;
-            last_free = i;
-        }
-    }
-}
-
 Ingame::Ingame(GLFWwindow *window, SceneStack &ss, DialogStack &ds, bty::Assets &assets, Hud &hud)
     : window(window)
     , ss(ss)
@@ -104,6 +87,7 @@ Ingame::Ingame(GLFWwindow *window, SceneStack &ss, DialogStack &ds, bty::Assets 
     , s_wizard(ss, assets, v, hud)
     , s_defeat(ss, ds, assets, hud)
     , s_battle(ss, ds, assets, v, gen, view_army, view_char)
+    , s_garrison(ss, ds, assets, hud, v, gen)
 {
     for (int i = 0; i < UnitId::UnitCount; i++) {
         unit_textures[i] = assets.get_texture(fmt::format("units/{}.png", i), {2, 2});
@@ -299,6 +283,8 @@ void Ingame::gen_tiles()
         for (int j = 0; j < 5; j++) {
             gen.castle_armies[i][j] = -1;
             gen.castle_counts[i][j] = 0;
+            gen.garrison_armies[i][j] = -1;
+            gen.garrison_counts[i][j] = 0;
         }
         gen.town_units[i] = -1;
         gen.town_spells[i] = -1;
@@ -472,7 +458,7 @@ void Ingame::gen_tiles()
                     mob.dead = false;
 
                     gen_mob_army(continent, mob.army, mob.counts);
-                    sort_army(mob.army, mob.counts);
+                    bty::sort_army(mob.army, mob.counts);
 
                     int highest = 0;
                     for (int i = 0; i < 5; i++) {
@@ -1103,6 +1089,21 @@ void Ingame::end_week_astrology()
     });
 
     v.leadership = v.permanent_leadership;
+
+    for (int i = 0; i < 26; i++) {
+        if (gen.castle_occupants[i] == -1) {
+            int army_size = 0;
+            for (int j = 0; j < 5; j++) {
+                if (gen.garrison_armies[i][j] != -1) {
+                    army_size++;
+                }
+            }
+            if (army_size == 0) {
+                gen_castle_army(kCastleInfo[i].continent, gen.castle_armies[i], gen.castle_counts[i]);
+                gen.castle_occupants[i] = 0x7F;
+            }
+        }
+    }
 }
 
 void Ingame::end_week_budget()
@@ -1113,6 +1114,12 @@ void Ingame::end_week_budget()
     for (int i = 0; i < 26; i++) {
         if (gen.castle_occupants[i] == -1) {
             commission += 250;
+        }
+    }
+
+    for (int i = 0; i < 26; i++) {
+        if (gen.castle_occupants[i] == -1) {
+            v.gold += 250;
         }
     }
 
@@ -1147,7 +1154,7 @@ void Ingame::end_week_budget()
         }
     }
 
-    sort_army(v.army, v.counts);
+    bty::sort_army(v.army, v.counts);
 
     bool out_of_money = (boat + army_total) > (gold + commission);
     if (!out_of_money) {
@@ -1262,7 +1269,7 @@ void Ingame::dismiss_slot(int slot)
 
     v.army[slot] = -1;
     v.counts[slot] = 0;
-    sort_army(v.army, v.counts);
+    bty::sort_army(v.army, v.counts);
     dismiss();
 }
 
@@ -1758,7 +1765,6 @@ void Ingame::collide_sign(const Tile &tile)
 
 void Ingame::collide(const Tile &tile)
 {
-    spdlog::debug("Collide ID {}", tile.id);
     switch (tile.id) {
         case Tile_Sign:
             [[fallthrough]];
@@ -1901,7 +1907,8 @@ void Ingame::collide_castle(const Tile &tile)
     int occupier = gen.castle_occupants[castle_id];
 
     if (occupier == -1) {
-        spdlog::warn("TODO: garrisoned castles");
+        s_garrison.view(castle_id);
+        ss.push(&s_garrison, nullptr);
         return;
     }
 
@@ -1926,6 +1933,7 @@ void Ingame::collide_castle(const Tile &tile)
             .confirm = [this, castle_id](int opt) {
                 if (opt == 0) {
                     s_battle.show(gen.castle_armies[castle_id], gen.castle_counts[castle_id], true, castle_id);
+                    garrison_castle_id = castle_id;
                     ss.push(&s_battle, std::bind(&Ingame::battle_pop, this, std::placeholders::_1));
                 }
             },
@@ -2012,8 +2020,12 @@ void Ingame::battle_pop(int ret)
     switch (ret) {
         case 0:    // victory encounter
             gen.mobs[v.continent][battle_mob].dead = true;
+            s_garrison.view(garrison_castle_id);
+            ss.push(&s_garrison, nullptr);
             break;
         case 1:    // victory siege
+            s_garrison.view(garrison_castle_id);
+            ss.push(&s_garrison, nullptr);
             break;
         case 2:    // defeat/give up
             disgrace();
