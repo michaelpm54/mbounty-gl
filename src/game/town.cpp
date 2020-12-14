@@ -13,13 +13,14 @@
 #include "gfx/gfx.hpp"
 #include "glfw.hpp"
 
-Town::Town(SceneStack &ss, DialogStack &ds, bty::Assets &assets, Variables &v, GenVariables &gen, Hud &hud, ViewContract &view_contract)
+Town::Town(SceneStack &ss, DialogStack &ds, bty::Assets &assets, Variables &v, GenVariables &gen, Hud &hud, ViewContract &view_contract, bty::Sprite &boat)
     : ss(ss)
     , ds(ds)
     , v(v)
     , gen(gen)
     , hud(hud)
     , view_contract(view_contract)
+    , boat(boat)
 {
     unit_.set_position(64, 104);
     bg_.set_texture(assets.get_texture("bg/town.png"));
@@ -231,6 +232,18 @@ void Town::get_contract()
 
 void Town::rent_boat()
 {
+    if (!v.boat_rented) {
+        v.boat_x = kTownBoatX[town_id];
+        v.boat_y = 63 - kTownBoatY[town_id];
+        v.boat_c = v.continent;
+        boat.set_position(v.boat_x * 48.0f + 8.0f, v.boat_y * 40.0f + 8.0f);
+    }
+    else {
+        v.boat_x = -1;
+        v.boat_y = -1;
+        v.boat_c = -1;
+    }
+
     v.boat_rented = !v.boat_rented;
 
     bool have_anchor = gen.artifacts_found[ArtiAnchorOfAdmirality];

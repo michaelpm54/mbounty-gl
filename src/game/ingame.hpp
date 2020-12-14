@@ -159,6 +159,11 @@ private:
     int sceptre_y {-1};
 
     int temp_continent = -1;
+
+    bty::Sprite boat;
+
+    int last_water_x {-1};
+    int last_water_y {-1};
 };
 
 #endif    // BTY_INGAME_INGAME_HPP_

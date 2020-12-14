@@ -24,6 +24,9 @@ struct Variables {
     int followers_killed;
     int weeks_passed;
     int days_passed_this_week;
+    int boat_x;
+    int boat_y;
+    int boat_c;
     bool magic;
     bool siege;
     bool boat_rented;

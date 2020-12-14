@@ -22,7 +22,7 @@ struct Texture;
 
 class Town : public Scene {
 public:
-    Town(SceneStack &ss, DialogStack &ds, bty::Assets &assets, Variables &v, GenVariables &gen, Hud &hud, ViewContract &view_contract);
+    Town(SceneStack &ss, DialogStack &ds, bty::Assets &assets, Variables &v, GenVariables &gen, Hud &hud, ViewContract &view_contract, bty::Sprite &boat);
     void draw(bty::Gfx &gfx, glm::mat4 &camera) override;
     void update(float dt) override;
     void key(int key, int action) override;
@@ -42,6 +42,7 @@ private:
     GenVariables &gen;
     Hud &hud;
     ViewContract &view_contract;
+    bty::Sprite &boat;
     bty::Sprite bg_;
     bty::Sprite unit_;
     const bty::Texture *unit_textures_[25];

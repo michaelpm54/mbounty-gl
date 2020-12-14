@@ -19,6 +19,8 @@ struct CastleInfo {
     int continent;
 };
 
+extern const int kTownBoatX[26];
+extern const int kTownBoatY[26];
 extern const char *const kSpellNames[14];
 extern const int kSpellCosts[14];
 extern const TownInfo kTownInfo[];

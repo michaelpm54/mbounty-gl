@@ -5,6 +5,13 @@
 #include "assets.hpp"
 #include "game/map.hpp"
 
+Hero::Hero(int &boat_x, int &boat_y, int &boat_c)
+    : boat_x(boat_x)
+    , boat_y(boat_y)
+    , boat_c(boat_c)
+{
+}
+
 void Hero::load(bty::Assets &assets)
 {
     tex_walk_moving_ = assets.get_texture("hero/walk-moving.png", {4, 1});
@@ -45,7 +52,7 @@ void Hero::set_moving(bool val)
     update_texture();
 }
 
-bool Hero::can_move(int id)
+bool Hero::can_move(int id, int x, int y, int c)
 {
     switch (mount_) {
         case Mount::Fly:
@@ -53,7 +60,7 @@ bool Hero::can_move(int id)
         case Mount::Boat:
             return id <= Tile_GrassInFrontOfCastle || id == Tile_BridgeHorizontal || id == Tile_BridgeVertical || id == Tile_WaterConnector || (id >= Tile_WaterIRT && id <= Tile_Water);
         case Mount::Walk:
-            return id <= Tile_GrassInFrontOfCastle || id == Tile_MobBlocker || id == Tile_BridgeHorizontal || id == Tile_BridgeVertical;
+            return id <= Tile_GrassInFrontOfCastle || id == Tile_MobBlocker || id == Tile_BridgeHorizontal || id == Tile_BridgeVertical || (x == boat_x && y == boat_y && c == boat_c);
         default:
             break;
     }

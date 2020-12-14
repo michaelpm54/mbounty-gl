@@ -172,6 +172,8 @@ Entity::CollisionManifold Entity::move(float dx, float dy, Map &map, int contine
             narrow_phase.push_back({ct.tx + 1, ct.ty - 1});
     }
 
+    bool any_overlap {false};
+
     bool collide_x {false};
 
     for (const auto &coord : narrow_phase) {
@@ -179,7 +181,7 @@ Entity::CollisionManifold Entity::move(float dx, float dy, Map &map, int contine
         auto tile = map.get_tile(coord, continent);
 
         /* Skip collision if we can move on this tile. */
-        if (can_move(tile.id)) {
+        if (can_move(tile.id, tile.tx, tile.ty, continent)) {
             if (debug_) {
                 auto tile_shape = get_collision_rect(tile.id, tile.tx, tile.ty);
 
@@ -205,6 +207,8 @@ Entity::CollisionManifold Entity::move(float dx, float dy, Map &map, int contine
 
         /* Check if the bounding boxes collide. */
         if (collision_enabled && c2AABBtoAABB(collider_shape, tile_shape)) {
+            any_overlap = true;
+
             if (debug_) {
                 collided_rects_.push_back({
                     kCollidedColour,
@@ -241,13 +245,16 @@ Entity::CollisionManifold Entity::move(float dx, float dy, Map &map, int contine
         ent_shape.min.x += dx;
         ent_shape.max.x += dx;
     }
+    else {
+        any_overlap = true;
+    }
 
     bool collide_y {false};
 
     for (const auto &coord : narrow_phase) {
         auto tile = map.get_tile(coord, continent);
 
-        if (can_move(tile.id)) {
+        if (can_move(tile.id, tile.tx, tile.ty, continent)) {
             if (debug_) {
                 auto tile_shape = get_collision_rect(tile.id, tile.tx, tile.ty);
 
@@ -270,6 +277,8 @@ Entity::CollisionManifold Entity::move(float dx, float dy, Map &map, int contine
         };
 
         if (c2AABBtoAABB(collider_shape, tile_shape)) {
+            any_overlap = true;
+
             if (debug_) {
                 collided_rects_.push_back({
                     kCollidedColour,
@@ -305,6 +314,9 @@ Entity::CollisionManifold Entity::move(float dx, float dy, Map &map, int contine
         ent_shape.min.y += dy;
         ent_shape.max.y += dy;
     }
+    else {
+        any_overlap = true;
+    }
 
     if (debug_) {
         collision_rect_.set_position(ent_shape.min.x, ent_shape.min.y);
@@ -319,7 +331,7 @@ Entity::CollisionManifold Entity::move(float dx, float dy, Map &map, int contine
         return manifold;
     }
 
-    if (tile.tx != tile_.tx || tile.ty != tile_.ty) {
+    if (tile.tx != tile_.tx || tile.ty != tile_.ty && !any_overlap) {
         collided_event_on_this_tile = false;
         manifold.changed_tile = true;
         manifold.new_tile = tile;
@@ -340,7 +352,7 @@ glm::vec2 Entity::get_center() const
     return {position_.x + 16, position_.y + 16};
 }
 
-bool Entity::can_move(int id)
+bool Entity::can_move(int id, int x, int y, int c)
 {
     return id == Tile_Grass;
 }

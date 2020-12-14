@@ -10,6 +10,7 @@
 #include "bounty.hpp"
 #include "game/army-gen.hpp"
 #include "game/chest.hpp"
+#include "game/cute_c2.hpp"
 #include "game/hud.hpp"
 #include "game/scene-stack.hpp"
 #include "gfx/gfx.hpp"
@@ -76,6 +77,7 @@ Ingame::Ingame(GLFWwindow *window, SceneStack &ss, DialogStack &ds, bty::Assets 
     , ss(ss)
     , ds(ds)
     , hud(hud)
+    , hero(v.boat_x, v.boat_y, v.boat_c)
     , view_army(ss, assets)
     , view_char(ss, assets)
     , view_continent(ss, assets)
@@ -83,7 +85,7 @@ Ingame::Ingame(GLFWwindow *window, SceneStack &ss, DialogStack &ds, bty::Assets 
     , view_puzzle(ss, assets)
     , kings_castle(ss, ds, assets, hud, v, gen)
     , shop(ss, assets, v, gen, hud)
-    , town(ss, ds, assets, v, gen, hud, view_contract)
+    , town(ss, ds, assets, v, gen, hud, view_contract, boat)
     , s_wizard(ss, assets, v, hud)
     , s_defeat(ss, ds, assets, hud)
     , s_battle(ss, ds, assets, v, gen, view_army, view_char)
@@ -99,6 +101,9 @@ Ingame::Ingame(GLFWwindow *window, SceneStack &ss, DialogStack &ds, bty::Assets 
 
     ui_cam = glm::ortho(0.0f, 320.0f, 224.0f, 0.0f, -1.0f, 1.0f);
     map_cam = ui_cam;
+
+    boat.set_position(11 * 48.0f + 8.0f, 58 * 40.0f + 8.0f);
+    boat.set_texture(assets.get_texture("hero/boat-stationary.png", {2, 1}));
 }
 
 void Ingame::setup(int hero, int diff)
@@ -118,6 +123,9 @@ void Ingame::setup(int hero, int diff)
     v.days_passed_this_week = 0;
     v.x = 0;
     v.y = 0;
+    v.boat_x = -1;
+    v.boat_y = -1;
+    v.boat_c = -1;
 
     for (int i = 0; i < 26; i++) {
         v.visited_towns[i] = false;
@@ -224,6 +232,9 @@ void Ingame::draw(bty::Gfx &gfx, glm::mat4 &camera)
 {
     map.draw(map_cam, v.continent);
     draw_mobs(gfx);
+    if (v.boat_rented && hero.get_mount() != Mount::Boat) {
+        gfx.draw_sprite(boat, map_cam);
+    }
     hero.draw(gfx, map_cam);
     hud.draw(gfx, ui_cam);
 }
@@ -284,6 +295,10 @@ void Ingame::update(float dt)
     else {
         update_day_clock(dt);
         update_mobs(dt);
+    }
+
+    if (v.boat_rented) {
+        boat.update(dt);
     }
 }
 
@@ -1460,15 +1475,48 @@ void Ingame::move_hero(int move_flags, float dt)
         });
     }
     else {
+        auto hero_tile = hero.get_tile();
+
         if (manifold.changed_tile) {
+            spdlog::debug("Changed from {} to {}", hero_tile.id, manifold.new_tile.id);
+            if (manifold.new_tile.id == Tile_Grass && hero_tile.id >= Tile_WaterIRT && hero_tile.id <= Tile_Water) {
+                spdlog::debug("Going from water to land, setting last boat tile to {}, {}", hero_tile.tx, hero_tile.ty);
+                last_water_x = hero_tile.tx;
+                last_water_y = hero_tile.ty;
+            }
             v.x = manifold.new_tile.tx;
             v.y = manifold.new_tile.ty;
-            hero.set_tile_info(manifold.new_tile);
-            if (hero.get_mount() == Mount::Boat && manifold.new_tile.id == Tile_Grass) {
-                hero.set_mount(Mount::Walk);
-            }
-            update_visited_tiles();
         }
+
+        if (hero.get_mount() == Mount::Boat && hero_tile.id == Tile_Grass) {
+            c2AABB hero_box;
+            hero_box.min.x = ht.x;
+            hero_box.min.y = ht.y;
+            hero_box.max.x = hero_box.min.x + 44.0f;
+            hero_box.max.y = hero_box.min.y + 32.0f;
+            c2AABB tile_box;
+            tile_box.min.x = v.x * 48.0f;
+            tile_box.min.y = v.y * 40.0f;
+            tile_box.max.x = tile_box.min.x + 48.0f;
+            tile_box.max.y = tile_box.min.y + 40.0f;
+            c2Manifold m;
+            c2AABBtoAABBManifold(hero_box, tile_box, &m);
+            for (int i = 0; i < m.count; i++) {
+                if (std::abs(m.depths[i]) >= 20.0f) {
+                    hero.set_mount(Mount::Walk);
+                    v.boat_x = last_water_x;
+                    v.boat_y = last_water_y;
+                    v.boat_c = v.continent;
+                    boat.set_position(v.boat_x * 48.0f + 8.0f, v.boat_y * 40.0f + 8.0f);
+                    break;
+                }
+            }
+        }
+        else if (v.x == v.boat_x && v.y == v.boat_y && v.continent == v.boat_c && hero.get_mount() == Mount::Walk && hero_tile.id >= Tile_WaterIRT && hero_tile.id <= Tile_Water) {
+            hero.set_mount(Mount::Boat);
+        }
+
+        update_visited_tiles();
     }
 
     update_camera();

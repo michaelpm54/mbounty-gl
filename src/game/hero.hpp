@@ -16,8 +16,9 @@ enum class Mount {
 
 class Hero : public Entity {
 public:
+    Hero(int &boat_x, int &boat_y, int &boat_c);
     void load(bty::Assets &assets);
-    bool can_move(int id) override;
+    bool can_move(int id, int x, int y, int c) override;
     void set_mount(Mount mount);
     Mount get_mount() const;
     void set_moving(bool val);
@@ -32,6 +33,9 @@ private:
     const bty::Texture *tex_walk_stationary_;
     const bty::Texture *tex_boat_moving_;
     const bty::Texture *tex_boat_stationary_;
+    int &boat_x;
+    int &boat_y;
+    int &boat_c;
 };
 
 #endif    // BTY_GAME_HERO_HPP_

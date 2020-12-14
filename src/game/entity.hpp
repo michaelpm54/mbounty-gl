@@ -37,7 +37,7 @@ public:
     void set_collision_enabled(bool val);
 
 protected:
-    virtual bool can_move(int id);
+    virtual bool can_move(int id, int x, int y, int c);
 
 protected:
     Tile tile_ {-1, -1, -1};
