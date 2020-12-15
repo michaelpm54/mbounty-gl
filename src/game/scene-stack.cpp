@@ -11,6 +11,9 @@ SceneStack::SceneStack(bty::Assets &assets)
 
 void SceneStack::push(Scene *scene, std::function<void(int)> callback)
 {
+    if (stack_.size() && stack_.back() == scene) {
+        return;
+    }
     callbacks_.push_back(callback);
     stack_.push_back(scene);
 }
@@ -73,7 +76,7 @@ int SceneStack::size() const
     return static_cast<int>(stack_.size());
 }
 
-const Scene* SceneStack::get() const
+const Scene *SceneStack::get() const
 {
     return stack_.size() ? stack_.back() : nullptr;
 }
