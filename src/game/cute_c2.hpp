@@ -282,12 +282,9 @@ CUTE_C2_API void c2CircletoCircleManifold(c2Circle A, c2Circle B, c2Manifold *m)
 CUTE_C2_API void c2CircletoAABBManifold(c2Circle A, c2AABB B, c2Manifold *m);
 CUTE_C2_API void c2CircletoCapsuleManifold(c2Circle A, c2Capsule B, c2Manifold *m);
 CUTE_C2_API void c2AABBtoAABBManifold(c2AABB A, c2AABB B, c2Manifold *m);
-CUTE_C2_API void c2AABBtoCapsuleManifold(c2AABB A, c2Capsule B, c2Manifold *m);
 CUTE_C2_API void c2CapsuletoCapsuleManifold(c2Capsule A, c2Capsule B, c2Manifold *m);
 CUTE_C2_API void c2CircletoPolyManifold(c2Circle A, const c2Poly *B, const c2x *bx, c2Manifold *m);
 CUTE_C2_API void c2AABBtoPolyManifold(c2AABB A, const c2Poly *B, const c2x *bx, c2Manifold *m);
-CUTE_C2_API void
-c2CapsuletoPolyManifold(c2Capsule A, const c2Poly *B, const c2x *bx, c2Manifold *m);
 CUTE_C2_API void
 c2PolytoPolyManifold(const c2Poly *A, const c2x *ax, const c2Poly *B, const c2x *bx, c2Manifold *m);
 
@@ -372,7 +369,6 @@ C2_INLINE void c2SinCos(float radians, float *s, float *c)
     *c = c2Cos(radians);
     *s = c2Sin(radians);
 }
-#define c2Sign(a) (a < 0 ? -1.0f : 1.0f)
 
 // The rest of the functions in the header-only portion are all for internal use
 // and use the author's personal naming conventions. It is recommended to use one's
@@ -756,9 +752,6 @@ void c2Collide(
                 case C2_TYPE_AABB:
                     c2AABBtoAABBManifold(*(c2AABB *)A, *(c2AABB *)B, m);
                     break;
-                case C2_TYPE_CAPSULE:
-                    c2AABBtoCapsuleManifold(*(c2AABB *)A, *(c2Capsule *)B, m);
-                    break;
                 case C2_TYPE_POLY:
                     c2AABBtoPolyManifold(*(c2AABB *)A, (const c2Poly *)B, bx, m);
                     break;
@@ -771,15 +764,8 @@ void c2Collide(
                     c2CircletoCapsuleManifold(*(c2Circle *)B, *(c2Capsule *)A, m);
                     m->n = c2Neg(m->n);
                     break;
-                case C2_TYPE_AABB:
-                    c2AABBtoCapsuleManifold(*(c2AABB *)B, *(c2Capsule *)A, m);
-                    m->n = c2Neg(m->n);
-                    break;
                 case C2_TYPE_CAPSULE:
                     c2CapsuletoCapsuleManifold(*(c2Capsule *)A, *(c2Capsule *)B, m);
-                    break;
-                case C2_TYPE_POLY:
-                    c2CapsuletoPolyManifold(*(c2Capsule *)A, (const c2Poly *)B, bx, m);
                     break;
             }
             break;
@@ -792,10 +778,6 @@ void c2Collide(
                     break;
                 case C2_TYPE_AABB:
                     c2AABBtoPolyManifold(*(c2AABB *)B, (const c2Poly *)A, ax, m);
-                    m->n = c2Neg(m->n);
-                    break;
-                case C2_TYPE_CAPSULE:
-                    c2CapsuletoPolyManifold(*(c2Capsule *)B, (const c2Poly *)A, ax, m);
                     m->n = c2Neg(m->n);
                     break;
                 case C2_TYPE_POLY:
@@ -1833,17 +1815,6 @@ void c2AABBtoAABBManifold(c2AABB A, c2AABB B, c2Manifold *m)
     m->n = n;
 }
 
-void c2AABBtoCapsuleManifold(c2AABB A, c2Capsule B, c2Manifold *m)
-{
-    m->count = 0;
-    c2Poly p;
-    c2BBVerts(p.verts, &A);
-    p.count = 4;
-    c2Norms(p.verts, p.norms, 4);
-    c2CapsuletoPolyManifold(B, &p, 0, m);
-    m->n = c2Neg(m->n);
-}
-
 void c2CapsuletoCapsuleManifold(c2Capsule A, c2Capsule B, c2Manifold *m)
 {
     m->count = 0;
@@ -2022,68 +1993,6 @@ static void c2AntinormalFace(c2Capsule cap, const c2Poly *p, c2x x, int *face_ou
     }
     *face_out = index;
     *n_out = n;
-}
-
-void c2CapsuletoPolyManifold(c2Capsule A, const c2Poly *B, const c2x *bx_ptr, c2Manifold *m)
-{
-    m->count = 0;
-    c2v a, b;
-    float d = c2GJK(&A, C2_TYPE_CAPSULE, 0, B, C2_TYPE_POLY, bx_ptr, &a, &b, 0, 0, 0);
-
-    // deep, treat as segment to poly collision
-    if (d == 0) {
-        c2x bx = bx_ptr ? *bx_ptr : c2xIdentity();
-        c2v n;
-        int index;
-        c2AntinormalFace(A, B, bx, &index, &n);
-        c2v seg[2] = {A.a, A.b};
-        c2h h;
-        if (!c2SidePlanes(seg, bx, B, index, &h))
-            return;
-        c2KeepDeep(seg, h, m);
-        for (int i = 0; i < m->count; ++i) {
-            m->depths[i] += c2Sign(m->depths) * A.r;
-            m->contact_points[i] = c2Add(m->contact_points[i], c2Mulvs(n, A.r));
-        }
-        m->n = c2Neg(m->n);
-    }
-
-    // shallow, use GJK results a and b to define manifold
-    else if (d < A.r) {
-        c2x bx = bx_ptr ? *bx_ptr : c2xIdentity();
-        c2v ab = c2Sub(b, a);
-        int face_case = 0;
-
-        for (int i = 0; i < B->count; ++i) {
-            c2v n = c2Mulrv(bx.r, B->norms[i]);
-            if (c2Parallel(c2Neg(ab), n, 5.0e-3f)) {
-                face_case = 1;
-                break;
-            }
-        }
-
-        // 1 contact
-        if (!face_case) {
-        one_contact:
-            m->count = 1;
-            m->n = c2Norm(ab);
-            m->contact_points[0] = c2Add(a, c2Mulvs(m->n, A.r));
-            m->depths[0] = A.r - d;
-        }
-
-        // 2 contacts if laying on a polygon face nicely
-        else {
-            c2v n;
-            int index;
-            c2AntinormalFace(A, B, bx, &index, &n);
-            c2v seg[2] = {c2Add(A.a, c2Mulvs(n, A.r)), c2Add(A.b, c2Mulvs(n, A.r))};
-            c2h h;
-            if (!c2SidePlanes(seg, bx, B, index, &h))
-                goto one_contact;
-            c2KeepDeep(seg, h, m);
-            m->n = c2Neg(m->n);
-        }
-    }
 }
 
 #ifdef _MSC_VER
