@@ -2,6 +2,7 @@
 
 #include <spdlog/spdlog.h>
 
+#include "data/color.hpp"
 #include "window/glfw.hpp"
 
 namespace bty {

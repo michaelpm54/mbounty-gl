@@ -2,6 +2,7 @@
 #define BTY_GAME_KINGS_CASTLE_HPP_
 
 #include "data/bounty.hpp"
+#include "data/color.hpp"
 #include "engine/dialog.hpp"
 #include "engine/scene.hpp"
 #include "game/recruit-input.hpp"

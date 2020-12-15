@@ -3,6 +3,7 @@
 #include <spdlog/spdlog.h>
 
 #include "data/bounty.hpp"
+#include "data/color.hpp"
 #include "data/hero.hpp"
 #include "data/puzzle.hpp"
 #include "engine/assets.hpp"

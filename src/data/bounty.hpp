@@ -28,18 +28,6 @@ int random(int max);
 int random(int min, int max);
 std::string number_with_ks(int num);
 
-enum class BoxColor {
-    Easy,
-    Normal,
-    Hard,
-    Impossible,
-    Intro,
-    None,
-};
-
-glm::vec4 get_color(BoxColor color, bool outline = false);
-BoxColor get_box_color(int difficulty);
-
 }    // namespace bty
 
 enum UnitId {

@@ -5,7 +5,7 @@
 #include <glm/mat4x4.hpp>
 #include <vector>
 
-#include "data/bounty.hpp"
+#include "data/color.hpp"
 #include "gfx/rect.hpp"
 #include "gfx/sprite.hpp"
 #include "gfx/text.hpp"

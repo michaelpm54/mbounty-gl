@@ -4,6 +4,7 @@
 #include <memory>
 #include <vector>
 
+#include "data/color.hpp"
 #include "engine/dialog-def.hpp"
 #include "engine/dialog.hpp"
 

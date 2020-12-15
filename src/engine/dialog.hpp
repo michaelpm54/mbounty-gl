@@ -8,6 +8,7 @@
 #include <unordered_set>
 #include <vector>
 
+#include "data/color.hpp"
 #include "engine/textbox.hpp"
 #include "gfx/sprite.hpp"
 #include "gfx/text.hpp"
@@ -43,8 +44,8 @@ public:
 	void create(
 		int x, int y,
 		int w, int h,
-		bty::BoxColor color,
-		bty::Assets &assets
+		BoxColor color,
+		Assets &assets
 	);
     /* clang-format on */
     void set_position(int x, int y);

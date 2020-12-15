@@ -3,6 +3,7 @@
 
 #include <array>
 
+#include "data/color.hpp"
 #include "engine/scene.hpp"
 #include "gfx/rect.hpp"
 #include "gfx/sprite.hpp"

@@ -3,7 +3,7 @@
 
 #include <glm/vec4.hpp>
 
-#include "data/bounty.hpp"
+#include "data/color.hpp"
 #include "engine/assets.hpp"
 #include "gfx/transformable.hpp"
 

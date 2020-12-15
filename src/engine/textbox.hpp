@@ -7,6 +7,7 @@
 #include <string>
 
 #include "data/bounty.hpp"
+#include "data/color.hpp"
 #include "engine/assets.hpp"
 #include "gfx/rect.hpp"
 #include "gfx/sprite.hpp"
@@ -24,15 +25,15 @@ public:
 	void create(
 		int x, int y,
 		int w, int h,
-		bty::BoxColor color,
-		bty::Assets &assets
+		BoxColor color,
+		Assets &assets
 	);
     /* clang-format on */
 
     void draw(Gfx &gfx, glm::mat4 &camera);
     Text *add_line(int x, int y, std::string const &str);
     void set_line(int i, std::string const &str);
-    void set_color(bty::BoxColor color);
+    void set_color(BoxColor color);
     void set_line_visible(int index, bool value);
     void set_size(int w, int h);
     void set_position(int x, int y);
