@@ -44,9 +44,11 @@ void ViewContinent::draw(bty::Gfx &gfx, glm::mat4 &camera)
     gfx.draw_sprite(map_, camera);
 }
 
-void ViewContinent::update_info(Variables &v)
+void ViewContinent::update_info(Variables &v, bool have_map, bool force_show)
 {
     this->v = &v;
+    this->have_map = have_map;
+    fog = !force_show;
 
     set_color(bty::get_box_color(v.diff));
 
@@ -56,9 +58,57 @@ void ViewContinent::update_info(Variables &v)
     continent_->set_string(kContinents[v.continent]);
     coordinates_->set_string(fmt::format("X={:>2} Position Y={:>2}", v.x, 63 - v.y));
 
-    std::vector<unsigned char> pixels(64 * 64 * 4);
-    unsigned char *p = pixels.data();
+    gen_texture();
+}
 
+void ViewContinent::update(float dt)
+{
+    dot_timer_ += dt;
+    dot_alpha_ = glm::abs(glm::cos(dot_timer_ * 4));
+
+    uint8_t val = static_cast<uint8_t>(255 * dot_alpha_);
+
+    /* Cyan */
+    uint32_t pixel = 0xFF000000 | (val << 8) | val;
+
+    glTextureSubImage2D(
+        map_texture_.handle,
+        0,
+        x_,
+        y_,
+        1,
+        1,
+        GL_BGRA,
+        GL_UNSIGNED_INT_8_8_8_8_REV,
+        &pixel);
+}
+
+void ViewContinent::set_color(bty::BoxColor color)
+{
+    box_.set_color(color);
+}
+
+void ViewContinent::key(int key, int action)
+{
+    if (action == GLFW_PRESS) {
+        switch (key) {
+            case GLFW_KEY_BACKSPACE:
+                ss.pop(0);
+                break;
+            case GLFW_KEY_ENTER:
+                if (have_map) {
+                    fog = !fog;
+                    gen_texture();
+                }
+                break;
+            default:
+                break;
+        }
+    }
+}
+
+void ViewContinent::gen_texture()
+{
     /* ARGB */
     static constexpr uint32_t water_edge = 0xFF2161C7;
     static constexpr uint32_t water_deep = 0xFF002084;
@@ -69,7 +119,10 @@ void ViewContinent::update_info(Variables &v)
     static constexpr uint32_t yellow = 0xFFCCCC00;
     static constexpr uint32_t castle = 0xFFe8E4E8;
 
-    const unsigned char *const map = fog ? v.visited_tiles[v.continent].data() : v.tiles[v.continent];
+    const unsigned char *const map = fog ? v->visited_tiles[v->continent].data() : v->tiles[v->continent];
+
+    std::vector<unsigned char> pixels(64 * 64 * 4);
+    unsigned char *p = pixels.data();
 
     for (int i = 0; i < 4096; i++) {
         int id = map[i];
@@ -114,48 +167,4 @@ void ViewContinent::update_info(Variables &v)
         GL_BGRA,
         GL_UNSIGNED_INT_8_8_8_8_REV,
         pixels.data());
-}
-
-void ViewContinent::update(float dt)
-{
-    dot_timer_ += dt;
-    dot_alpha_ = glm::abs(glm::cos(dot_timer_ * 4));
-
-    uint8_t val = static_cast<uint8_t>(255 * dot_alpha_);
-
-    /* Cyan */
-    uint32_t pixel = 0xFF000000 | (val << 8) | val;
-
-    glTextureSubImage2D(
-        map_texture_.handle,
-        0,
-        x_,
-        y_,
-        1,
-        1,
-        GL_BGRA,
-        GL_UNSIGNED_INT_8_8_8_8_REV,
-        &pixel);
-}
-
-void ViewContinent::set_color(bty::BoxColor color)
-{
-    box_.set_color(color);
-}
-
-void ViewContinent::key(int key, int action)
-{
-    if (action == GLFW_PRESS) {
-        switch (key) {
-            case GLFW_KEY_BACKSPACE:
-                ss.pop(0);
-                break;
-            case GLFW_KEY_ENTER:
-                fog = !fog;
-                update_info(*v);
-                break;
-            default:
-                break;
-        }
-    }
 }

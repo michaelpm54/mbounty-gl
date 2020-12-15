@@ -1356,7 +1356,7 @@ void Ingame::pause()
                         ss.push(&view_char, nullptr);
                         break;
                     case 2:
-                        view_continent.update_info(v);
+                        view_continent.update_info(v, gen.continent_maps_found[v.continent]);
                         ss.push(&view_continent, nullptr);
                         break;
                     case 3:
@@ -1948,7 +1948,8 @@ void Ingame::collide_chest(const Tile &tile)
             },
             .callbacks = {
                 .confirm = [this](int opt) {
-                    // set_state(GameState::ViewContinent);
+                    view_continent.update_info(v, true, true);
+                    ss.push(&view_continent, nullptr);
                 },
             },
         });

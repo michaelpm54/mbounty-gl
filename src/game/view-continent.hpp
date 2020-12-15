@@ -25,8 +25,11 @@ public:
     void update(float dt) override;
     void key(int key, int action) override;
 
-    void update_info(Variables &v);
+    void update_info(Variables &v, bool have_map, bool force_show = false);
     void set_color(bty::BoxColor color);
+
+private:
+    void gen_texture();
 
 private:
     Variables *v;
@@ -41,6 +44,7 @@ private:
     int x_ {0};
     int y_ {0};
     bool fog {true};
+    bool have_map {false};
 };
 
 #endif    // BTY_GAME_VIEW_CONTINENT_HPP_
