@@ -2,18 +2,18 @@
 
 #include <spdlog/spdlog.h>
 
-#include "assets.hpp"
-#include "game/dialog-stack.hpp"
+#include "engine/assets.hpp"
+#include "engine/dialog-stack.hpp"
+#include "engine/scene-stack.hpp"
 #include "game/gen-variables.hpp"
 #include "game/hud.hpp"
 #include "game/map.hpp"
-#include "game/scene-stack.hpp"
 #include "game/variables.hpp"
 #include "game/view-contract.hpp"
 #include "gfx/gfx.hpp"
-#include "glfw.hpp"
+#include "window/glfw.hpp"
 
-Town::Town(SceneStack &ss, DialogStack &ds, bty::Assets &assets, Variables &v, GenVariables &gen, Hud &hud, ViewContract &view_contract, bty::Sprite &boat)
+Town::Town(bty::SceneStack &ss, bty::DialogStack &ds, bty::Assets &assets, Variables &v, GenVariables &gen, Hud &hud, ViewContract &view_contract, bty::Sprite &boat)
     : ss(ss)
     , ds(ds)
     , v(v)

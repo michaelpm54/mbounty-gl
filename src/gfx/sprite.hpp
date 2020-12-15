@@ -5,7 +5,7 @@
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
 
-#include "assets.hpp"
+#include "engine/assets.hpp"
 #include "gfx/transformable.hpp"
 
 namespace bty {

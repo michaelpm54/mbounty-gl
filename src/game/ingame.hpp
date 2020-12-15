@@ -1,9 +1,12 @@
 #ifndef BTY_GAME_INGAME_HPP_
 #define BTY_GAME_INGAME_HPP_
 
+#include "engine/dialog-stack.hpp"
+#include "engine/dialog.hpp"
+#include "engine/scene.hpp"
+#include "engine/textbox.hpp"
 #include "game/battle.hpp"
 #include "game/defeat.hpp"
-#include "game/dialog-stack.hpp"
 #include "game/dir-flags.hpp"
 #include "game/garrison.hpp"
 #include "game/gen-variables.hpp"
@@ -11,7 +14,6 @@
 #include "game/kings-castle.hpp"
 #include "game/map.hpp"
 #include "game/mob.hpp"
-#include "game/scene.hpp"
 #include "game/shop-info.hpp"
 #include "game/shop.hpp"
 #include "game/town.hpp"
@@ -23,29 +25,27 @@
 #include "game/view-contract.hpp"
 #include "game/view-puzzle.hpp"
 #include "game/wizard.hpp"
-#include "gfx/dialog.hpp"
 #include "gfx/font.hpp"
 #include "gfx/sprite.hpp"
 #include "gfx/text.hpp"
-#include "gfx/textbox.hpp"
 
 namespace bty {
 class Assets;
 class Gfx;
+class DialogStack;
+class SceneStack;
 }    // namespace bty
 
 class Hud;
-class DialogStack;
-class SceneStack;
 struct GLFWwindow;
 
-class Ingame : public Scene {
+class Ingame : public bty::Scene {
 public:
     void update(float dt) override;
     void setup(int hero, int diff);
     void key(int key, int action) override;
     void draw(bty::Gfx &gfx, glm::mat4 &camera) override;
-    Ingame(GLFWwindow *window, SceneStack &ss, DialogStack &ds, bty::Assets &assets, Hud &hud);
+    Ingame(GLFWwindow *window, bty::SceneStack &ss, bty::DialogStack &ds, bty::Assets &assets, Hud &hud);
 
 private:
     void defeat();
@@ -119,8 +119,8 @@ private:
     GenVariables gen;
 
     GLFWwindow *window;
-    SceneStack &ss;
-    DialogStack &ds;
+    bty::SceneStack &ss;
+    bty::DialogStack &ds;
     Hud &hud;
     Map map;
     Hero hero;

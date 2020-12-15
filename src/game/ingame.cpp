@@ -6,16 +6,16 @@
 #include <glm/gtx/transform.hpp>
 #include <random>
 
-#include "assets.hpp"
-#include "bounty.hpp"
+#include "data/bounty.hpp"
+#include "data/signs.hpp"
+#include "engine/assets.hpp"
+#include "engine/scene-stack.hpp"
 #include "game/army-gen.hpp"
 #include "game/chest.hpp"
 #include "game/cute_c2.hpp"
 #include "game/hud.hpp"
-#include "game/scene-stack.hpp"
 #include "gfx/gfx.hpp"
-#include "glfw.hpp"
-#include "signs.hpp"
+#include "window/glfw.hpp"
 
 static constexpr int kShopUnits[24] = {
     0x00,
@@ -72,7 +72,7 @@ static constexpr int kMaxShopCounts[25] = {
     25,
 };
 
-Ingame::Ingame(GLFWwindow *window, SceneStack &ss, DialogStack &ds, bty::Assets &assets, Hud &hud)
+Ingame::Ingame(GLFWwindow *window, bty::SceneStack &ss, bty::DialogStack &ds, bty::Assets &assets, Hud &hud)
     : window(window)
     , ss(ss)
     , ds(ds)
@@ -743,7 +743,7 @@ void Ingame::move_hero_to(int x, int y, int c)
 
 void Ingame::use_magic()
 {
-    std::vector<DialogDef::StringDef> options;
+    std::vector<bty::DialogDef::StringDef> options;
 
     for (int i = 7; i < 14; i++) {
         options.push_back({4, 3 + i - 7, fmt::format("{} {}", v.spells[i], kSpellNames[i])});
@@ -941,7 +941,7 @@ void Ingame::castle_gate_confirm(int opt)
 
 void Ingame::spell_tc_gate(bool town)
 {
-    std::vector<DialogDef::StringDef> options(26);
+    std::vector<bty::DialogDef::StringDef> options(26);
     std::vector<bool> visible_options(26);
 
     int n = 0;
@@ -1160,7 +1160,7 @@ void Ingame::end_week_budget(bool search)
     int boat = v.boat_rented ? (gen.artifacts_found[ArtiAnchorOfAdmirality] ? 100 : 500) : 0;
     int balance = (commission + gold) - boat;
 
-    std::vector<DialogDef::StringDef> strings;
+    std::vector<bty::DialogDef::StringDef> strings;
 
     for (int i = 0; i < 5; i++) {
         if (v.army[i] == -1) {
@@ -1273,7 +1273,7 @@ void Ingame::victory()
 
 void Ingame::dismiss()
 {
-    std::vector<DialogDef::StringDef> options;
+    std::vector<bty::DialogDef::StringDef> options;
 
     for (int i = 0; i < 5; i++) {
         if (v.army[i] != -1) {
@@ -1454,7 +1454,7 @@ void Ingame::move_hero(int move_flags, float dt)
     }
 
     if (auto ht = hero.get_center(); !v.auto_move && (ht.x < 0 || ht.x > 3072 || ht.y < 0 || ht.y > 40 * 64)) {
-        std::vector<DialogDef::StringDef> continents;
+        std::vector<bty::DialogDef::StringDef> continents;
 
         for (int i = 0; i < 4; i++) {
             if (gen.sail_maps_found[i]) {

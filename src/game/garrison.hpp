@@ -1,27 +1,27 @@
 #ifndef BTY_GAME_GARRISON_HPP_
 #define BTY_GAME_GARRISON_HPP_
 
-#include "bounty.hpp"
+#include "data/bounty.hpp"
+#include "engine/dialog.hpp"
+#include "engine/scene.hpp"
 #include "game/recruit-input.hpp"
-#include "game/scene.hpp"
-#include "gfx/dialog.hpp"
 #include "gfx/sprite.hpp"
 
 namespace bty {
 class Gfx;
 struct Texture;
-}    // namespace bty
-
 class SceneStack;
 class DialogStack;
 class Assets;
+}    // namespace bty
+
 class Hud;
 struct Variables;
 struct GenVariables;
 
-class Garrison : public Scene {
+class Garrison : public bty::Scene {
 public:
-    Garrison(SceneStack &ss, DialogStack &ds, bty::Assets &assets, Hud &hud, Variables &v, GenVariables &gen);
+    Garrison(bty::SceneStack &ss, bty::DialogStack &ds, bty::Assets &assets, Hud &hud, Variables &v, GenVariables &gen);
     void draw(bty::Gfx &gfx, glm::mat4 &camera) override;
     void key(int key, int action) override;
     void update(float dt) override;
@@ -35,8 +35,8 @@ private:
     void update_units(int opt);
 
 private:
-    SceneStack &ss;
-    DialogStack &ds;
+    bty::SceneStack &ss;
+    bty::DialogStack &ds;
     Hud &hud;
     Variables &v;
     GenVariables &gen;

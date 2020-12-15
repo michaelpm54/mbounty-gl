@@ -1,13 +1,11 @@
-#ifndef BTY_WINDOW_ENGINE_INTERFACE_HPP_
-#define BTY_WINDOW_ENGINE_INTERFACE_HPP_
+#ifndef BTY_WINDOW_WINDOW_ENGINE_INTERFACE_HPP_
+#define BTY_WINDOW_WINDOW_ENGINE_INTERFACE_HPP_
 
 #include "glfw.hpp"
 
 namespace bty {
 
 class Engine;
-
-namespace input {
 
 void key(GLFWwindow *window, int key, int scancode, int action, int mods);
 void close(GLFWwindow *window);
@@ -17,8 +15,6 @@ struct InputHandler {
     Engine *engine;
 };
 
-}    // namespace input
-
 }    // namespace bty
 
-#endif    // BTY_WINDOW_ENGINE_INTERFACE_HPP_
+#endif    // BTY_WINDOW_WINDOW_ENGINE_INTERFACE_HPP_

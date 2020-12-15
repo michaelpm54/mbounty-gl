@@ -4,15 +4,15 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 
-#include "assets.hpp"
-#include "bounty.hpp"
+#include "data/bounty.hpp"
+#include "engine/assets.hpp"
+#include "engine/dialog-stack.hpp"
+#include "engine/scene-stack.hpp"
 #include "game/army-gen.hpp"
-#include "game/dialog-stack.hpp"
 #include "game/gen-variables.hpp"
-#include "game/scene-stack.hpp"
 #include "game/variables.hpp"
 #include "gfx/gfx.hpp"
-#include "glfw.hpp"
+#include "window/glfw.hpp"
 
 static constexpr char const *kSiegeVictoryMessage = {
     R"raw(          Victory!
@@ -148,7 +148,7 @@ static constexpr char const *kStatuses[] = {
     "{} are out of control!",
 };
 
-Battle::Battle(SceneStack &ss, DialogStack &ds, bty::Assets &assets, Variables &v, GenVariables &gen, ViewArmy &view_army_, ViewCharacter &view_character_)
+Battle::Battle(bty::SceneStack &ss, bty::DialogStack &ds, bty::Assets &assets, Variables &v, GenVariables &gen, ViewArmy &view_army_, ViewCharacter &view_character_)
     : ss(ss)
     , ds(ds)
     , v(v)
@@ -1800,7 +1800,7 @@ void Battle::use_magic()
         return;
     }
 
-    std::vector<DialogDef::StringDef> options;
+    std::vector<bty::DialogDef::StringDef> options;
 
     for (int i = 7; i < 14; i++) {
         options.push_back({4, 3 + i - 7, fmt::format("{} {}", v.spells[i], kSpellNames[i])});

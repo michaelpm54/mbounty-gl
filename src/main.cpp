@@ -2,9 +2,9 @@
 
 #include <filesystem>
 
-#include "engine.hpp"
-#include "glfw.hpp"
-#include "window.hpp"
+#include "engine/engine.hpp"
+#include "window/glfw.hpp"
+#include "window/window.hpp"
 
 void APIENTRY glDebugOutput(GLenum source,
                             GLenum type,

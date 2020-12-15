@@ -2,16 +2,16 @@
 
 #include <spdlog/spdlog.h>
 
-#include "assets.hpp"
-#include "bounty.hpp"
+#include "data/bounty.hpp"
+#include "engine/assets.hpp"
+#include "engine/scene-stack.hpp"
 #include "game/gen-variables.hpp"
-#include "game/scene-stack.hpp"
 #include "game/variables.hpp"
 #include "gfx/gfx.hpp"
 #include "gfx/texture.hpp"
-#include "glfw.hpp"
+#include "window/glfw.hpp"
 
-ViewCharacter::ViewCharacter(SceneStack &ss, bty::Assets &assets)
+ViewCharacter::ViewCharacter(bty::SceneStack &ss, bty::Assets &assets)
     : ss(ss)
 {
     frame_.set_texture(assets.get_texture("frame/character.png"));

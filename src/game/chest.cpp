@@ -2,8 +2,8 @@
 
 #include <fmt/format.h>
 
-#include "bounty.hpp"
-#include "game/dialog-stack.hpp"
+#include "data/bounty.hpp"
+#include "engine/dialog-stack.hpp"
 #include "game/gen-variables.hpp"
 #include "game/variables.hpp"
 
@@ -42,7 +42,7 @@ static constexpr int kChestChanceAddSpell[] = {
     101,
 };
 
-void chest_gold(Variables &v, GenVariables &gen, DialogStack &ds)
+void chest_gold(Variables &v, GenVariables &gen, bty::DialogStack &ds)
 {
     static constexpr int kGoldBase[] = {
         5,
@@ -90,7 +90,7 @@ void chest_gold(Variables &v, GenVariables &gen, DialogStack &ds)
     });
 }
 
-void chest_commission(Variables &v, DialogStack &ds)
+void chest_commission(Variables &v, bty::DialogStack &ds)
 {
     static constexpr int kCommissionBase[] = {
         41,
@@ -129,7 +129,7 @@ void chest_commission(Variables &v, DialogStack &ds)
     });
 }
 
-void chest_spell_power(Variables &v, DialogStack &ds)
+void chest_spell_power(Variables &v, bty::DialogStack &ds)
 {
     ds.show_dialog({
         .x = 1,
@@ -148,7 +148,7 @@ void chest_spell_power(Variables &v, DialogStack &ds)
     });
 }
 
-void chest_spell_capacity(Variables &v, GenVariables &gen, DialogStack &ds)
+void chest_spell_capacity(Variables &v, GenVariables &gen, bty::DialogStack &ds)
 {
     static constexpr int kSpellCapacityBase[] = {
         1,
@@ -177,7 +177,7 @@ void chest_spell_capacity(Variables &v, GenVariables &gen, DialogStack &ds)
     });
 }
 
-void chest_spell(Variables &v, DialogStack &ds)
+void chest_spell(Variables &v, bty::DialogStack &ds)
 {
     int amount = (rand() % (v.continent + 1)) + 1;
     int spell = rand() % 14;
@@ -199,7 +199,7 @@ void chest_spell(Variables &v, DialogStack &ds)
     });
 }
 
-void chest_roll(Variables &v, GenVariables &gen, DialogStack &ds)
+void chest_roll(Variables &v, GenVariables &gen, bty::DialogStack &ds)
 {
     int roll = rand() % 100;
 

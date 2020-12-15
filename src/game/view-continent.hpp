@@ -1,25 +1,25 @@
 #ifndef BTY_GAME_VIEW_CONTINENT_HPP_
 #define BTY_GAME_VIEW_CONTINENT_HPP_
 
-#include "game/scene.hpp"
+#include "engine/scene.hpp"
+#include "engine/textbox.hpp"
 #include "gfx/rect.hpp"
 #include "gfx/sprite.hpp"
 #include "gfx/text.hpp"
-#include "gfx/textbox.hpp"
 
 namespace bty {
 class Assets;
 class Font;
 class Gfx;
 struct Texture;
+class SceneStack;
 }    // namespace bty
 
-class SceneStack;
 struct Variables;
 
-class ViewContinent : public Scene {
+class ViewContinent : public bty::Scene {
 public:
-    ViewContinent(SceneStack &ss, bty::Assets &assets);
+    ViewContinent(bty::SceneStack &ss, bty::Assets &assets);
     ~ViewContinent();
     void draw(bty::Gfx &gfx, glm::mat4 &camera) override;
     void update(float dt) override;
@@ -33,7 +33,7 @@ private:
 
 private:
     Variables *v;
-    SceneStack &ss;
+    bty::SceneStack &ss;
     bty::TextBox box_;
     bty::Text *continent_ {nullptr};
     bty::Text *coordinates_ {nullptr};

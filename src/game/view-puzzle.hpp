@@ -1,7 +1,7 @@
 #ifndef BTY_GAME_VIEW_PUZZLE_HPP_
 #define BTY_GAME_VIEW_PUZZLE_HPP_
 
-#include "game/scene.hpp"
+#include "engine/scene.hpp"
 #include "gfx/rect.hpp"
 #include "gfx/sprite.hpp"
 #include "gfx/text.hpp"
@@ -11,14 +11,14 @@ class Assets;
 class Font;
 class Gfx;
 struct Texture;
+class SceneStack;
 }    // namespace bty
 
 struct GenVariables;
-class SceneStack;
 
-class ViewPuzzle : public Scene {
+class ViewPuzzle : public bty::Scene {
 public:
-    ViewPuzzle(SceneStack &ss, bty::Assets &assets);
+    ViewPuzzle(bty::SceneStack &ss, bty::Assets &assets);
 
     void draw(bty::Gfx &gfx, glm::mat4 &camera) override;
     void update(float dt) override;
@@ -27,7 +27,7 @@ public:
     void update_info(const GenVariables &gen);
 
 private:
-    SceneStack &ss;
+    bty::SceneStack &ss;
     const bty::Texture *textures_[25] {nullptr};
     bty::Sprite sprites_[25];
     bty::Sprite border_[8];

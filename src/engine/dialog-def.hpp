@@ -1,13 +1,13 @@
-#ifndef BTY_GAME_DIALOG_DEF_HPP_
-#define BTY_GAME_DIALOG_DEF_HPP_
+#ifndef BTY_ENGINE_DIALOG_DEF_HPP_
+#define BTY_ENGINE_DIALOG_DEF_HPP_
 
 #include <functional>
 #include <string>
 #include <vector>
 
 namespace bty {
+
 class Dialog;
-}
 
 struct DialogDef {
     struct StringDef {
@@ -35,4 +35,6 @@ struct DialogDef {
     bool steals_input {true};
 };
 
-#endif    // BTY_GAME_DIALOG_DEF_HPP_
+}    // namespace bty
+
+#endif    // BTY_ENGINE_DIALOG_DEF_HPP_

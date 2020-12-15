@@ -1,10 +1,12 @@
-#include "game/dialog-stack.hpp"
+#include "engine/dialog-stack.hpp"
 
 #include <spdlog/spdlog.h>
 
-#include "glfw.hpp"
+#include "window/glfw.hpp"
 
-DialogStack::DialogStack(bty::Assets &assets)
+namespace bty {
+
+DialogStack::DialogStack(Assets &assets)
     : assets_(assets)
 {
 }
@@ -14,14 +16,14 @@ bool DialogStack::empty() const
     return stack_.empty();
 }
 
-bty::Dialog *DialogStack::show_dialog(const DialogDef &dialog_, bty::BoxColor color)
+Dialog *DialogStack::show_dialog(const DialogDef &dialog_, BoxColor color)
 {
-    bty::BoxColor color_ = color == bty::BoxColor::None ? default_color_ : color;
+    BoxColor color_ = color == BoxColor::None ? default_color_ : color;
 
-    auto dialog = std::make_shared<bty::Dialog>();
+    auto dialog = std::make_shared<Dialog>();
     dialog->create(dialog_.x, dialog_.y, dialog_.w, dialog_.h, color_, assets_);
 
-    std::vector<bty::Option *> options;
+    std::vector<Option *> options;
 
     for (const auto &str : dialog_.strings) {
         dialog->add_line(str.x, str.y, str.str);
@@ -42,7 +44,7 @@ bool DialogStack::key(int key, int action)
         return false;
     }
 
-    std::pair<std::shared_ptr<bty::Dialog>, DialogDef> back;
+    std::pair<std::shared_ptr<Dialog>, DialogDef> back;
     if (action == GLFW_PRESS) {
         switch (key) {
             case GLFW_KEY_BACKSPACE:
@@ -94,7 +96,7 @@ bool DialogStack::key(int key, int action)
     return true;
 }
 
-void DialogStack::draw(bty::Gfx &gfx, glm::mat4 &camera)
+void DialogStack::draw(Gfx &gfx, glm::mat4 &camera)
 {
     if (stack_.empty()) {
         return;
@@ -105,7 +107,7 @@ void DialogStack::draw(bty::Gfx &gfx, glm::mat4 &camera)
     }
 }
 
-void DialogStack::set_default_color(bty::BoxColor color)
+void DialogStack::set_default_color(BoxColor color)
 {
     default_color_ = color;
 }
@@ -129,3 +131,5 @@ void DialogStack::pop()
 
     stack_.pop_back();
 }
+
+}    // namespace bty

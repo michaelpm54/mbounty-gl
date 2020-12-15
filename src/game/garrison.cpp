@@ -2,14 +2,14 @@
 
 #include <spdlog/spdlog.h>
 
-#include "assets.hpp"
-#include "game/dialog-stack.hpp"
+#include "engine/assets.hpp"
+#include "engine/dialog-stack.hpp"
+#include "engine/scene-stack.hpp"
 #include "game/gen-variables.hpp"
 #include "game/hud.hpp"
-#include "game/scene-stack.hpp"
 #include "game/variables.hpp"
 #include "gfx/gfx.hpp"
-#include "glfw.hpp"
+#include "window/glfw.hpp"
 
 static constexpr int kKingsCastleUnits[5] = {
     Militias,
@@ -19,7 +19,7 @@ static constexpr int kKingsCastleUnits[5] = {
     Knights,
 };
 
-Garrison::Garrison(SceneStack &ss, DialogStack &ds, bty::Assets &assets, Hud &hud, Variables &v, GenVariables &gen)
+Garrison::Garrison(bty::SceneStack &ss, bty::DialogStack &ds, bty::Assets &assets, Hud &hud, Variables &v, GenVariables &gen)
     : ss(ss)
     , ds(ds)
     , hud(hud)
@@ -96,8 +96,8 @@ void Garrison::key(int key, int action)
 
 void Garrison::select(int opt)
 {
-    std::vector<DialogDef::StringDef> strings;
-    std::vector<DialogDef::StringDef> options;
+    std::vector<bty::DialogDef::StringDef> strings;
+    std::vector<bty::DialogDef::StringDef> options;
 
     strings.push_back({1, 1, fmt::format("Castle {}", kCastleInfo[castle_id].name)});
     strings.push_back({22, 1, fmt::format("GP={}", bty::number_with_ks(v.gold))});

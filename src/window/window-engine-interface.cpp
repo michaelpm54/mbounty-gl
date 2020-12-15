@@ -1,8 +1,8 @@
-#include "window-engine-interface.hpp"
+#include "window/window-engine-interface.hpp"
 
-#include "engine.hpp"
+#include "engine/engine.hpp"
 
-namespace bty::input {
+namespace bty {
 
 void key(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
@@ -14,4 +14,4 @@ void close(GLFWwindow* window)
     static_cast<InputHandler*>(glfwGetWindowUserPointer(window))->engine->quit();
 }
 
-}    // namespace bty::input
+}    // namespace bty

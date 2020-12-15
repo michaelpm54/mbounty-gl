@@ -7,12 +7,12 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/transform.hpp>
 
-#include "assets.hpp"
+#include "engine/assets.hpp"
 #include "game/army-gen.hpp"
 #include "game/chest.hpp"
 #include "game/shop-info.hpp"
 #include "gfx/gfx.hpp"
-#include "glfw.hpp"
+#include "window/glfw.hpp"
 
 void Game::intro_pop(int ret)
 {

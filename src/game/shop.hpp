@@ -1,27 +1,27 @@
 #ifndef BTY_GAME_SHOP_HPP_
 #define BTY_GAME_SHOP_HPP_
 
-#include "bounty.hpp"
+#include "data/bounty.hpp"
+#include "engine/dialog.hpp"
+#include "engine/scene.hpp"
 #include "game/recruit-input.hpp"
-#include "game/scene.hpp"
-#include "gfx/dialog.hpp"
 #include "gfx/sprite.hpp"
 
-struct Variables;
-struct GenVariables;
-class SceneStack;
-struct Tile;
-struct ShopInfo;
-class Hud;
-
 namespace bty {
+class SceneStack;
 class Gfx;
 struct Texture;
 }    // namespace bty
 
-class Shop : public Scene {
+struct Variables;
+struct GenVariables;
+struct Tile;
+struct ShopInfo;
+class Hud;
+
+class Shop : public bty::Scene {
 public:
-    Shop(SceneStack &ss, bty::Assets &assets, Variables &v, GenVariables &gen, Hud &hud);
+    Shop(bty::SceneStack &ss, bty::Assets &assets, Variables &v, GenVariables &gen, Hud &hud);
 
     void draw(bty::Gfx &gfx, glm::mat4 &camera) override;
     void update(float dt) override;
@@ -34,7 +34,7 @@ private:
     void confirm();
 
 private:
-    SceneStack &ss;
+    bty::SceneStack &ss;
     Variables &v;
     GenVariables &gen;
     Hud &hud;

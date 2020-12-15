@@ -3,21 +3,21 @@
 
 #include <glm/mat4x4.hpp>
 
-#include "game/scene.hpp"
+#include "engine/scene.hpp"
 #include "gfx/sprite.hpp"
 
 namespace bty {
 class Assets;
 class Gfx;
+class SceneStack;
+class DialogStack;
 }    // namespace bty
 
 class Hud;
-class SceneStack;
-class DialogStack;
 
-class Defeat : public Scene {
+class Defeat : public bty::Scene {
 public:
-    Defeat(SceneStack &ss, DialogStack &ds, bty::Assets &assets, Hud &hud);
+    Defeat(bty::SceneStack &ss, bty::DialogStack &ds, bty::Assets &assets, Hud &hud);
 
     void draw(bty::Gfx &gfx, glm::mat4 &camera) override;
     void key(int key, int action);
@@ -26,8 +26,8 @@ public:
     void show(int hero);
 
 private:
-    SceneStack &ss;
-    DialogStack &ds;
+    bty::SceneStack &ss;
+    bty::DialogStack &ds;
     Hud &hud;
     bty::Sprite lose_pic;
 };

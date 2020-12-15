@@ -7,7 +7,10 @@
 #include <random>
 #include <vector>
 
-#include "game/dialog-def.hpp"
+#include "engine/dialog-def.hpp"
+#include "engine/dialog.hpp"
+#include "engine/scene-stack.hpp"
+#include "engine/textbox.hpp"
 #include "game/dir-flags.hpp"
 #include "game/entity.hpp"
 #include "game/hero.hpp"
@@ -17,7 +20,6 @@
 #include "game/kings-castle.hpp"
 #include "game/map.hpp"
 #include "game/mob.hpp"
-#include "game/scene-stack.hpp"
 #include "game/shop-info.hpp"
 #include "game/shop.hpp"
 #include "game/town.hpp"
@@ -26,11 +28,9 @@
 #include "game/view-continent.hpp"
 #include "game/view-contract.hpp"
 #include "game/view-puzzle.hpp"
-#include "gfx/dialog.hpp"
 #include "gfx/font.hpp"
 #include "gfx/sprite.hpp"
 #include "gfx/text.hpp"
-#include "gfx/textbox.hpp"
 
 namespace bty {
 class Assets;
@@ -59,8 +59,8 @@ private:
     int hero_id {0};
     int difficulty {0};
 
-    SceneStack ss;
-    DialogStack ds;
+    bty::SceneStack ss;
+    bty::DialogStack ds;
 
     Hud hud_;
 

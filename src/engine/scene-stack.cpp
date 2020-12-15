@@ -1,10 +1,12 @@
-#include "game/scene-stack.hpp"
+#include "engine/scene-stack.hpp"
 
 #include <spdlog/spdlog.h>
 
-#include "game/scene.hpp"
+#include "engine/scene.hpp"
 
-SceneStack::SceneStack(bty::Assets &assets)
+namespace bty {
+
+SceneStack::SceneStack(Assets &assets)
     : assets_(assets)
 {
 }
@@ -44,7 +46,7 @@ void SceneStack::key(int key, int action)
     stack_.back()->key(key, action);
 }
 
-void SceneStack::draw(bty::Gfx &gfx, glm::mat4 &camera)
+void SceneStack::draw(Gfx &gfx, glm::mat4 &camera)
 {
     if (stack_.empty()) {
         return;
@@ -66,7 +68,7 @@ void SceneStack::update(float dt)
     }
 }
 
-bty::Assets &SceneStack::get_assets()
+Assets &SceneStack::get_assets()
 {
     return assets_;
 }
@@ -80,3 +82,5 @@ const Scene *SceneStack::get() const
 {
     return stack_.size() ? stack_.back() : nullptr;
 }
+
+}    // namespace bty

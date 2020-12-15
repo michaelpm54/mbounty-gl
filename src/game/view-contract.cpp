@@ -2,16 +2,16 @@
 
 #include <spdlog/spdlog.h>
 
-#include "assets.hpp"
-#include "bounty.hpp"
+#include "data/bounty.hpp"
+#include "engine/assets.hpp"
+#include "engine/scene-stack.hpp"
 #include "game/gen-variables.hpp"
-#include "game/scene-stack.hpp"
 #include "game/variables.hpp"
 #include "gfx/gfx.hpp"
 #include "gfx/texture.hpp"
-#include "glfw.hpp"
+#include "window/window-engine-interface.hpp"
 
-ViewContract::ViewContract(SceneStack &ss, bty::Assets &assets, Variables &v, GenVariables &gen, bty::Sprite *contract_sprite)
+ViewContract::ViewContract(bty::SceneStack &ss, bty::Assets &assets, Variables &v, GenVariables &gen, bty::Sprite *contract_sprite)
     : ss(ss)
     , v(v)
     , gen(gen)

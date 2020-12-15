@@ -1,7 +1,7 @@
 #ifndef BTY_GAME_VIEW_CHARACTER_HPP_
 #define BTY_GAME_VIEW_CHARACTER_HPP_
 
-#include "game/scene.hpp"
+#include "engine/scene.hpp"
 #include "gfx/rect.hpp"
 #include "gfx/sprite.hpp"
 #include "gfx/text.hpp"
@@ -11,15 +11,15 @@ class Assets;
 class Font;
 class Gfx;
 struct Texture;
+class SceneStack;
 }    // namespace bty
 
-class SceneStack;
 struct Variables;
 struct GenVariables;
 
-class ViewCharacter : public Scene {
+class ViewCharacter : public bty::Scene {
 public:
-    ViewCharacter(SceneStack &ss, bty::Assets &assets);
+    ViewCharacter(bty::SceneStack &ss, bty::Assets &assets);
     void draw(bty::Gfx &gfx, glm::mat4 &camera) override;
     void update(float dt) override;
     void key(int key, int action) override;
@@ -27,7 +27,7 @@ public:
     void set_color(bty::BoxColor color);
 
 private:
-    SceneStack &ss;
+    bty::SceneStack &ss;
     bty::Sprite frame_;
     bty::Sprite portrait_;
     bty::Rect rect_;

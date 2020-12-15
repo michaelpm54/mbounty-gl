@@ -1,5 +1,5 @@
-#ifndef BTY_BOUNTY_HPP_
-#define BTY_BOUNTY_HPP_
+#ifndef BTY_DATA_BOUNTY_HPP_
+#define BTY_DATA_BOUNTY_HPP_
 
 #include <array>
 #include <glm/vec4.hpp>
@@ -153,4 +153,4 @@ struct Unit {
 
 extern const Unit kUnits[UnitId::UnitCount];
 
-#endif    // BTY_BOUNTY_HPP_
+#endif    // BTY_DATA_BOUNTY_HPP_

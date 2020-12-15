@@ -1,11 +1,11 @@
-#ifndef BTY_ENGINE_HPP_
-#define BTY_ENGINE_HPP_
+#ifndef BTY_ENGINE_ENGINE_HPP_
+#define BTY_ENGINE_ENGINE_HPP_
 
 #include <memory>
 
 #include "game/game.hpp"
 #include "gfx/gfx.hpp"
-#include "window-engine-interface.hpp"
+#include "window/window-engine-interface.hpp"
 
 namespace bty {
 
@@ -23,11 +23,11 @@ public:
 private:
     Game game;
     std::unique_ptr<Gfx> gfx_;
-    input::InputHandler input_;
+    InputHandler input_;
     Window *window_ {nullptr};
     bool run_ {true};
 };
 
 }    // namespace bty
 
-#endif    // BTY_ENGINE_HPP_
+#endif    // BTY_ENGINE_ENGINE_HPP_

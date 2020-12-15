@@ -2,14 +2,14 @@
 
 #include <spdlog/spdlog.h>
 
-#include "assets.hpp"
-#include "game/dialog-stack.hpp"
+#include "engine/assets.hpp"
+#include "engine/dialog-stack.hpp"
+#include "engine/scene-stack.hpp"
 #include "game/gen-variables.hpp"
 #include "game/hud.hpp"
-#include "game/scene-stack.hpp"
 #include "game/variables.hpp"
 #include "gfx/gfx.hpp"
-#include "glfw.hpp"
+#include "window/glfw.hpp"
 
 static constexpr int kKingsCastleUnits[5] = {
     Militias,
@@ -19,7 +19,7 @@ static constexpr int kKingsCastleUnits[5] = {
     Knights,
 };
 
-KingsCastle::KingsCastle(SceneStack &ss, DialogStack &ds, bty::Assets &assets, Hud &hud, Variables &v, GenVariables &gen)
+KingsCastle::KingsCastle(bty::SceneStack &ss, bty::DialogStack &ds, bty::Assets &assets, Hud &hud, Variables &v, GenVariables &gen)
     : ss(ss)
     , ds(ds)
     , hud(hud)

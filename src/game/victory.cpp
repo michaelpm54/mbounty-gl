@@ -2,9 +2,9 @@
 
 #include <fmt/format.h>
 
-#include "game/dialog-stack.hpp"
+#include "engine/dialog-stack.hpp"
+#include "engine/scene-stack.hpp"
 #include "game/hud.hpp"
-#include "game/scene-stack.hpp"
 #include "game/variables.hpp"
 #include "gfx/gfx.hpp"
 
@@ -31,7 +31,7 @@ static constexpr const char *const kVictoryString = {
     "Final Score: {:>5}",
 };
 
-Victory::Victory(SceneStack &ss, DialogStack &ds, bty::Assets &assets, Variables &v, Hud &hud)
+Victory::Victory(bty::SceneStack &ss, bty::DialogStack &ds, bty::Assets &assets, Variables &v, Hud &hud)
     : ss(ss)
     , ds(ds)
     , v(v)

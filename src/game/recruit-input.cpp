@@ -2,7 +2,7 @@
 
 #include <spdlog/spdlog.h>
 
-#include "glfw.hpp"
+#include "window/glfw.hpp"
 
 void RecruitInput::set_max(int max)
 {

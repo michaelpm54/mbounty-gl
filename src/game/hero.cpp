@@ -2,7 +2,7 @@
 
 #include <spdlog/spdlog.h>
 
-#include "assets.hpp"
+#include "engine/assets.hpp"
 #include "game/map.hpp"
 
 Hero::Hero(int &boat_x, int &boat_y, int &boat_c)

@@ -1,6 +1,6 @@
 #include "game/army-gen.hpp"
 
-#include "bounty.hpp"
+#include "data/bounty.hpp"
 
 static constexpr int kVillainArmies[5][17] = {
     {

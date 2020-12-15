@@ -10,30 +10,21 @@ set(PROJECT_NAME bounty)
 
 set(MBOUNTYGL_SRC
 	src/main.cpp
-	src/assets.cpp
-	src/engine.cpp
-	src/bounty.cpp
-	src/window.cpp
-	src/window-engine-interface.cpp
-	src/gfx/dialog.cpp
-	src/gfx/font.cpp
-	src/gfx/gfx.cpp
-	src/gfx/rect.cpp
-	src/gfx/shader.cpp
-	src/gfx/sprite.cpp
-	src/gfx/text.cpp
-	src/gfx/textbox.cpp
-	src/gfx/transformable.cpp
+	src/engine/assets.cpp
+	src/engine/engine.cpp
+	src/engine/dialog.cpp
+	src/engine/textbox.cpp
+	src/engine/scene-stack.cpp
+	src/engine/dialog-stack.cpp
+	src/data/bounty.cpp
+	src/data/signs.cpp
 	src/game/garrison.cpp
 	src/game/victory.cpp
 	src/game/wizard.cpp
-	src/signs.cpp
 	src/game/intro.cpp
 	src/game/game.cpp
 	src/game/hud.cpp
 	src/game/map.cpp
-	src/game/scene-stack.cpp
-	src/game/dialog-stack.cpp
 	src/game/ingame.cpp
 	src/game/entity.cpp
 	src/game/defeat.cpp
@@ -50,6 +41,15 @@ set(MBOUNTYGL_SRC
 	src/game/chest.cpp
 	src/game/army-gen.cpp
 	src/game/battle.cpp
+	src/gfx/font.cpp
+	src/gfx/gfx.cpp
+	src/gfx/rect.cpp
+	src/gfx/shader.cpp
+	src/gfx/sprite.cpp
+	src/gfx/text.cpp
+	src/gfx/transformable.cpp
+	src/window/window.cpp
+	src/window/window-engine-interface.cpp
 )
 
 add_executable(${PROJECT_NAME}

@@ -2,15 +2,15 @@
 
 #include <spdlog/spdlog.h>
 
-#include "assets.hpp"
+#include "engine/assets.hpp"
+#include "engine/scene-stack.hpp"
 #include "game/gen-variables.hpp"
 #include "game/hud.hpp"
 #include "game/map.hpp"
-#include "game/scene-stack.hpp"
 #include "game/shop-info.hpp"
 #include "game/variables.hpp"
 #include "gfx/gfx.hpp"
-#include "glfw.hpp"
+#include "window/glfw.hpp"
 
 enum Dwellings {
     Cave,
@@ -54,7 +54,7 @@ static constexpr const char *const kShopNames[] = {
     "Plains",
 };
 
-Shop::Shop(SceneStack &ss, bty::Assets &assets, Variables &v, GenVariables &gen, Hud &hud)
+Shop::Shop(bty::SceneStack &ss, bty::Assets &assets, Variables &v, GenVariables &gen, Hud &hud)
     : ss(ss)
     , v(v)
     , gen(gen)

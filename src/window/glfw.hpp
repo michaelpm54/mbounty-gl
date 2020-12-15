@@ -1,5 +1,5 @@
-#ifndef BTY_GLFW_HPP_
-#define BTY_GLFW_HPP_
+#ifndef BTY_WINDOW_GLFW_HPP_
+#define BTY_WINDOW_GLFW_HPP_
 
 /* clang-format off */
 #include "gfx/gl.hpp"
@@ -9,4 +9,4 @@
 #include <GLFW/glfw3.h>
 /* clang-format on */
 
-#endif    // BTY_GLFW_HPP_
+#endif    // BTY_WINDOW_GLFW_HPP_

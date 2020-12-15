@@ -3,8 +3,8 @@
 
 #include <glm/vec4.hpp>
 
-#include "assets.hpp"
-#include "bounty.hpp"
+#include "data/bounty.hpp"
+#include "engine/assets.hpp"
 #include "gfx/transformable.hpp"
 
 namespace bty {

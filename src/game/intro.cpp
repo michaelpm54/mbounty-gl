@@ -4,13 +4,14 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 
-#include "assets.hpp"
-#include "bounty.hpp"
-#include "game/scene-stack.hpp"
+#include "data/bounty.hpp"
+#include "engine/assets.hpp"
+#include "engine/dialog-stack.hpp"
+#include "engine/scene-stack.hpp"
 #include "gfx/gfx.hpp"
-#include "glfw.hpp"
+#include "window/glfw.hpp"
 
-Intro::Intro(SceneStack &ss, DialogStack &ds, bty::Assets &assets, int &hero_id, int &difficulty)
+Intro::Intro(bty::SceneStack &ss, bty::DialogStack &ds, bty::Assets &assets, int &hero_id, int &difficulty)
     : ss(ss)
     , ds(ds)
     , hero_id_(hero_id)

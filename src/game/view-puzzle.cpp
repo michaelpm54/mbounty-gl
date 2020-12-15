@@ -4,16 +4,15 @@
 
 #include <algorithm>
 
-#include "assets.hpp"
-#include "bounty.hpp"
+#include "data/bounty.hpp"
+#include "engine/assets.hpp"
+#include "engine/scene-stack.hpp"
 #include "game/gen-variables.hpp"
-#include "game/scene-stack.hpp"
-#include "gen-variables.hpp"
 #include "gfx/gfx.hpp"
 #include "gfx/texture.hpp"
-#include "glfw.hpp"
+#include "window/glfw.hpp"
 
-ViewPuzzle::ViewPuzzle(SceneStack &ss, bty::Assets &assets)
+ViewPuzzle::ViewPuzzle(bty::SceneStack &ss, bty::Assets &assets)
     : ss(ss)
 {
     for (int i = 0; i < 17; i++) {

@@ -1,7 +1,7 @@
 #ifndef BTY_GAME_VICTORY_HPP_
 #define BTY_GAME_VICTORY_HPP_
 
-#include "game/scene.hpp"
+#include "engine/scene.hpp"
 #include "gfx/rect.hpp"
 #include "gfx/sprite.hpp"
 #include "gfx/text.hpp"
@@ -11,16 +11,16 @@ class Assets;
 class Font;
 class Gfx;
 struct Texture;
+class SceneStack;
+class DialogStack;
 }    // namespace bty
 
 struct Variables;
-class SceneStack;
-class DialogStack;
 class Hud;
 
-class Victory : public Scene {
+class Victory : public bty::Scene {
 public:
-    Victory(SceneStack &ss, DialogStack &ds, bty::Assets &assets, Variables &v, Hud &hud);
+    Victory(bty::SceneStack &ss, bty::DialogStack &ds, bty::Assets &assets, Variables &v, Hud &hud);
 
     void draw(bty::Gfx &gfx, glm::mat4 &camera) override;
     void update(float dt) override;
@@ -29,8 +29,8 @@ public:
     void view();
 
 private:
-    SceneStack &ss;
-    DialogStack &ds;
+    bty::SceneStack &ss;
+    bty::DialogStack &ds;
     Variables &v;
     Hud &hud;
     bty::Sprite bg;

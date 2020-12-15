@@ -1,28 +1,28 @@
 #ifndef BTY_GAME_TOWN_HPP_
 #define BTY_GAME_TOWN_HPP_
 
-#include "bounty.hpp"
-#include "game/dialog-def.hpp"
-#include "game/scene.hpp"
-#include "gfx/dialog.hpp"
+#include "data/bounty.hpp"
+#include "engine/dialog-def.hpp"
+#include "engine/dialog.hpp"
+#include "engine/scene.hpp"
 #include "gfx/sprite.hpp"
 
+namespace bty {
+class Gfx;
+struct Texture;
 class SceneStack;
 class DialogStack;
+}    // namespace bty
+
 class Hud;
 class ViewContract;
 struct Variables;
 struct GenVariables;
 struct Tile;
 
-namespace bty {
-class Gfx;
-struct Texture;
-}    // namespace bty
-
-class Town : public Scene {
+class Town : public bty::Scene {
 public:
-    Town(SceneStack &ss, DialogStack &ds, bty::Assets &assets, Variables &v, GenVariables &gen, Hud &hud, ViewContract &view_contract, bty::Sprite &boat);
+    Town(bty::SceneStack &ss, bty::DialogStack &ds, bty::Assets &assets, Variables &v, GenVariables &gen, Hud &hud, ViewContract &view_contract, bty::Sprite &boat);
     void draw(bty::Gfx &gfx, glm::mat4 &camera) override;
     void update(float dt) override;
     void key(int key, int action) override;
@@ -36,8 +36,8 @@ public:
     void buy_siege();
 
 private:
-    SceneStack &ss;
-    DialogStack &ds;
+    bty::SceneStack &ss;
+    bty::DialogStack &ds;
     Variables &v;
     GenVariables &gen;
     Hud &hud;

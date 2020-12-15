@@ -4,14 +4,14 @@
 
 #include <algorithm>
 
-#include "assets.hpp"
-#include "bounty.hpp"
-#include "game/scene-stack.hpp"
+#include "data/bounty.hpp"
+#include "engine/assets.hpp"
+#include "engine/scene-stack.hpp"
 #include "gfx/gfx.hpp"
 #include "gfx/texture.hpp"
-#include "glfw.hpp"
+#include "window/glfw.hpp"
 
-ViewArmy::ViewArmy(SceneStack &ss, bty::Assets &assets)
+ViewArmy::ViewArmy(bty::SceneStack &ss, bty::Assets &assets)
     : ss(ss)
 {
     for (int i = 0; i < 25; i++) {

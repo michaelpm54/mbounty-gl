@@ -3,8 +3,8 @@
 #include <spdlog/spdlog.h>
 
 #include "gfx/gfx.hpp"
-#include "glfw.hpp"
-#include "window.hpp"
+#include "window/glfw.hpp"
+#include "window/window.hpp"
 
 namespace bty {
 

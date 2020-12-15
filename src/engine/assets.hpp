@@ -1,5 +1,5 @@
-#ifndef BTY_ASSETS_HPP_
-#define BTY_ASSETS_HPP_
+#ifndef BTY_ENGINE_ASSETS_HPP_
+#define BTY_ENGINE_ASSETS_HPP_
 
 #include <glm/vec2.hpp>
 #include <string>
@@ -34,4 +34,4 @@ private:
 
 }    // namespace bty
 
-#endif    // BTY_ASSETS_HPP_
+#endif    // BTY_ENGINE_ASSETS_HPP_

@@ -2,12 +2,12 @@
 
 #include <spdlog/spdlog.h>
 
-#include "game/dialog-stack.hpp"
+#include "engine/dialog-stack.hpp"
+#include "engine/scene-stack.hpp"
 #include "game/hud.hpp"
-#include "game/scene-stack.hpp"
 #include "gfx/gfx.hpp"
 
-Defeat::Defeat(SceneStack &ss, DialogStack &ds, bty::Assets &assets, Hud &hud)
+Defeat::Defeat(bty::SceneStack &ss, bty::DialogStack &ds, bty::Assets &assets, Hud &hud)
     : ss(ss)
     , ds(ds)
     , hud(hud)

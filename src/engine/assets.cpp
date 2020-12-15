@@ -3,7 +3,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <spdlog/spdlog.h>
 
-#include "gfx/stb_image.h"
+#include "gfx/stb_image.hpp"
 
 namespace bty {
 

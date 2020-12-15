@@ -3,31 +3,31 @@
 
 #include <array>
 
-#include "game/scene.hpp"
+#include "engine/dialog.hpp"
+#include "engine/scene.hpp"
+#include "engine/textbox.hpp"
 #include "game/view-army.hpp"
 #include "game/view-character.hpp"
-#include "gfx/dialog.hpp"
 #include "gfx/font.hpp"
 #include "gfx/sprite.hpp"
 #include "gfx/text.hpp"
-#include "gfx/textbox.hpp"
 
 namespace bty {
 class Assets;
 class Gfx;
+class DialogStack;
+class SceneStack;
 }    // namespace bty
 
 struct Variables;
 struct GenVariables;
 struct Unit;
-class DialogStack;
-class SceneStack;
 class ViewArmy;
 class ViewCharacter;
 
-class Battle : public Scene {
+class Battle : public bty::Scene {
 public:
-    Battle(SceneStack &ss, DialogStack &ds, bty::Assets &assets, Variables &v, GenVariables &gen, ViewArmy &view_army, ViewCharacter &view_character);
+    Battle(bty::SceneStack &ss, bty::DialogStack &ds, bty::Assets &assets, Variables &v, GenVariables &gen, ViewArmy &view_army, ViewCharacter &view_character);
 
     void draw(bty::Gfx &gfx, glm::mat4 &camera) override;
     void key(int key, int action) override;
@@ -113,8 +113,8 @@ private:
     void give_up_confirm(int opt);
 
 private:
-    SceneStack &ss;
-    DialogStack &ds;
+    bty::SceneStack &ss;
+    bty::DialogStack &ds;
     Variables &v;
     GenVariables &gen;
     ViewArmy &s_view_army;

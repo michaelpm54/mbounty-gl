@@ -2,15 +2,15 @@
 
 #include <spdlog/spdlog.h>
 
-#include "assets.hpp"
-#include "game/dialog-stack.hpp"
+#include "engine/assets.hpp"
+#include "engine/dialog-stack.hpp"
+#include "engine/scene-stack.hpp"
 #include "game/hud.hpp"
-#include "game/scene-stack.hpp"
 #include "game/variables.hpp"
 #include "gfx/gfx.hpp"
-#include "glfw.hpp"
+#include "window/glfw.hpp"
 
-Wizard::Wizard(SceneStack &ss, bty::Assets &assets, Variables &v, Hud &hud)
+Wizard::Wizard(bty::SceneStack &ss, bty::Assets &assets, Variables &v, Hud &hud)
     : ss(ss)
     , v(v)
     , hud(hud)
@@ -27,7 +27,7 @@ void Wizard::draw(bty::Gfx &gfx, glm::mat4 &camera)
     gfx.draw_sprite(unit_, camera);
 }
 
-void Wizard::view(DialogStack &ds)
+void Wizard::view(bty::DialogStack &ds)
 {
     ds.show_dialog({
         .x = 1,

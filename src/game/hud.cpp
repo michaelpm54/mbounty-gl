@@ -2,8 +2,8 @@
 
 #include <spdlog/spdlog.h>
 
-#include "assets.hpp"
-#include "bounty.hpp"
+#include "data/bounty.hpp"
+#include "engine/assets.hpp"
 #include "gfx/font.hpp"
 #include "gfx/gfx.hpp"
 

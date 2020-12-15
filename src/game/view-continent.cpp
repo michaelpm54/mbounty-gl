@@ -4,16 +4,16 @@
 
 #include <glm/trigonometric.hpp>
 
-#include "assets.hpp"
-#include "bounty.hpp"
+#include "data/bounty.hpp"
+#include "engine/assets.hpp"
+#include "engine/scene-stack.hpp"
 #include "game/map.hpp"
-#include "game/scene-stack.hpp"
 #include "game/variables.hpp"
 #include "gfx/gfx.hpp"
 #include "gfx/texture.hpp"
-#include "glfw.hpp"
+#include "window/glfw.hpp"
 
-ViewContinent::ViewContinent(SceneStack &ss, bty::Assets &assets)
+ViewContinent::ViewContinent(bty::SceneStack &ss, bty::Assets &assets)
     : ss(ss)
     , map_texture_({64, 64, GL_NONE, 1, 1, 64, 64})
 {

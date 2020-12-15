@@ -4,7 +4,7 @@
 
 #include <glm/gtc/type_ptr.hpp>
 
-#include "assets.hpp"
+#include "engine/assets.hpp"
 #include "gfx/shader.hpp"
 #include "gfx/texture.hpp"
 

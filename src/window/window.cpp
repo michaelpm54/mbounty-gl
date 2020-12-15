@@ -1,8 +1,8 @@
-#include "window.hpp"
+#include "window/window.hpp"
 
 #include <spdlog/spdlog.h>
 
-#include "window-engine-interface.hpp"
+#include "window/window-engine-interface.hpp"
 
 namespace bty {
 
@@ -89,11 +89,11 @@ void window_events(Window *window)
     glfwPollEvents();
 }
 
-void window_init_callbacks(Window *window, input::InputHandler *input)
+void window_init_callbacks(Window *window, InputHandler *input)
 {
     glfwSetWindowUserPointer(window->handle, input);
-    glfwSetKeyCallback(window->handle, bty::input::key);
-    glfwSetWindowCloseCallback(window->handle, bty::input::close);
+    glfwSetKeyCallback(window->handle, bty::key);
+    glfwSetWindowCloseCallback(window->handle, bty::close);
 }
 
 void window_swap(Window *window)
