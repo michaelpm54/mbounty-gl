@@ -1131,13 +1131,7 @@ void Ingame::end_week_astrology(bool search)
 
     for (int i = 0; i < 26; i++) {
         if (gen.castle_occupants[i] == -1) {
-            int army_size = 0;
-            for (int j = 0; j < 5; j++) {
-                if (gen.garrison_armies[i][j] != -1) {
-                    army_size++;
-                }
-            }
-            if (army_size == 0) {
+            if (gen.garrison_armies[i][0] == -1) {
                 gen_castle_army(kCastleInfo[i].continent, gen.castle_armies[i], gen.castle_counts[i]);
                 gen.castle_occupants[i] = 0x7F;
             }

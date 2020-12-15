@@ -1664,8 +1664,7 @@ void Battle::victory()
             });
         }
 
-        gen.castle_occupants[castle_id] = 0x7F;
-        gen_castle_army(v.continent, gen.castle_armies[castle_id], gen.castle_counts[castle_id]);
+        gen.castle_occupants[castle_id] = -1;
     }
     else {
         ds.show_dialog({
