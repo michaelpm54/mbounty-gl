@@ -8,7 +8,8 @@
 #include "gfx/gfx.hpp"
 
 #define CUTE_C2_IMPLEMENTATION
-#include "cute_c2.hpp"
+#include "data/tiles.hpp"
+#include "game/cute_c2.hpp"
 
 bool is_event_tile(int tile_id)
 {

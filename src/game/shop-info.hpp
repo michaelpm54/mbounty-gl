@@ -6,6 +6,7 @@ struct ShopInfo {
     int y;
     int unit;
     int count;
+    int tile_id;
 };
 
 #endif    // BTY_GAME_SHOP_INFO_HPP_

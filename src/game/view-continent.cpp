@@ -5,6 +5,7 @@
 #include <glm/trigonometric.hpp>
 
 #include "data/bounty.hpp"
+#include "data/tiles.hpp"
 #include "engine/assets.hpp"
 #include "engine/scene-stack.hpp"
 #include "game/map.hpp"

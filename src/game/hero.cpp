@@ -2,6 +2,7 @@
 
 #include <spdlog/spdlog.h>
 
+#include "data/tiles.hpp"
 #include "engine/assets.hpp"
 #include "game/map.hpp"
 

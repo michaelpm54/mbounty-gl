@@ -37,6 +37,7 @@ set(MBOUNTYGL_SRC
 	src/game/town.cpp
 	src/game/kings-castle.cpp
 	src/game/shop.cpp
+	src/game/shop-gen.cpp
 	src/game/recruit-input.cpp
 	src/game/chest.cpp
 	src/game/army-gen.cpp

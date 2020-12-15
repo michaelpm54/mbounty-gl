@@ -70,6 +70,7 @@ void sort_army(std::array<int, 5> &army, std::array<int, 5> &counts);
 int check_morale(int me, int *army);
 std::string get_descriptor(int count);
 int random(int max);
+int random(int min, int max);
 std::string number_with_ks(int num);
 
 enum class BoxColor {

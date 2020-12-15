@@ -7,70 +7,18 @@
 #include <random>
 
 #include "data/bounty.hpp"
+#include "data/shop.hpp"
 #include "data/signs.hpp"
+#include "data/tiles.hpp"
 #include "engine/assets.hpp"
 #include "engine/scene-stack.hpp"
 #include "game/army-gen.hpp"
 #include "game/chest.hpp"
 #include "game/cute_c2.hpp"
 #include "game/hud.hpp"
+#include "game/shop-gen.hpp"
 #include "gfx/gfx.hpp"
 #include "window/glfw.hpp"
-
-static constexpr int kShopUnits[24] = {
-    0x00,
-    0x01,
-    0x07,
-    0x04,
-    0x03,
-    0x06,
-    0x0c,
-    0x05,
-    0x0b,
-    0x09,
-    0x0f,
-    0x09,
-    0x0d,
-    0x10,
-    0x11,
-    0x13,
-    0x00,
-    0x00,
-    0x16,
-    0x15,
-    0x14,
-    0x18,
-    0x17,
-    0x00,
-};
-
-static constexpr int kMaxShopCounts[25] = {
-    250,
-    200,
-    0,
-    150,
-    150,
-    100,
-    250,
-    200,
-    0,
-    100,
-    0,
-    150,
-    100,
-    25,
-    0,
-    200,
-    100,
-    25,
-    0,
-    25,
-    25,
-    50,
-    50,
-    25,
-    25,
-};
 
 Ingame::Ingame(GLFWwindow *window, bty::SceneStack &ss, bty::DialogStack &ds, bty::Assets &assets, Hud &hud)
     : window(window)
@@ -375,34 +323,6 @@ void Ingame::gen_tiles()
          Peasants},
     };
 
-    static constexpr int kShopTileForUnit[] = {
-        Tile_ShopWagon,      // peasants
-        Tile_ShopTree,       // militia
-        Tile_ShopTree,       // sprites
-        Tile_ShopWagon,      // wolves
-        Tile_ShopDungeon,    // skeletons
-        Tile_ShopDungeon,    // zombies
-        Tile_ShopTree,       // gnomes
-        Tile_ShopCave,       // orcs
-        Tile_ShopTree,       // archers
-        Tile_ShopTree,       // elves
-        Tile_ShopWagon,      // pikemen
-        Tile_ShopWagon,      // nomads
-        Tile_ShopCave,       // dwarves
-        Tile_ShopDungeon,    // ghosts
-        Tile_ShopTree,       // knights
-        Tile_ShopCave,       // ogres
-        Tile_ShopWagon,      // barbarians
-        Tile_ShopCave,       // trolls
-        Tile_ShopTree,       // cavalries
-        Tile_ShopTree,       // druids
-        Tile_ShopTree,       // archmages
-        Tile_ShopDungeon,    // vampires
-        Tile_ShopWagon,      // giants
-        Tile_ShopDungeon,    // demons
-        Tile_ShopCave,       // dragons
-    };
-
     static constexpr int kArtifactTiles[] = {
         Tile_AfctScroll,
         Tile_AfctShield,
@@ -605,13 +525,10 @@ void Ingame::gen_tiles()
             auto &shop = gen.shops[continent][num_shops++];
             shop.x = tile.x;
             shop.y = tile.y;
-            shop.unit = kShopUnits[i + continent * 6];
-            int max = kMaxShopCounts[shop.unit];
-            int a = (rand() % kMaxShopCounts[shop.unit]) / 8;
-            int b = (rand() % kMaxShopCounts[shop.unit]) / 16;
-            int c = rand() % 4;
-            shop.count = continent + a + b + max;
-            tiles[tile.x + tile.y * 64] = kShopTileForUnit[shop.unit];
+            shop.unit = gen_shop_unit(i, continent);
+            shop.count = gen_shop_count(shop.unit);
+            shop.tile_id = get_shop_tile(shop.unit);
+            tiles[tile.x + tile.y * 64] = shop.tile_id;
         }
 
         /* Gen L high value shops */

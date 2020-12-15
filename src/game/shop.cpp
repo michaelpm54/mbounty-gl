@@ -2,6 +2,8 @@
 
 #include <spdlog/spdlog.h>
 
+#include "data/shop.hpp"
+#include "data/tiles.hpp"
 #include "engine/assets.hpp"
 #include "engine/scene-stack.hpp"
 #include "game/gen-variables.hpp"
@@ -17,34 +19,6 @@ enum Dwellings {
     Forest,
     Dungeon,
     Plains,
-};
-
-static constexpr int kShopTileForUnit[] = {
-    Tile_ShopWagon,      // peasants
-    Tile_ShopTree,       // militia
-    Tile_ShopTree,       // sprites
-    Tile_ShopWagon,      // wolves
-    Tile_ShopDungeon,    // skeletons
-    Tile_ShopDungeon,    // zombies
-    Tile_ShopTree,       // gnomes
-    Tile_ShopCave,       // orcs
-    Tile_ShopTree,       // archers
-    Tile_ShopTree,       // elves
-    Tile_ShopWagon,      // pikemen
-    Tile_ShopWagon,      // nomads
-    Tile_ShopCave,       // dwarves
-    Tile_ShopDungeon,    // ghosts
-    Tile_ShopTree,       // knights
-    Tile_ShopCave,       // ogres
-    Tile_ShopWagon,      // barbarians
-    Tile_ShopCave,       // trolls
-    Tile_ShopTree,       // cavalries
-    Tile_ShopTree,       // druids
-    Tile_ShopTree,       // archmages
-    Tile_ShopDungeon,    // vampires
-    Tile_ShopWagon,      // giants
-    Tile_ShopDungeon,    // demons
-    Tile_ShopCave,       // dragons
 };
 
 static constexpr const char *const kShopNames[] = {
