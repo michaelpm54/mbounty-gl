@@ -6,11 +6,6 @@
 
 namespace bty {
 
-SceneStack::SceneStack(Assets &assets)
-    : assets_(assets)
-{
-}
-
 void SceneStack::push(Scene *scene, std::function<void(int)> callback)
 {
     if (stack_.size() && stack_.back() == scene) {
@@ -66,11 +61,6 @@ void SceneStack::update(float dt)
     for (auto *scene : stack_) {
         scene->update(dt);
     }
-}
-
-Assets &SceneStack::get_assets()
-{
-    return assets_;
 }
 
 int SceneStack::size() const

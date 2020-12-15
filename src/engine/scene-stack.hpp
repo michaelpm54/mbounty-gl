@@ -13,8 +13,6 @@ class Scene;
 
 class SceneStack {
 public:
-    SceneStack(Assets &assets);
-    Assets &get_assets();
     void key(int key, int action);
     void draw(Gfx &gfx, glm::mat4 &camera);
     void update(float dt);
@@ -24,7 +22,6 @@ public:
     const Scene *get() const;
 
 private:
-    Assets &assets_;
     std::vector<Scene *> stack_;
     std::vector<std::function<void(int)>> callbacks_;
 };

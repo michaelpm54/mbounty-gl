@@ -43,7 +43,6 @@ void Game::ingame_pop(int ret)
 
 Game::Game(GLFWwindow *window, bty::Assets &assets)
     : window_(window)
-    , ss(assets)
     , ds(assets)
     , intro(ss, ds, assets, hero_id, difficulty)
     , ingame(window, ss, ds, assets, hud_)
