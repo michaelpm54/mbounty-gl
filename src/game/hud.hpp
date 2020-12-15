@@ -45,10 +45,6 @@ public:
     void set_puzzle(bool *villains, bool *artifacts);
     void set_gold(int gold);
 
-    void update_state()
-    {
-    }
-
 private:
     const bty::Texture *blank_frame_;
     const bty::Texture *hud_frame_;
