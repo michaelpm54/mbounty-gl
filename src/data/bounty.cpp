@@ -627,29 +627,6 @@ int const kDays[4] =
         200,
 };
 
-char const *const kLoseMessage =
-    {
-        "Oh, %s,\n"
-        "\n"
-        "you have failed to\n"
-        "recover the\n"
-        "Sceptre of Order\n"
-        "in time to save\n"
-        "the land! Beloved\n"
-        "King Maximus has\n"
-        "died and the Demon\n"
-        "King  Urthrax\n"
-        "Killspite rules in\n"
-        "his place. The\n"
-        "Four Continents\n"
-        "lay in ruin about\n"
-        "you, its people\n"
-        "doomed to a life\n"
-        "of misery and\n"
-        "oppression because\n"
-        "you could not find\n"
-        "the Sceptre."};
-
 const Unit kUnits[UnitId::UnitCount] =
     {
         {
