@@ -7,6 +7,7 @@
 #include <random>
 
 #include "data/bounty.hpp"
+#include "data/castles.hpp"
 #include "data/hero.hpp"
 #include "data/shop.hpp"
 #include "data/signs.hpp"
@@ -22,7 +23,6 @@
 #include "game/shop-gen.hpp"
 #include "gfx/gfx.hpp"
 #include "window/glfw.hpp"
-
 
 Ingame::Ingame(GLFWwindow *window, bty::SceneStack &ss, bty::DialogStack &ds, bty::Assets &assets, Hud &hud)
     : window(window)

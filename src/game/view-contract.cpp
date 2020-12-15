@@ -3,6 +3,7 @@
 #include <spdlog/spdlog.h>
 
 #include "data/bounty.hpp"
+#include "data/castles.hpp"
 #include "data/villains.hpp"
 #include "engine/assets.hpp"
 #include "engine/scene-stack.hpp"

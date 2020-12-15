@@ -5,18 +5,8 @@
 #include <glm/vec4.hpp>
 #include <string>
 
-struct CastleInfo {
-    std::string name;
-    int x;
-    int y;
-    int continent;
-};
-
 extern const char *const kSpellNames[14];
 extern const int kSpellCosts[14];
-extern const CastleInfo kCastleInfo[];
-extern const int kCastlesPerContinent[4];
-extern const int kCastleIndices[4];
 
 enum ArtifactId {
     ArtiArticlesOfNobility,

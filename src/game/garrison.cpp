@@ -2,6 +2,7 @@
 
 #include <spdlog/spdlog.h>
 
+#include "data/castles.hpp"
 #include "engine/assets.hpp"
 #include "engine/dialog-stack.hpp"
 #include "engine/scene-stack.hpp"

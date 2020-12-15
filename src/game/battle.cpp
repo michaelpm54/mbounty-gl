@@ -5,6 +5,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "data/bounty.hpp"
+#include "data/castles.hpp"
 #include "data/hero.hpp"
 #include "data/villains.hpp"
 #include "engine/assets.hpp"
