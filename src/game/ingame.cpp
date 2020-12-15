@@ -1016,17 +1016,17 @@ void tc_gate_right(bty::Dialog &dialog)
     dialog.set_selection(nearest_index);
 }
 
-void Ingame::add_unit_to_army(int id, int count)
+bool Ingame::add_unit_to_army(int id, int count)
 {
     if (id < 0 || id >= UnitId::UnitCount) {
         spdlog::warn("add_unit_to_army: id out of range: {}", id);
-        return;
+        return false;
     }
 
     for (int i = 0; i < 5; i++) {
         if (v.army[i] == id) {
             v.counts[i] += count;
-            return;
+            return true;
         }
     }
 
@@ -1040,13 +1040,15 @@ void Ingame::add_unit_to_army(int id, int count)
 
     if (army_size == 5) {
         spdlog::warn("add_unit_to_army: army already full");
-        return;
+        return false;
     }
 
     int index = army_size++;
 
     v.army[index] = id;
     v.counts[index] = count;
+
+    return true;
 }
 
 void Ingame::spell_instant_army()
@@ -1080,18 +1082,22 @@ void Ingame::spell_instant_army()
 
     int unit = kInstantArmyUnits[v.rank][v.hero];
     int amt = v.spell_power * 3 + (rand() % v.spell_power + 2);
-    add_unit_to_army(unit, amt);
 
-    ds.show_dialog({
-        .x = 1,
-        .y = 21,
-        .w = 30,
-        .h = 6,
-        .strings = {
-            {1, 1, fmt::format("{} {}", bty::get_descriptor(amt), kUnits[unit].name_plural)},
-            {3, 3, "have joined your army."},
-        },
-    });
+    if (!add_unit_to_army(unit, amt)) {
+        hud.set_error(" You do not have any more army slots!");
+    }
+    else {
+        ds.show_dialog({
+            .x = 1,
+            .y = 21,
+            .w = 30,
+            .h = 6,
+            .strings = {
+                {1, 1, fmt::format("{} {}", bty::get_descriptor(amt), kUnits[unit].name_plural)},
+                {3, 3, "have joined your army."},
+            },
+        });
+    }
 }
 
 void Ingame::spell_raise_control()

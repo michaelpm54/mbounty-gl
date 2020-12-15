@@ -56,7 +56,7 @@ private:
     void use_spell(int spell);
     void update_mobs(float dt);
     void draw_mobs(bty::Gfx &gfx);
-    void add_unit_to_army(int id, int count);
+    bool add_unit_to_army(int id, int count);
 
     /* Adventure spells */
     void spell_bridge();
