@@ -171,7 +171,18 @@ void Town::gather_information()
     }
 
     int villain_id = gen.castle_occupants[town_id];
-    std::string occupier = villain_id == 0x7F ? "no one" : ("\n" + std::string(kVillains[villain_id][0]));
+    std::string occupier;
+    switch (villain_id) {
+        case -1:
+            occupier = fmt::format("Castle {}\nis under your rule.", kCastleInfo[town_id].name);
+            break;
+        case 0x7F:
+            occupier = fmt::format("Castle {}\nis under no one's rule.", kCastleInfo[town_id].name);
+            break;
+        default:
+            occupier = fmt::format("Castle {} is under\n{}'s rule.", kCastleInfo[town_id].name, kVillains[villain_id][0]);
+            break;
+    }
 
     ds.show_dialog({
         .x = 1,
@@ -179,11 +190,8 @@ void Town::gather_information()
         .w = 30,
         .h = 9,
         .strings = {
-            {
-                1,
-                1,
-                fmt::format("Castle {}{}is under {}'s rule.\n{}", kCastleInfo[town_id].name, villain_id == -1 ? "\n" : " ", occupier, army),
-            },
+            {1, 1, occupier},
+            {1, 3, army},
         },
     });
 

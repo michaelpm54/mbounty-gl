@@ -31,7 +31,6 @@
 - Continent map should only reveal when you have the map
 - Add flying hero texture
 - Add flying key when all army can fly
-- Add info about your garrisoned castles in "Gather information"
 
 ### Battle
 
