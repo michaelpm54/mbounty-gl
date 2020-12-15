@@ -1919,7 +1919,6 @@ void Ingame::collide_chest(const Tile &tile)
 
     if (v.continent < 3 && tile.tx == gen.sail_map_tiles[v.continent].x && tile.ty == gen.sail_map_tiles[v.continent].y) {
         gen.sail_maps_found[v.continent + 1] = true;
-        hud.set_error("You found a map!");
         ds.show_dialog({
             .x = 1,
             .y = 18,
