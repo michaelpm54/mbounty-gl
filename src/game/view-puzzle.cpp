@@ -5,6 +5,7 @@
 #include <algorithm>
 
 #include "data/bounty.hpp"
+#include "data/puzzle.hpp"
 #include "engine/assets.hpp"
 #include "engine/scene-stack.hpp"
 #include "game/gen-variables.hpp"

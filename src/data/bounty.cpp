@@ -2,37 +2,6 @@
 
 #include <fmt/format.h>
 
-const int kPuzzleVillainPositions[17] = {
-    15,
-    3,
-    23,
-    5,
-    19,
-    1,
-    9,
-    21,
-    7,
-    18,
-    11,
-    8,
-    17,
-    6,
-    13,
-    16,
-    12,
-};
-
-const int kPuzzleArtifactPositions[8] = {
-    10,
-    2,
-    4,
-    14,
-    20,
-    24,
-    22,
-    0,
-};
-
 static constexpr unsigned char kBoxAccents[5][2][3] =
     {
         // Easy, green
