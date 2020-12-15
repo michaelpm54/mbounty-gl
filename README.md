@@ -28,7 +28,6 @@
 - Better collision
 - Add artifact textures
 - Add artifact collision message
-- Continent map should only reveal when you have the map
 - Add flying hero texture
 - Add flying key when all army can fly
 
