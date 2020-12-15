@@ -7,6 +7,7 @@
 #include "data/bounty.hpp"
 #include "data/castles.hpp"
 #include "data/hero.hpp"
+#include "data/spells.hpp"
 #include "data/villains.hpp"
 #include "engine/assets.hpp"
 #include "engine/dialog-stack.hpp"

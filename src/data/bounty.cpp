@@ -2,40 +2,6 @@
 
 #include <fmt/format.h>
 
-const char *const kSpellNames[14] = {
-    "Clone",
-    "Teleport",
-    "Fireball",
-    "Lightning",
-    "Freeze",
-    "Resurrect",
-    "Turn Undead",
-    "Bridge",
-    "Time Stop",
-    "Find Villain",
-    "Castle Gate",
-    "Town Gate",
-    "Instant Army",
-    "Raise Control",
-};
-
-const int kSpellCosts[14] = {
-    2000,
-    500,
-    1500,
-    500,
-    300,
-    5000,
-    2000,
-    100,
-    200,
-    1000,
-    1000,
-    500,
-    1000,
-    500,
-};
-
 const int kPuzzleVillainPositions[17] = {
     15,
     3,

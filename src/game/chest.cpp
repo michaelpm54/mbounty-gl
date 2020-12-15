@@ -3,6 +3,7 @@
 #include <fmt/format.h>
 
 #include "data/bounty.hpp"
+#include "data/spells.hpp"
 #include "engine/dialog-stack.hpp"
 #include "game/gen-variables.hpp"
 #include "game/variables.hpp"

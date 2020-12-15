@@ -3,6 +3,7 @@
 #include <spdlog/spdlog.h>
 
 #include "data/castles.hpp"
+#include "data/spells.hpp"
 #include "data/towns.hpp"
 #include "data/villains.hpp"
 #include "engine/assets.hpp"

@@ -11,6 +11,7 @@
 #include "data/hero.hpp"
 #include "data/shop.hpp"
 #include "data/signs.hpp"
+#include "data/spells.hpp"
 #include "data/tiles.hpp"
 #include "data/towns.hpp"
 #include "data/villains.hpp"

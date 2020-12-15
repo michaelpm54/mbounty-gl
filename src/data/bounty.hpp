@@ -5,9 +5,6 @@
 #include <glm/vec4.hpp>
 #include <string>
 
-extern const char *const kSpellNames[14];
-extern const int kSpellCosts[14];
-
 enum ArtifactId {
     ArtiArticlesOfNobility,
     ArtiShieldOfProtection,
