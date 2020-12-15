@@ -17,7 +17,7 @@ class Engine {
 public:
     Engine(Window &window, Assets &assets);
     void run();
-    void key(int key, int scancode, int action, int mods);
+    void key(int key, int action);
     void quit();
 
 private:

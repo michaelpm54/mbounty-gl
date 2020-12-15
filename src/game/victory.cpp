@@ -113,4 +113,6 @@ void Victory::update(float dt)
 
 void Victory::key(int key, int action)
 {
+    (void)key;
+    (void)action;
 }

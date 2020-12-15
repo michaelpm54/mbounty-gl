@@ -61,6 +61,7 @@ void Intro::key(int key, int action)
 
 void Intro::update(float dt)
 {
+    (void)dt;
 }
 
 void Intro::show_difficulty()

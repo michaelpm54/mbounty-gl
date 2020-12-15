@@ -29,7 +29,7 @@ void Engine::run()
     }
 }
 
-void Engine::key(int key, int scancode, int action, int mods)
+void Engine::key(int key, int action)
 {
     switch (key) {
         case GLFW_KEY_Q:

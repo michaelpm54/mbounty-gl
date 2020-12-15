@@ -20,8 +20,8 @@ public:
     Defeat(bty::SceneStack &ss, bty::DialogStack &ds, bty::Assets &assets, Hud &hud);
 
     void draw(bty::Gfx &gfx, glm::mat4 &camera) override;
-    void key(int key, int action);
-    void update(float dt);
+    void key(int key, int action) override;
+    void update(float dt) override;
 
     void show(int hero);
 

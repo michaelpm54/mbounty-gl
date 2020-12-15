@@ -8,7 +8,7 @@ inline constexpr int const kStartingGold[4] = {
     7'500,
 };
 
-inline constexpr char *const kHeroRankNames[4][4] = {
+inline constexpr const char *const kHeroRankNames[4][4] = {
     {
         "Knight",
         "General",
@@ -35,14 +35,14 @@ inline constexpr char *const kHeroRankNames[4][4] = {
     },
 };
 
-inline constexpr char *const kShortHeroNames[4] = {
+inline constexpr const char *const kShortHeroNames[4] = {
     "Sir Crimsaun",
     "Lord Palmer",
     "Tynnestra",
     "Moham",
 };
 
-inline constexpr char *const kHeroNames[][4] =
+inline constexpr const char *const kHeroNames[][4] =
     {
         {
             "Sir Crimsaun the Knight",

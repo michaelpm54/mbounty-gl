@@ -80,7 +80,7 @@ void TextBox::draw(Gfx &gfx, glm::mat4 &camera)
     gfx.draw_rect(background_outline_, camera);
     gfx.draw_rect(background_, camera);
 
-    for (int i = 0; i < lines_.size(); i++) {
+    for (auto i = 0u; i < lines_.size(); i++) {
         if (lines_visible_[i]) {
             gfx.draw_text(lines_[i], camera);
         }
@@ -126,7 +126,7 @@ void TextBox::set_color(bty::BoxColor color)
 
 void TextBox::set_line_visible(int index, bool value)
 {
-    if (index < 0 || index >= lines_.size()) {
+    if (index < 0 || index >= static_cast<int>(lines_.size())) {
         spdlog::warn("TextBox::set_line_visible: {} out of range", index);
         return;
     }

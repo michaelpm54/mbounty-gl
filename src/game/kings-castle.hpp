@@ -49,7 +49,6 @@ private:
     const bty::Texture *unit_textures_[5];
 
     bool show_recruit_ {false};
-    bool show_audience_ {false};
     bool show_recruit_amount_ {false};
 
     bty::Text *may_get_ {nullptr};

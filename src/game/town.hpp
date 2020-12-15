@@ -27,7 +27,7 @@ public:
     void update(float dt) override;
     void key(int key, int action) override;
 
-    void view(int town_id, const Tile &tile, int continent, int unit_id, int spell);
+    void view(int town_id, int unit_id, int spell);
 
     void get_contract();
     void rent_boat();
@@ -46,7 +46,6 @@ private:
     bty::Sprite bg_;
     bty::Sprite unit_;
     const bty::Texture *unit_textures_[25];
-    int current_info_contract_ {-1};
     int town_id {-1};
 
     bty::Dialog dialog;

@@ -195,7 +195,7 @@ Battle::Battle(bty::SceneStack &ss, bty::DialogStack &ds, bty::Assets &assets, V
     }
 }
 
-void Battle::draw(bty::Gfx &gfx, glm::mat4 &camera)
+void Battle::draw(bty::Gfx &gfx, glm::mat4 &)
 {
     bool tmp_msg {false};
     BattleState tmp_state_;
@@ -915,7 +915,8 @@ void Battle::status_attack(const Unit &unit)
     }
 }
 
-void Battle::status_retaliation(const Unit &unit)
+// FIXME: use the parameter
+void Battle::status_retaliation(const Unit &)
 {
     const Unit &target = kUnits[armies_[last_attacking_team_][last_attacking_unit_]];
     status_.set_string(fmt::format(kStatuses[RETALIATION], target.name_plural, last_kills_));
@@ -1556,8 +1557,6 @@ bool Battle::check_end()
         }
     }
 
-    auto &state = v;
-
     if (num_dead[0] == 5) {
         for (int i = 0; i < 5; i++) {
             (*enemy_army)[i] = armies_[1][i];
@@ -1608,7 +1607,7 @@ void Battle::victory()
                         {1, 1, fmt::format(kSiegeVictoryMessage, kShortHeroNames[v.hero], bty::number_with_ks(gold_total), kVillains[villain][0], kVillainRewards[villain])},
                     },
                     .callbacks = {
-                        .confirm = [this](int opt) {
+                        .confirm = [this](int) {
                             ss.pop(siege);
                         },
                     },
@@ -1627,7 +1626,7 @@ void Battle::victory()
                         {1, 1, fmt::format(kSiegeVictoryMessageNoContract, kShortHeroNames[v.hero], bty::number_with_ks(gold_total), kVillains[villain][0])},
                     },
                     .callbacks = {
-                        .confirm = [this](int opt) {
+                        .confirm = [this](int) {
                             ss.pop(siege);
                         },
                     },
@@ -1661,7 +1660,7 @@ void Battle::victory()
                     {1, 1, fmt::format(kEncounterVictoryMessage, kShortHeroNames[v.hero], bty::number_with_ks(gold_total))},
                 },
                 .callbacks = {
-                    .confirm = [this](int opt) {
+                    .confirm = [this](int) {
                         ss.pop(siege);
                     },
                 },
@@ -1680,7 +1679,7 @@ void Battle::victory()
                 {1, 1, fmt::format(kEncounterVictoryMessage, kShortHeroNames[v.hero], bty::number_with_ks(gold_total))},
             },
             .callbacks = {
-                .confirm = [this](int opt) {
+                .confirm = [this](int) {
                     ss.pop(siege);
                 },
             },
@@ -1692,7 +1691,6 @@ bool Battle::any_enemy_around() const
 {
     int x = positions_[active_.x][active_.y].x;
     int y = positions_[active_.x][active_.y].y;
-    bool any_enemy_around {false};
     for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 3; j++) {
             auto [unit, enemy] = get_unit(x - 1 + i, y - 1 + j);

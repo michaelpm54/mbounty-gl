@@ -36,13 +36,6 @@ static constexpr int kChestChanceSpellCapacity[] = {
     91,
 };
 
-static constexpr int kChestChanceAddSpell[] = {
-    101,
-    101,
-    101,
-    101,
-};
-
 void chest_gold(Variables &v, GenVariables &gen, bty::DialogStack &ds)
 {
     static constexpr int kGoldBase[] = {
@@ -132,6 +125,8 @@ void chest_commission(Variables &v, bty::DialogStack &ds)
 
 void chest_spell_power(Variables &v, bty::DialogStack &ds)
 {
+    v.spell_power++;
+
     ds.show_dialog({
         .x = 1,
         .y = 18,

@@ -22,11 +22,11 @@ void Defeat::draw(bty::Gfx &gfx, glm::mat4 &camera)
     gfx.draw_sprite(lose_pic, camera);
 }
 
-void Defeat::key(int key, int action)
+void Defeat::key(int, int)
 {
 }
 
-void Defeat::update(float dt)
+void Defeat::update(float)
 {
 }
 
@@ -61,7 +61,7 @@ you could not find
 the Sceptre.)raw"},
         },
         .callbacks = {
-            .confirm = [this](int opt) {
+            .confirm = [this](int) {
                 hud.set_error("      Press Enter to play again.", [this]() {
                     spdlog::debug("Popping defeat info text");
                     ds.pop();

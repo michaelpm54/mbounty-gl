@@ -16,7 +16,7 @@ void Dialog::next()
 
     int found = -1;
 
-    for (int i = 0; i < options_.size(); i++) {
+    for (auto i = 0u; i < options_.size(); i++) {
         int selection = (selection_ + i + 1) % std::max(static_cast<int>(options_.size()), 1);
         if (options_[selection].enabled() && options_[selection].visible()) {
             found = selection;
@@ -42,7 +42,7 @@ void Dialog::prev()
 
     int found = -1;
 
-    for (int i = 0; i < options_.size(); i++) {
+    for (auto i = 0u; i < options_.size(); i++) {
         int selection = (selection_ - i - 1 + options_.size()) % std::max(static_cast<int>(options_.size()), 1);
         if (options_[selection].enabled() && options_[selection].visible()) {
             found = selection;
@@ -64,7 +64,7 @@ void Dialog::set_position(int x, int y)
 {
     TextBox::set_position(x, y);
 
-    for (int i = 0; i < options_.size(); i++) {
+    for (auto i = 0u; i < options_.size(); i++) {
         options_[i].set_position({x_ + x, y_ + y});
     }
 }
@@ -102,7 +102,7 @@ Option *Dialog::add_option(int x, int y, const std::string &str)
 
 void Dialog::set_option(int index, std::string const &str)
 {
-    if (index < 0 || index >= options_.size()) {
+    if (index < 0 || index >= static_cast<int>(options_.size())) {
         spdlog::warn("Dialog::set_option: {} out of range", index);
         return;
     }

@@ -55,7 +55,7 @@ inline constexpr int const kVillainRewards[17] = {
     50'000,
 };
 
-inline constexpr char *const kVillains[17][4] = {
+inline constexpr const char *const kVillains[17][4] = {
     {"Murray the Miser",
      "None",
      R"raw(

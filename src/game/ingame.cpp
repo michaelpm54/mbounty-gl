@@ -37,7 +37,7 @@ Ingame::Ingame(GLFWwindow *window, bty::SceneStack &ss, bty::DialogStack &ds, bt
     , view_contract(ss, assets, v, gen, hud.get_contract())
     , view_puzzle(ss, assets)
     , kings_castle(ss, ds, assets, hud, v, gen)
-    , shop(ss, assets, v, gen, hud)
+    , shop(ss, assets, v, hud)
     , town(ss, ds, assets, v, gen, hud, view_contract, boat)
     , s_wizard(ss, assets, v, hud)
     , s_defeat(ss, ds, assets, hud)
@@ -188,7 +188,7 @@ void Ingame::setup(int hero, int diff)
     move_hero_to(11, 58, 0);
 }
 
-void Ingame::draw(bty::Gfx &gfx, glm::mat4 &camera)
+void Ingame::draw(bty::Gfx &gfx, glm::mat4 &)
 {
     map.draw(map_cam, v.continent);
     draw_mobs(gfx);
@@ -306,35 +306,6 @@ void Ingame::gen_tiles()
         2,
     };
 
-    static constexpr int kAvailableUnitsPerContinent[4][6] = {
-        {
-            Peasants,
-            Sprites,
-            Orcs,
-            Skeletons,
-            Wolves,
-            Gnomes,
-        },
-        {Dwarves,
-         Zombies,
-         Nomads,
-         Elves,
-         Ogres,
-         Elves},
-        {Ghosts,
-         Barbarians,
-         Trolls,
-         Druids,
-         Peasants,
-         Peasants},
-        {Giants,
-         Vampires,
-         Archmages,
-         Dragons,
-         Demons,
-         Peasants},
-    };
-
     static constexpr int kArtifactTiles[] = {
         Tile_AfctScroll,
         Tile_AfctShield,
@@ -447,7 +418,7 @@ void Ingame::gen_tiles()
         rng_.seed(static_cast<unsigned int>(std::chrono::system_clock::now().time_since_epoch().count()));
         std::shuffle(std::begin(random_tiles), std::end(random_tiles), rng_);
 
-        int used_tiles = 0;
+        unsigned int used_tiles = 0;
         glm::ivec2 tile;
 
         /* Process:
@@ -556,7 +527,7 @@ void Ingame::gen_tiles()
                 int a = (rand() % kMaxShopCounts[shop.unit]) / 8;
                 int b = (rand() % kMaxShopCounts[shop.unit]) / 16;
                 int c = rand() % 4;
-                shop.count = continent + a + b + max;
+                shop.count = c + a + b + max;
                 tiles[tile.x + tile.y * 64] = kShopTileForUnit[shop.unit];
             }
             else {
@@ -570,7 +541,7 @@ void Ingame::gen_tiles()
                 int b = (rand() % kMaxShopCounts[shop.unit]) / 16;
                 int c = rand() % 4;
                 shop.unit = id;
-                shop.count = continent + a + b + max;
+                shop.count = c + a + b + max;
                 tiles[tile.x + tile.y * 64] = kShopTileForUnit[shop.unit];
             }
         }
@@ -596,7 +567,6 @@ void Ingame::gen_tiles()
         }
 
         /* Gen castle occupants */
-        int used_castles = 0;
         for (int i = 0; i < kVillainsPerContinent[continent]; i++) {
             int castle;
             do {
@@ -610,7 +580,7 @@ void Ingame::gen_tiles()
         }
 
         /* Turn the rest of the RNG tiles into chests */
-        for (int i = used_tiles; i < random_tiles.size(); i++) {
+        for (auto i = used_tiles; i < random_tiles.size(); i++) {
             tiles[random_tiles[i].x + random_tiles[i].y * 64] = Tile_Chest;
         }
     }
@@ -1566,7 +1536,7 @@ void Ingame::sail_to(int continent)
 void Ingame::draw_mobs(bty::Gfx &gfx)
 {
     const auto &hero_tile = hero.get_tile();
-    for (int i = 0; i < gen.mobs[v.continent].size(); i++) {
+    for (auto i = 0u; i < gen.mobs[v.continent].size(); i++) {
         if (gen.mobs[v.continent][i].dead) {
             continue;
         }
@@ -1589,7 +1559,7 @@ void Ingame::update_mobs(float dt)
 
     int continent = v.continent;
 
-    for (int i = 0; i < gen.mobs[continent].size(); i++) {
+    for (auto i = 0u; i < gen.mobs[continent].size(); i++) {
         auto &mob = gen.mobs[continent][i];
         if (mob.dead) {
             continue;
@@ -1612,7 +1582,7 @@ void Ingame::update_mobs(float dt)
             }
 
             if (hero.get_mount() == Mount::Walk && distance_x < 12.0f && distance_y < 12.0f) {
-                for (int j = 0; j < gen.friendly_mobs[v.continent].size(); j++) {
+                for (auto j = 0u; j < gen.friendly_mobs[v.continent].size(); j++) {
                     if (gen.friendly_mobs[v.continent][j] == i) {
                         int size = 0;
                         for (int i = 0; i < 5; i++) {
@@ -1633,7 +1603,7 @@ void Ingame::update_mobs(float dt)
                                     {1, 1, descriptor},
                                     {3, 3, " flee in terror at the\nsight of your vast army."},
                                 },
-                                .callbacks = {.confirm = [this, &mob](int) {
+                                .callbacks = {.confirm = [&mob](int) {
                                     mob.dead = true;
                                 }},
                             });
@@ -1827,7 +1797,7 @@ void Ingame::collide(const Tile &tile)
 void Ingame::collide_shop(const Tile &tile)
 {
     int shop_id = -1;
-    for (int i = 0; i < gen.shops[v.continent].size(); i++) {
+    for (auto i = 0u; i < gen.shops[v.continent].size(); i++) {
         if (gen.shops[v.continent][i].x == tile.tx && gen.shops[v.continent][i].y == tile.ty) {
             shop_id = i;
             break;
@@ -1875,7 +1845,7 @@ void Ingame::collide_chest(const Tile &tile)
                 {3, 5, "of this area is complete."},
             },
             .callbacks = {
-                .confirm = [this](int opt) {
+                .confirm = [this](int) {
                     view_continent.update_info(v, true, true);
                     ss.push(&view_continent, nullptr);
                 },
@@ -1959,7 +1929,7 @@ void Ingame::collide_town(const Tile &tile)
 
     v.visited_towns[town_id] = true;
 
-    town.view(town_id, tile, v.continent, gen.town_units[town_id], gen.town_spells[town_id]);
+    town.view(town_id, gen.town_units[town_id], gen.town_spells[town_id]);
     ss.push(&town, nullptr);
 }
 
@@ -2036,7 +2006,7 @@ void Ingame::wizard()
     s_wizard.view(ds);
     ss.push(&s_wizard, [this](int ret) {
         if (ret == 0) {
-            map.set_tile({11, 63 - 19}, 0, Tile_Grass);
+            map.set_tile({11, 63 - 19, -1}, 0, Tile_Grass);
         }
     });
 }
@@ -2114,7 +2084,7 @@ void Ingame::search_fail()
             {1, 3, "Your search of this area has\n      revealed nothing."},
         },
         .callbacks = {
-            .confirm = [this](int opt) {
+            .confirm = [this](int) {
                 end_week(true);
             },
         },

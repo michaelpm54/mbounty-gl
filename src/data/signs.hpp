@@ -1,7 +1,7 @@
 #ifndef BTY_DATA_SIGNS_HPP_
 #define BTY_DATA_SIGNS_HPP_
 
-inline constexpr char *const kSigns[] = {
+inline constexpr const char *const kSigns[] = {
     "      Treasure Island       \n                             ",
     "Rent a boat and sail the    \nseas. Explore the easy way!  ",
     "Six villains rule           \nContinentia.                 ",

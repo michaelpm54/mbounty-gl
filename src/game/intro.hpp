@@ -30,8 +30,6 @@ private:
     bty::DialogStack &ds;
     int &hero_id_;
     int &difficulty_;
-    bool chosen_hero_ {false};
-    int hero_ {0};
     bty::Sprite bg_;
     bty::TextBox name_box_;
     bty::TextBox help_box_;

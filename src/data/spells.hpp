@@ -1,7 +1,7 @@
 #ifndef BTY_DATA_SPELLS_HPP_
 #define BTY_DATA_SPELLS_HPP_
 
-inline constexpr char *const kSpellNames[14] = {
+inline constexpr const char *const kSpellNames[14] = {
     "Clone",
     "Teleport",
     "Fireball",

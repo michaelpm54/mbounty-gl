@@ -6,7 +6,6 @@
 #include "data/tiles.hpp"
 #include "engine/assets.hpp"
 #include "engine/scene-stack.hpp"
-#include "game/gen-variables.hpp"
 #include "game/hud.hpp"
 #include "game/map.hpp"
 #include "game/shop-info.hpp"
@@ -28,10 +27,9 @@ static constexpr const char *const kShopNames[] = {
     "Plains",
 };
 
-Shop::Shop(bty::SceneStack &ss, bty::Assets &assets, Variables &v, GenVariables &gen, Hud &hud)
+Shop::Shop(bty::SceneStack &ss, bty::Assets &assets, Variables &v, Hud &hud)
     : ss(ss)
     , v(v)
-    , gen(gen)
     , hud(hud)
 {
     box_.create(1, 18, 30, 9, bty::BoxColor::Intro, assets);

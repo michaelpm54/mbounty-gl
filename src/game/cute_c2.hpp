@@ -740,6 +740,8 @@ void c2Collide(
                 case C2_TYPE_POLY:
                     c2CircletoPolyManifold(*(c2Circle *)A, (const c2Poly *)B, bx, m);
                     break;
+                default:
+                    break;
             }
             break;
 
@@ -755,6 +757,8 @@ void c2Collide(
                 case C2_TYPE_POLY:
                     c2AABBtoPolyManifold(*(c2AABB *)A, (const c2Poly *)B, bx, m);
                     break;
+                default:    
+                    break;
             }
             break;
 
@@ -766,6 +770,8 @@ void c2Collide(
                     break;
                 case C2_TYPE_CAPSULE:
                     c2CapsuletoCapsuleManifold(*(c2Capsule *)A, *(c2Capsule *)B, m);
+                    break;
+                default:    
                     break;
             }
             break;
@@ -783,7 +789,11 @@ void c2Collide(
                 case C2_TYPE_POLY:
                     c2PolytoPolyManifold((const c2Poly *)A, ax, (const c2Poly *)B, bx, m);
                     break;
+                default:    
+                    break;
             }
+            break;
+        default:    
             break;
     }
 }
@@ -799,6 +809,8 @@ int c2CastRay(c2Ray A, const void *B, const c2x *bx, C2_TYPE typeB, c2Raycast *o
             return c2RaytoCapsule(A, *(c2Capsule *)B, out);
         case C2_TYPE_POLY:
             return c2RaytoPoly(A, (const c2Poly *)B, bx, out);
+        default:    
+            break;
     }
 
     return 0;
@@ -862,6 +874,9 @@ static C2_INLINE void c2MakeProxy(const void *shape, C2_TYPE type, c2Proxy *p)
             for (int i = 0; i < p->count; ++i)
                 p->verts[i] = poly->verts[i];
         } break;
+
+        default:    
+            break;
     }
 }
 
@@ -1973,26 +1988,6 @@ static C2_INLINE c2v c2CapsuleSupport(c2Capsule A, c2v dir)
         return c2Add(A.a, c2Mulvs(dir, A.r));
     else
         return c2Add(A.b, c2Mulvs(dir, A.r));
-}
-
-static void c2AntinormalFace(c2Capsule cap, const c2Poly *p, c2x x, int *face_out, c2v *n_out)
-{
-    float sep = -FLT_MAX;
-    int index = ~0;
-    c2v n = c2V(0, 0);
-    for (int i = 0; i < p->count; ++i) {
-        c2h h = c2Mulxh(x, c2PlaneAt(p, i));
-        c2v n0 = c2Neg(h.n);
-        c2v s = c2CapsuleSupport(cap, n0);
-        float d = c2Dist(h, s);
-        if (d > sep) {
-            sep = d;
-            index = i;
-            n = n0;
-        }
-    }
-    *face_out = index;
-    *n_out = n;
 }
 
 #ifdef _MSC_VER

@@ -50,7 +50,7 @@ void Town::draw(bty::Gfx &gfx, glm::mat4 &camera)
     dialog.draw(gfx, camera);
 }
 
-void Town::view(int town_id, const Tile &tile, int continent, int unit_id, int spell)
+void Town::view(int town_id, int unit_id, int spell)
 {
     dialog.set_color(bty::get_box_color(v.diff));
 

@@ -9,7 +9,7 @@
 
 #include "data/morale.hpp"
 
-inline constexpr char *const kContinentNames[4] = {
+inline constexpr const char *const kContinentNames[4] = {
     "Continentia",
     "Forestria",
     "Archipelia",

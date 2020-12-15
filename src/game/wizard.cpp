@@ -69,7 +69,7 @@ the required amount of gold?
     Begone until you do!)raw"},
                             },
                             .callbacks = {
-                                .confirm = [this](int opt) {
+                                .confirm = [this](int) {
                                     ss.pop(1);
                                 },
                             },
@@ -94,6 +94,10 @@ void Wizard::update(float dt)
 
 void Wizard::key(int key, int action)
 {
+    if (action == GLFW_RELEASE) {
+        return;
+    }
+
     switch (key) {
         case GLFW_KEY_BACKSPACE:
             ss.pop(0);

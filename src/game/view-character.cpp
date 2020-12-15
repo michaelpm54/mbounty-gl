@@ -108,7 +108,7 @@ void ViewCharacter::set_color(bty::BoxColor color)
     rect_.set_color(color);
 }
 
-void ViewCharacter::update(float dt)
+void ViewCharacter::update(float)
 {
 }
 

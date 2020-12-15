@@ -300,7 +300,7 @@ void KingsCastle::show_audience()
        and proclaims:)raw"},
         },
         .callbacks = {
-            .confirm = [this, required_villains](int opt) {
+            .confirm = [this, required_villains](int) {
                 if (required_villains <= 0) {
                     ds.show_dialog({
                         .x = 1,

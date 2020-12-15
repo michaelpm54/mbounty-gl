@@ -371,7 +371,7 @@ int gen_mob_count(int continent, int unit)
     int bVar1 = kMaxMobCounts[continent][unit];
     int cVar3 = bty::random(bVar1 / 8);
     int uVar2 = bty::random(2);
-    return uVar2 & 0xffffff00 | (bVar1 + uVar2 + cVar3);
+    return (uVar2 & 0xffffff00) | (bVar1 + uVar2 + cVar3);
 }
 
 int gen_mob_unit(int continent)
@@ -387,7 +387,7 @@ int gen_mob_unit(int continent)
             break;
         tries++;
     }
-    return tries * 4 & 0xffffff00 | kMobIdRange[((id >> 2) & 0xff) + tries * 4];
+    return ((tries * 4) & 0xffffff00) | kMobIdRange[((id >> 2) & 0xff) + tries * 4];
 }
 
 void gen_mob_army(int continent, std::array<int, 5> &army, std::array<int, 5> &counts)

@@ -14,14 +14,13 @@ struct Texture;
 }    // namespace bty
 
 struct Variables;
-struct GenVariables;
 struct Tile;
 struct ShopInfo;
 class Hud;
 
 class Shop : public bty::Scene {
 public:
-    Shop(bty::SceneStack &ss, bty::Assets &assets, Variables &v, GenVariables &gen, Hud &hud);
+    Shop(bty::SceneStack &ss, bty::Assets &assets, Variables &v, Hud &hud);
 
     void draw(bty::Gfx &gfx, glm::mat4 &camera) override;
     void update(float dt) override;
@@ -36,7 +35,6 @@ private:
 private:
     bty::SceneStack &ss;
     Variables &v;
-    GenVariables &gen;
     Hud &hud;
     ShopInfo *info_ {nullptr};
     bty::Sprite bg_;

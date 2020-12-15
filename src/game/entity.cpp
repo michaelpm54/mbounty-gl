@@ -200,10 +200,8 @@ Entity::CollisionManifold Entity::move(float dx, float dy, Map &map, int contine
 
         /* Generate a bounding box for the entity. */
         c2AABB collider_shape {
-            ent_shape.min.x + dx,
-            ent_shape.min.y,
-            ent_shape.max.x + dx,
-            ent_shape.max.y,
+            {ent_shape.min.x + dx, ent_shape.min.y},
+            {ent_shape.max.x + dx, ent_shape.max.y},
         };
 
         /* Check if the bounding boxes collide. */
@@ -271,10 +269,8 @@ Entity::CollisionManifold Entity::move(float dx, float dy, Map &map, int contine
         auto tile_shape = get_collision_rect(tile.id, tile.tx, tile.ty);
 
         c2AABB collider_shape {
-            ent_shape.min.x,
-            ent_shape.min.y + dy,
-            ent_shape.max.x,
-            ent_shape.max.y + dy,
+            {ent_shape.min.x, ent_shape.min.y + dy},
+            {ent_shape.max.x, ent_shape.max.y + dy},
         };
 
         if (c2AABBtoAABB(collider_shape, tile_shape)) {
@@ -332,7 +328,7 @@ Entity::CollisionManifold Entity::move(float dx, float dy, Map &map, int contine
         return manifold;
     }
 
-    if (tile.tx != tile_.tx || tile.ty != tile_.ty && !any_overlap) {
+    if ((tile.tx != tile_.tx || tile.ty != tile_.ty) && !any_overlap) {
         collided_event_on_this_tile = false;
         manifold.changed_tile = true;
         manifold.new_tile = tile;
@@ -353,7 +349,7 @@ glm::vec2 Entity::get_center() const
     return {position_.x + 16, position_.y + 16};
 }
 
-bool Entity::can_move(int id, int x, int y, int c)
+bool Entity::can_move(int id, int, int, int)
 {
     return id == Tile_Grass;
 }

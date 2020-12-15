@@ -51,8 +51,6 @@ private:
     void ingame_pop(int ret);
 
 private:
-    GLFWwindow *window_ {nullptr};
-
     Intro intro;
     Ingame ingame;
 

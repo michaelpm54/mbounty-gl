@@ -42,10 +42,9 @@ void Game::ingame_pop(int ret)
 }
 
 Game::Game(GLFWwindow *window, bty::Assets &assets)
-    : window_(window)
-    , ds(assets)
-    , intro(ss, ds, assets, hero_id, difficulty)
+    : intro(ss, ds, assets, hero_id, difficulty)
     , ingame(window, ss, ds, assets, hud_)
+    , ds(assets)
     , hud_(assets)
 {
     ss.push(&intro, std::bind(&Game::intro_pop, this, std::placeholders::_1));

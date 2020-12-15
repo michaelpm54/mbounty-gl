@@ -107,6 +107,6 @@ void ViewContract::key(int key, int action)
     }
 }
 
-void ViewContract::update(float dt)
+void ViewContract::update(float)
 {
 }
