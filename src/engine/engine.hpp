@@ -35,6 +35,11 @@ private:
     Hud hud;
     glm::mat4 view;
     bool run_ {true};
+
+    bool debug{false};
+    Text fps_label;
+    Text fps;
+    Text frame_time;
 };
 
 }    // namespace bty
