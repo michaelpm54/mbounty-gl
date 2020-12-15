@@ -1941,7 +1941,7 @@ void Ingame::collide_chest(const Tile &tile)
             .w = 30,
             .h = 9,
             .strings = {
-                {3, 2, "Perring through a magical"},
+                {3, 2, "Peering through a magical"},
                 {1, 3, "orb you are able to view the"},
                 {2, 4, "entire continent. Your map"},
                 {3, 5, "of this area is complete."},
