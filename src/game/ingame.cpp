@@ -7,6 +7,7 @@
 #include <random>
 
 #include "data/bounty.hpp"
+#include "data/hero.hpp"
 #include "data/shop.hpp"
 #include "data/signs.hpp"
 #include "data/tiles.hpp"

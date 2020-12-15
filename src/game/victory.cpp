@@ -2,6 +2,7 @@
 
 #include <fmt/format.h>
 
+#include "data/hero.hpp"
 #include "engine/dialog-stack.hpp"
 #include "engine/scene-stack.hpp"
 #include "game/hud.hpp"

@@ -3,6 +3,7 @@
 #include <spdlog/spdlog.h>
 
 #include "data/bounty.hpp"
+#include "data/hero.hpp"
 #include "engine/assets.hpp"
 #include "gfx/font.hpp"
 #include "gfx/gfx.hpp"
