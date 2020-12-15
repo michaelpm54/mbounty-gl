@@ -1,13 +1,14 @@
 #ifndef BTY_GAME_INTRO_HPP_
 #define BTY_GAME_INTRO_HPP_
 
-#include "game/ingame.hpp"
 #include "engine/dialog.hpp"
 #include "engine/scene.hpp"
 #include "engine/textbox.hpp"
+#include "game/ingame.hpp"
 #include "gfx/font.hpp"
 #include "gfx/sprite.hpp"
 #include "gfx/text.hpp"
+
 
 namespace bty {
 class Assets;
@@ -30,7 +31,7 @@ private:
     bty::SceneStack &ss;
     bty::DialogStack &ds;
     Ingame &ingame;
-    int hero;
+    int hero {0};
     bty::Sprite bg_;
     bty::TextBox name_box_;
     bty::TextBox help_box_;
