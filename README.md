@@ -8,7 +8,6 @@
 - Cleaner variable/state handling. I don't like the Variables/GenVariables thing.
 - Maybe cleaner "scene" handling. I don't like how you have to pass everything you want to use
 	into the class, but it's okay for now.
-- Merge Game class into Engine class?
 - Remove all the debug keys:
 	- K in game to win
 	- E in game to lose

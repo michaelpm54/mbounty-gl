@@ -12,11 +12,10 @@
 #include "gfx/gfx.hpp"
 #include "window/glfw.hpp"
 
-Intro::Intro(bty::SceneStack &ss, bty::DialogStack &ds, bty::Assets &assets, int &hero_id, int &difficulty)
+Intro::Intro(bty::SceneStack &ss, bty::DialogStack &ds, bty::Assets &assets, Ingame &ingame)
     : ss(ss)
     , ds(ds)
-    , hero_id_(hero_id)
-    , difficulty_(difficulty)
+    , ingame(ingame)
 {
     bg_.set_texture(assets.get_texture("bg/intro.png"));
     name_box_.create(7, 1, 27, 3, bty::BoxColor::Intro, assets);
@@ -39,12 +38,12 @@ void Intro::key(int key, int action)
         if (action == GLFW_PRESS) {
             switch (key) {
                 case GLFW_KEY_LEFT:
-                    hero_id_ = (hero_id_ - 1 + 4) % 4;
-                    name_box_.set_line(0, kHeroNames[hero_id_][0]);
+                    hero = (hero - 1 + 4) % 4;
+                    name_box_.set_line(0, kHeroNames[hero][0]);
                     break;
                 case GLFW_KEY_RIGHT:
-                    hero_id_ = (hero_id_ + 1) % 4;
-                    name_box_.set_line(0, kHeroNames[hero_id_][0]);
+                    hero = (hero + 1) % 4;
+                    name_box_.set_line(0, kHeroNames[hero][0]);
                     break;
                 case GLFW_KEY_ENTER:
                     show_difficulty();
@@ -82,8 +81,19 @@ void Intro::show_difficulty()
         },
         .callbacks = {
             .confirm = [this](int opt) {
-                difficulty_ = opt;
                 ss.pop(0);
+                ingame.setup(hero, opt);
+                ss.push(&ingame, [this](int ret) {
+                    switch (ret) {
+                        case 0:    // reset
+                            ss.push(this, nullptr);
+                            break;
+                        case 1:    // battle
+                            break;
+                        default:
+                            break;
+                    }
+                });
             },
         },
     });

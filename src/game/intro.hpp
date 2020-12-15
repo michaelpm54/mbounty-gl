@@ -1,6 +1,7 @@
 #ifndef BTY_GAME_INTRO_HPP_
 #define BTY_GAME_INTRO_HPP_
 
+#include "game/ingame.hpp"
 #include "engine/dialog.hpp"
 #include "engine/scene.hpp"
 #include "engine/textbox.hpp"
@@ -17,7 +18,7 @@ class DialogStack;
 
 class Intro : public bty::Scene {
 public:
-    Intro(bty::SceneStack &ss, bty::DialogStack &ds, bty::Assets &assets, int &hero_id, int &difficulty);
+    Intro(bty::SceneStack &ss, bty::DialogStack &ds, bty::Assets &assets, Ingame &ingame);
     void draw(bty::Gfx &gfx, glm::mat4 &camera) override;
     void key(int key, int action) override;
     void update(float dt) override;
@@ -28,8 +29,8 @@ private:
 private:
     bty::SceneStack &ss;
     bty::DialogStack &ds;
-    int &hero_id_;
-    int &difficulty_;
+    Ingame &ingame;
+    int hero;
     bty::Sprite bg_;
     bty::TextBox name_box_;
     bty::TextBox help_box_;

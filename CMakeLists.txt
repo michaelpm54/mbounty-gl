@@ -20,7 +20,6 @@ set(MBOUNTYGL_SRC
 	src/game/victory.cpp
 	src/game/wizard.cpp
 	src/game/intro.cpp
-	src/game/game.cpp
 	src/game/hud.cpp
 	src/game/map.cpp
 	src/game/ingame.cpp

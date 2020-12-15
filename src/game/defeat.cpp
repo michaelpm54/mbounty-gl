@@ -1,7 +1,5 @@
 #include "game/defeat.hpp"
 
-#include <spdlog/spdlog.h>
-
 #include "data/hero.hpp"
 #include "engine/dialog-stack.hpp"
 #include "engine/scene-stack.hpp"
@@ -63,9 +61,7 @@ the Sceptre.)raw"},
         .callbacks = {
             .confirm = [this](int) {
                 hud.set_error("      Press Enter to play again.", [this]() {
-                    spdlog::debug("Popping defeat info text");
                     ds.pop();
-                    spdlog::debug("Popping defeat scene");
                     ss.pop(0);
                 });
             },

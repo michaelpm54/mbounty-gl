@@ -3,7 +3,9 @@
 
 #include <memory>
 
-#include "game/game.hpp"
+#include "engine/scene-stack.hpp"
+#include "engine/dialog-stack.hpp"
+#include "game/hud.hpp"
 #include "gfx/gfx.hpp"
 #include "window/window-engine-interface.hpp"
 
@@ -21,10 +23,17 @@ public:
     void quit();
 
 private:
-    Game game;
-    std::unique_ptr<Gfx> gfx_;
+    void intro_pop(int ret);
+
+private:
     InputHandler input_;
     Window *window_ {nullptr};
+    Assets &assets;
+    std::unique_ptr<Gfx> gfx_;
+    SceneStack scene_stack;
+    DialogStack dialog_stack;
+    Hud hud;
+    glm::mat4 view;
     bool run_ {true};
 };
 

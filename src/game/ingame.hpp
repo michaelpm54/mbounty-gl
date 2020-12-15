@@ -41,11 +41,13 @@ struct GLFWwindow;
 
 class Ingame : public bty::Scene {
 public:
+    Ingame(GLFWwindow *window, bty::SceneStack &ss, bty::DialogStack &ds, bty::Assets &assets, Hud &hud);
+
     void update(float dt) override;
-    void setup(int hero, int diff);
     void key(int key, int action) override;
     void draw(bty::Gfx &gfx, glm::mat4 &camera) override;
-    Ingame(GLFWwindow *window, bty::SceneStack &ss, bty::DialogStack &ds, bty::Assets &assets, Hud &hud);
+    
+    void setup(int hero, int diff);
 
 private:
     void defeat();
