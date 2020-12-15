@@ -11,6 +11,7 @@
 #include "data/shop.hpp"
 #include "data/signs.hpp"
 #include "data/tiles.hpp"
+#include "data/villains.hpp"
 #include "engine/assets.hpp"
 #include "engine/scene-stack.hpp"
 #include "game/army-gen.hpp"

@@ -6,6 +6,7 @@
 
 #include "data/bounty.hpp"
 #include "data/hero.hpp"
+#include "data/villains.hpp"
 #include "engine/assets.hpp"
 #include "engine/dialog-stack.hpp"
 #include "engine/scene-stack.hpp"

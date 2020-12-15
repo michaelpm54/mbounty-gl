@@ -41,15 +41,10 @@ enum ArtifactId {
     ArtiSwordOfProwess,
 };
 
-extern const int kVillainIndices[4];
-extern const int kVillainsPerContinent[4];
 extern const int kPuzzleVillainPositions[17];
 extern const int kPuzzleArtifactPositions[8];
 extern int const kDays[4];
 extern char const *const kContinents[4];
-extern char const *const kVillains[17][4];
-extern const int kVillainContinents[17];
-extern int const kVillainRewards[17];
 extern const int kTownsAlphabetical[26];    // ? has more than 26
 extern const int kTownGateX[26];
 extern const int kTownGateY[26];

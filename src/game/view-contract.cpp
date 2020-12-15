@@ -3,6 +3,7 @@
 #include <spdlog/spdlog.h>
 
 #include "data/bounty.hpp"
+#include "data/villains.hpp"
 #include "engine/assets.hpp"
 #include "engine/scene-stack.hpp"
 #include "game/gen-variables.hpp"
