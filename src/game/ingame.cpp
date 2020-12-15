@@ -119,6 +119,13 @@ void Ingame::setup(int hero, int diff)
         gen.artifacts_found[i] = false;
     }
 
+    static constexpr int const kDays[4] = {
+        900,
+        600,
+        400,
+        200,
+    };
+
     v.boat_rented = false;
     v.hero = hero;
     v.rank = 0;
@@ -1380,7 +1387,7 @@ void Ingame::move_hero(int move_flags, float dt)
 
         for (int i = 0; i < 4; i++) {
             if (gen.sail_maps_found[i]) {
-                continents.push_back({10, 3 + i, kContinents[i]});
+                continents.push_back({10, 3 + i, kContinentNames[i]});
             }
         }
 
@@ -1850,7 +1857,7 @@ void Ingame::collide_chest(const Tile &tile)
                 {3, 2, "Hidden within an ancient"},
                 {3, 3, "chest, you find maps and"},
                 {1, 4, "charts describing passage to"},
-                {10, 6, kContinents[v.continent + 1]},
+                {10, 6, kContinentNames[v.continent + 1]},
             },
         });
     }
@@ -1891,7 +1898,7 @@ void Ingame::collide_castle(const Tile &tile)
     }
 
     if (castle_id == -1) {
-        spdlog::warn("Failed to find castle at [{},{}] in {}", tile.tx, tile.ty, kContinents[v.continent]);
+        spdlog::warn("Failed to find castle at [{},{}] in {}", tile.tx, tile.ty, kContinentNames[v.continent]);
         return;
     }
 

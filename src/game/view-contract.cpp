@@ -81,7 +81,7 @@ Crimes: {}
         kVillains[v.contract][0],
         kVillains[v.contract][1],
         reward,
-        kContinents[kVillainContinents[v.contract]],
+        kContinentNames[kVillainContinents[v.contract]],
         castle_name,
         kVillains[v.contract][2],
         kVillains[v.contract][3]));

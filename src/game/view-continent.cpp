@@ -56,7 +56,7 @@ void ViewContinent::update_info(Variables &v, bool have_map, bool force_show)
     x_ = v.x;
     y_ = v.y;
 
-    continent_->set_string(kContinents[v.continent]);
+    continent_->set_string(kContinentNames[v.continent]);
     coordinates_->set_string(fmt::format("X={:>2} Position Y={:>2}", v.x, 63 - v.y));
 
     gen_texture();
