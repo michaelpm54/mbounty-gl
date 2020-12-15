@@ -5,13 +5,6 @@
 #include <glm/vec4.hpp>
 #include <string>
 
-struct TownInfo {
-    std::string name;
-    int x;
-    int y;
-    int continent;
-};
-
 struct CastleInfo {
     std::string name;
     int x;
@@ -19,13 +12,8 @@ struct CastleInfo {
     int continent;
 };
 
-extern const int kTownBoatX[26];
-extern const int kTownBoatY[26];
 extern const char *const kSpellNames[14];
 extern const int kSpellCosts[14];
-extern const TownInfo kTownInfo[];
-extern const int kTownsPerContinent[4];
-extern const int kTownIndices[4];
 extern const CastleInfo kCastleInfo[];
 extern const int kCastlesPerContinent[4];
 extern const int kCastleIndices[4];
@@ -45,9 +33,6 @@ extern const int kPuzzleVillainPositions[17];
 extern const int kPuzzleArtifactPositions[8];
 extern int const kDays[4];
 extern char const *const kContinents[4];
-extern const int kTownsAlphabetical[26];    // ? has more than 26
-extern const int kTownGateX[26];
-extern const int kTownGateY[26];
 
 namespace bty {
 

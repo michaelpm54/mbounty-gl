@@ -2,6 +2,7 @@
 
 #include <spdlog/spdlog.h>
 
+#include "data/towns.hpp"
 #include "data/villains.hpp"
 #include "engine/assets.hpp"
 #include "engine/dialog-stack.hpp"

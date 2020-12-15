@@ -11,6 +11,7 @@
 #include "data/shop.hpp"
 #include "data/signs.hpp"
 #include "data/tiles.hpp"
+#include "data/towns.hpp"
 #include "data/villains.hpp"
 #include "engine/assets.hpp"
 #include "engine/scene-stack.hpp"
@@ -21,6 +22,7 @@
 #include "game/shop-gen.hpp"
 #include "gfx/gfx.hpp"
 #include "window/glfw.hpp"
+
 
 Ingame::Ingame(GLFWwindow *window, bty::SceneStack &ss, bty::DialogStack &ds, bty::Assets &assets, Hud &hud)
     : window(window)
