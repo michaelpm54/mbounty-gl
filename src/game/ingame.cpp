@@ -225,15 +225,6 @@ void Ingame::key(int key, int action)
         else if (key == GLFW_KEY_B) {
             hero.set_mount(hero.get_mount() == Mount::Walk ? Mount::Boat : Mount::Walk);
         }
-        else if (key == GLFW_KEY_P) {
-            hero.set_debug(!hero.get_debug());
-            for (auto i = 0u; i < gen.mobs[v.continent].size(); i++) {
-                if (gen.mobs[v.continent][i].dead) {
-                    continue;
-                }
-                gen.mobs[v.continent][i].entity.set_debug(!gen.mobs[v.continent][i].entity.get_debug());
-            }
-        }
         else if (key == GLFW_KEY_E) {
             v.days = 1;
             day_clock = 15.99f;

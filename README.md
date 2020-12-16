@@ -11,7 +11,6 @@
 - Remove all the debug keys:
 	- K in game to win
 	- E in game to lose
-	- P in game to show collision info
 	- V in battle to win
 	- G to toggle flying
 	- B to toggle boat
@@ -30,6 +29,8 @@
 - Add flying hero texture
 - Add flying key when all army can fly
 - Stop mobs from bunching up
+- Alternative way of animating the tiles? Loading 10 full tilesets seems excessive.
+- Implement "can_move" for mob and hero in terms of virtual functions instead of a function pointer.
 
 ### Battle
 

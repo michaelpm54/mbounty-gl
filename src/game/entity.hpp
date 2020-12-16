@@ -26,7 +26,6 @@ public:
     Entity() = default;
     Entity(const Entity &) = default;
     Entity(const bty::Texture *texture, const glm::vec2 &position);
-    Entity::CollisionManifold move_manifold(float dx, float dy, Map &map, int continent);
     void set_tile_info(const Tile &tile);
     void move_to_tile(const Tile &tile);
     const Tile &get_tile() const;
@@ -34,21 +33,12 @@ public:
     void set_debug(bool val);
     bool get_debug() const;
     void draw(bty::Gfx &gfx, glm::mat4 &camera);
-    void set_collision_enabled(bool val);
 
 protected:
     virtual bool can_move(int id, int x, int y, int c);
 
 protected:
     Tile tile_ {-1, -1, -1};
-
-private:
-    bool debug_ {false};
-    bty::Rect collision_rect_;
-    std::vector<bty::Rect> checked_rects_;
-    std::vector<bty::Rect> collided_rects_;
-    bool collision_enabled {true};
-    bool collided_event_on_this_tile {false};
 };
 
 #endif    // BTY_GAME_ENTITY_HPP_
