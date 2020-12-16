@@ -33,6 +33,7 @@ private:
     const bty::Texture *tex_walk_stationary_;
     const bty::Texture *tex_boat_moving_;
     const bty::Texture *tex_boat_stationary_;
+    const bty::Texture *tex_flying;
     int &boat_x;
     int &boat_y;
     int &boat_c;

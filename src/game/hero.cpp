@@ -19,6 +19,7 @@ void Hero::load(bty::Assets &assets)
     tex_walk_stationary_ = assets.get_texture("hero/walk-stationary.png", {4, 1});
     tex_boat_moving_ = assets.get_texture("hero/boat-moving.png", {4, 1});
     tex_boat_stationary_ = assets.get_texture("hero/boat-stationary.png", {2, 1});
+    tex_flying = assets.get_texture("hero/flying.png", {4, 1});
     set_texture(tex_walk_stationary_);
 }
 
@@ -30,6 +31,9 @@ void Hero::update_texture()
             break;
         case Mount::Boat:
             set_texture(moving_ ? tex_boat_moving_ : tex_boat_stationary_);
+            break;
+        case Mount::Fly:
+            set_texture(tex_flying);
             break;
         default:
             break;
