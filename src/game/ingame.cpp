@@ -1324,7 +1324,7 @@ bool Ingame::mob_can_move(int id)
     return id == Tile_Grass;
 }
 
-bool Ingame::move_increment(c2AABB &box, float dx, float dy, Tile &center_tile, Tile &collided_tile, bool (Ingame::*can_move)(int))
+bool Ingame::move_increment(c2AABB &box, float dx, float dy, Tile &center_tile, Tile &collided_tile, bool (Ingame::*can_move)(int), bool mob)
 {
     box.min.x += dx;
     box.max.x += dx;
@@ -1334,17 +1334,19 @@ bool Ingame::move_increment(c2AABB &box, float dx, float dy, Tile &center_tile, 
     /* Test. */
     center_tile = map.get_tile(box.min.x + 4, box.min.y + 4, v.continent);
 
-    /* Tile center is the same as the last event tile we collided with.
+    if (!mob) {
+        /* Tile center is the same as the last event tile we collided with.
 		If we're not overlapping any other tiles, don't collide. */
-    if (center_tile.tx == last_event_tile.tx && center_tile.ty == last_event_tile.ty) {
-        return false;
-    }
-    /* Don't endlessly loop between the two teleport caves just because
+        if (center_tile.tx == last_event_tile.tx && center_tile.ty == last_event_tile.ty) {
+            return false;
+        }
+        /* Don't endlessly loop between the two teleport caves just because
 		"technically they are different tiles." (who am I quoting?) */
-    else if (last_event_tile.id == Tile_ShopCave) {
-        for (int i = 0; i < 2; i++) {
-            if (last_event_tile.tx == gen.teleport_cave_tiles[v.continent][i].x && last_event_tile.ty == gen.teleport_cave_tiles[v.continent][i].y) {
-                return false;
+        else if (last_event_tile.id == Tile_ShopCave) {
+            for (int i = 0; i < 2; i++) {
+                if (last_event_tile.tx == gen.teleport_cave_tiles[v.continent][i].x && last_event_tile.ty == gen.teleport_cave_tiles[v.continent][i].y) {
+                    return false;
+                }
             }
         }
     }
@@ -1392,8 +1394,8 @@ void Ingame::move_mob(Mob &mob, float dt, const glm::vec2 &dir)
     Tile center_tile {-1, -1, -1};
     Tile collided_tile {-1, -1, -1};
 
-    bool collide_x = move_increment(ent_shape, dx, 0, center_tile, collided_tile, &Ingame::mob_can_move);
-    bool collide_y = move_increment(ent_shape, 0, dy, center_tile, collided_tile, &Ingame::mob_can_move);
+    bool collide_x = move_increment(ent_shape, dx, 0, center_tile, collided_tile, &Ingame::mob_can_move, true);
+    bool collide_y = move_increment(ent_shape, 0, dy, center_tile, collided_tile, &Ingame::mob_can_move, true);
 
     if (center_tile.tx != mob.tile.x || center_tile.ty != mob.tile.y) {
         mob.tile = {center_tile.tx, center_tile.ty};
@@ -1465,8 +1467,8 @@ void Ingame::move_hero(int move_flags, float dt)
     Tile center_tile {-1, -1, -1};
     Tile collided_tile {-1, -1, -1};
 
-    bool collide_x = move_increment(ent_shape, dx, 0, center_tile, collided_tile, &Ingame::hero_can_move);
-    bool collide_y = move_increment(ent_shape, 0, dy, center_tile, collided_tile, &Ingame::hero_can_move);
+    bool collide_x = move_increment(ent_shape, dx, 0, center_tile, collided_tile, &Ingame::hero_can_move, false);
+    bool collide_y = move_increment(ent_shape, 0, dy, center_tile, collided_tile, &Ingame::hero_can_move, false);
 
     bool teleport {false};
 

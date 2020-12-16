@@ -89,7 +89,7 @@ private:
     void update_timestop_clock(float dt);
 
     /* Movement */
-    bool move_increment(c2AABB &box, float dx, float dy, Tile &center_tile, Tile &collided_tile, bool (Ingame::*can_move)(int));
+    bool move_increment(c2AABB &box, float dx, float dy, Tile &center_tile, Tile &collided_tile, bool (Ingame::*can_move)(int), bool mob);
     int get_move_input();
     void update_camera();
     void auto_move(float dt);

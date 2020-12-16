@@ -63,7 +63,7 @@ bool Hero::can_move(int id, int x, int y, int c)
         case Mount::Fly:
             return true;
         case Mount::Boat:
-            return id <= Tile_GrassInFrontOfCastle || id == Tile_BridgeHorizontal || id == Tile_BridgeVertical || id == Tile_WaterConnector || (id >= Tile_WaterIRT && id <= Tile_Water);
+            return id == Tile_BridgeHorizontal || id == Tile_BridgeVertical || id == Tile_WaterConnector || (id >= Tile_WaterIRT && id <= Tile_Water);
         case Mount::Walk:
             return id <= Tile_GrassInFrontOfCastle || id == Tile_MobBlocker || id == Tile_BridgeHorizontal || id == Tile_BridgeVertical || (id >= Tile_SandELT && id <= Tile_Sand);
         default:
