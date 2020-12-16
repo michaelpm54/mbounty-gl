@@ -1806,6 +1806,9 @@ void Ingame::collide_sign(const Tile &tile)
         for (int x = 0; x < 64; x++) {
             if (tiles[y * 64 + x] == Tile_GenSign) {
                 if (x == tile.tx && y == tile.ty) {
+                    auto pop_ds = [this](bty::Dialog &) {
+                        ds.pop();
+                    };
                     ds.show_dialog({
                         .x = 1,
                         .y = 21,
@@ -1813,6 +1816,12 @@ void Ingame::collide_sign(const Tile &tile)
                         .h = 6,
                         .strings = {
                             {1, 1, fmt::format("A sign reads\n\n{}", kSigns[index + v.continent * 22])},
+                        },
+                        .callbacks = {
+                            .up = pop_ds,
+                            .down = pop_ds,
+                            .left = pop_ds,
+                            .right = pop_ds,
                         },
                     });
                     break;
