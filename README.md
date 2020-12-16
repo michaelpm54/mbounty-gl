@@ -17,7 +17,6 @@
 	- D to toggle puzzle pieces
 	- R to regen RNG tiles
 - Add fading between battle, victory, loss, intro, etc.
-- GLFW doesn't allow pressing two keys at the same time for diagonal movement, or mabye I just don't understand how.
 
 ### In-game
 
