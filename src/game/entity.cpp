@@ -74,3 +74,15 @@ void Entity::draw(bty::Gfx &gfx, glm::mat4 &camera)
 {
     gfx.draw_sprite(*this, camera);
 }
+
+c2AABB Entity::get_aabb() const
+{
+    c2AABB aabb;
+
+    aabb.min.x = position_.x + kEntityOffsetX;
+    aabb.min.y = position_.y + kEntityOffsetY;
+    aabb.max.x = aabb.min.x + kEntitySizeX;
+    aabb.max.y = aabb.min.y + kEntitySizeY;
+
+    return aabb;
+}

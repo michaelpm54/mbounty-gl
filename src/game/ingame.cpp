@@ -1388,31 +1388,22 @@ void Ingame::move_mob(Mob &mob, float dt, const glm::vec2 &dir)
     float dy = dir.y * vel;
     auto last_pos = mob.entity.get_position();
 
-    static constexpr float kEntitySizeX = 8.0f;
-    static constexpr float kEntitySizeY = 8.0f;
-    static constexpr float kEntityOffsetX = (44.0f / 2.0f) - (kEntitySizeX / 2.0f);
-    static constexpr float kEntityOffsetY = 8.0f + (32.0f / 2.0f) - (kEntitySizeY / 2.0f);
-
     /* Create shape. */
-    c2AABB ent_shape;
-    ent_shape.min.x = last_pos.x + kEntityOffsetX;
-    ent_shape.min.y = last_pos.y + kEntityOffsetY;
-    ent_shape.max.x = ent_shape.min.x + kEntitySizeX;
-    ent_shape.max.y = ent_shape.min.y + kEntitySizeY;
+    auto aabb = mob.entity.get_aabb();
 
-    last_tile = map.get_tile(ent_shape.min.x + 4, ent_shape.min.y + 4, v.continent);
+    last_tile = map.get_tile(aabb.min.x + 4, aabb.min.y + 4, v.continent);
 
     Tile center_tile {-1, -1, -1};
     Tile collided_tile {-1, -1, -1};
 
-    bool collide_x = move_increment(ent_shape, dx, 0, center_tile, collided_tile, &Ingame::mob_can_move, true);
-    bool collide_y = move_increment(ent_shape, 0, dy, center_tile, collided_tile, &Ingame::mob_can_move, true);
+    bool collide_x = move_increment(aabb, dx, 0, center_tile, collided_tile, &Ingame::mob_can_move, true);
+    bool collide_y = move_increment(aabb, 0, dy, center_tile, collided_tile, &Ingame::mob_can_move, true);
 
     if (center_tile.tx != mob.tile.x || center_tile.ty != mob.tile.y) {
         mob.tile = {center_tile.tx, center_tile.ty};
     }
 
-    mob.entity.set_position(ent_shape.min.x - kEntityOffsetX, ent_shape.min.y - kEntityOffsetY);
+    mob.entity.set_position(aabb.min.x - kEntityOffsetX, aabb.min.y - kEntityOffsetY);
 }
 
 void Ingame::move_hero(int move_flags, float dt)
@@ -1457,26 +1448,17 @@ void Ingame::move_hero(int move_flags, float dt)
     float dy = dir.y * vel;
     auto pos = hero.get_position();
 
-    static constexpr float kEntitySizeX = 8.0f;
-    static constexpr float kEntitySizeY = 8.0f;
-    static constexpr float kEntityOffsetX = (44.0f / 2.0f) - (kEntitySizeX / 2.0f);
-    static constexpr float kEntityOffsetY = 8.0f + (32.0f / 2.0f) - (kEntitySizeY / 2.0f);
-
     /* Create shape. */
-    c2AABB ent_shape;
-    ent_shape.min.x = pos.x + kEntityOffsetX;
-    ent_shape.min.y = pos.y + kEntityOffsetY;
-    ent_shape.max.x = ent_shape.min.x + kEntitySizeX;
-    ent_shape.max.y = ent_shape.min.y + kEntitySizeY;
+    auto aabb = hero.get_aabb();
 
     auto last_pos = hero.get_position();
-    last_tile = map.get_tile(ent_shape.min.x + 4, ent_shape.min.y + 4, v.continent);
+    last_tile = map.get_tile(aabb.min.x + 4, aabb.min.y + 4, v.continent);
 
     Tile center_tile {-1, -1, -1};
     Tile collided_tile {-1, -1, -1};
 
-    bool collide_x = move_increment(ent_shape, dx, 0, center_tile, collided_tile, &Ingame::hero_can_move, false);
-    bool collide_y = move_increment(ent_shape, 0, dy, center_tile, collided_tile, &Ingame::hero_can_move, false);
+    bool collide_x = move_increment(aabb, dx, 0, center_tile, collided_tile, &Ingame::hero_can_move, false);
+    bool collide_y = move_increment(aabb, 0, dy, center_tile, collided_tile, &Ingame::hero_can_move, false);
 
     bool teleport {false};
 
@@ -1488,37 +1470,37 @@ void Ingame::move_hero(int move_flags, float dt)
 
             if (!teleport && collided_tile.id != Tile_CastleB) {
                 /* Move into it. */
-                ent_shape.min.x += dx;
-                ent_shape.max.x += dx;
-                ent_shape.min.y += dy;
-                ent_shape.max.y += dy;
+                aabb.min.x += dx;
+                aabb.max.x += dx;
+                aabb.min.y += dy;
+                aabb.max.y += dy;
             }
             else if (collided_tile.id == Tile_CastleB) {
                 /* Move /away/ from it. */
-                ent_shape.min.y -= dy * 3;
-                ent_shape.max.y -= dy * 3;
+                aabb.min.y -= dy * 3;
+                aabb.max.y -= dy * 3;
             }
-            center_tile = map.get_tile(ent_shape.min.x + 4, ent_shape.min.y + 4, v.continent);
+            center_tile = map.get_tile(aabb.min.x + 4, aabb.min.y + 4, v.continent);
         }
         /* Walked into the boat tile. */
         else if (collided_tile.tx == v.boat_x && collided_tile.ty == v.boat_y && v.continent == v.boat_c) {
             hero.set_mount(Mount::Boat);
             /* Move into it. */
-            ent_shape.min.x += dx;
-            ent_shape.max.x += dx;
-            ent_shape.min.y += dy;
-            ent_shape.max.y += dy;
-            center_tile = map.get_tile(ent_shape.min.x + 4, ent_shape.min.y + 4, v.continent);
+            aabb.min.x += dx;
+            aabb.max.x += dx;
+            aabb.min.y += dy;
+            aabb.max.y += dy;
+            center_tile = map.get_tile(aabb.min.x + 4, aabb.min.y + 4, v.continent);
         }
         /* Dismount. */
         else if (hero.get_mount() == Mount::Boat) {
             hero.set_mount(Mount::Walk);
             /* Move into it. */
-            ent_shape.min.x += dx;
-            ent_shape.max.x += dx;
-            ent_shape.min.y += dy;
-            ent_shape.max.y += dy;
-            center_tile = map.get_tile(ent_shape.min.x + 4, ent_shape.min.y + 4, v.continent);
+            aabb.min.x += dx;
+            aabb.max.x += dx;
+            aabb.min.y += dy;
+            aabb.max.y += dy;
+            center_tile = map.get_tile(aabb.min.x + 4, aabb.min.y + 4, v.continent);
 
             v.boat_x = last_tile.tx;
             v.boat_y = last_tile.ty;
@@ -1526,7 +1508,7 @@ void Ingame::move_hero(int move_flags, float dt)
 
             boat.set_flip(hero.get_flip());
 
-            auto hp = glm::vec2(ent_shape.min.x - kEntityOffsetX, ent_shape.min.y - kEntityOffsetY);
+            auto hp = glm::vec2(aabb.min.x - kEntityOffsetX, aabb.min.y - kEntityOffsetY);
             auto bp = last_pos;
 
             glm::vec4 a {hp.x, hp.y, 0.0f, 1.0f};
@@ -1555,11 +1537,11 @@ void Ingame::move_hero(int move_flags, float dt)
     v.y = center_tile.ty;
 
     if (!teleport) {
-        hero.set_position(ent_shape.min.x - kEntityOffsetX, ent_shape.min.y - kEntityOffsetY);
+        hero.set_position(aabb.min.x - kEntityOffsetX, aabb.min.y - kEntityOffsetY);
     }
 
     if (debug) {
-        cr.set_position(ent_shape.min.x, ent_shape.min.y);
+        cr.set_position(aabb.min.x, aabb.min.y);
         if (collide_x && collide_y) {
             cr.set_color({0.75f, 0.95f, 0.73f, 0.9f});
         }
@@ -2245,16 +2227,8 @@ void Ingame::fly_land()
     auto mount = hero.get_mount();
 
     if (mount == Mount::Fly) {
-        static constexpr float kEntitySizeX = 8.0f;
-        static constexpr float kEntitySizeY = 8.0f;
-        static constexpr float kEntityOffsetX = (44.0f / 2.0f) - (kEntitySizeX / 2.0f);
-        static constexpr float kEntityOffsetY = 8.0f + (32.0f / 2.0f) - (kEntitySizeY / 2.0f);
-        auto pos = hero.get_position();
-        c2AABB ent_shape;
-        ent_shape.min.x = pos.x + kEntityOffsetX;
-        ent_shape.min.y = pos.y + kEntityOffsetY;
-        ent_shape.max.x = ent_shape.min.x + kEntitySizeX;
-        ent_shape.max.y = ent_shape.min.y + kEntitySizeY;
+        c2AABB ent_shape = hero.get_aabb();
+
         int range = 4;
         int offset = range / 2;
 

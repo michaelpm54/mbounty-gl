@@ -3,9 +3,15 @@
 
 #include <vector>
 
+#include "game/cute_c2.hpp"
 #include "game/map.hpp"
 #include "gfx/rect.hpp"
 #include "gfx/sprite.hpp"
+
+inline constexpr float kEntitySizeX = 8.0f;
+inline constexpr float kEntitySizeY = 8.0f;
+inline constexpr float kEntityOffsetX = (44.0f / 2.0f) - (kEntitySizeX / 2.0f);
+inline constexpr float kEntityOffsetY = 8.0f + (32.0f / 2.0f) - (kEntitySizeY / 2.0f);
 
 namespace bty {
 class Gfx;
@@ -33,6 +39,8 @@ public:
     void set_debug(bool val);
     bool get_debug() const;
     void draw(bty::Gfx &gfx, glm::mat4 &camera);
+
+    c2AABB get_aabb() const;
 
 protected:
     virtual bool can_move(int id, int x, int y, int c);
