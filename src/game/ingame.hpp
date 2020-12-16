@@ -99,6 +99,7 @@ private:
     void move_hero_to(int x, int y, int c);
 
     /* Collision */
+    bool can_move(int id);
     bool events(const Tile &tile);
     void collide_sign(const Tile &tile);
     void collide_town(const Tile &tile);

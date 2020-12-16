@@ -1324,6 +1324,21 @@ int Ingame::get_move_input()
     return move_flags;
 }
 
+bool Ingame::can_move(int id)
+{
+    auto mount = hero.get_mount();
+    if (mount == Mount::Walk) {
+        return id == Tile_Grass;
+    }
+    else if (mount == Mount::Boat) {
+        return id >= Tile_WaterIRT && id <= Tile_Water;
+    }
+    else if (mount == Mount::Fly) {
+        return true;
+    }
+    return false;
+}
+
 bool Ingame::move_increment(c2AABB &box, float dx, float dy, Tile &center_tile, Tile &collided_tile)
 {
     box.min.x += dx;
@@ -1341,7 +1356,7 @@ bool Ingame::move_increment(c2AABB &box, float dx, float dy, Tile &center_tile, 
     }
 
     /* Collided; undo move and register it. */
-    if (center_tile.id != Tile_Grass) {
+    if (!can_move(center_tile.id)) {
         box.min.x -= dx;
         box.max.x -= dx;
         box.min.y -= dy;
@@ -1414,6 +1429,7 @@ void Ingame::move_hero(int move_flags, float dt)
     ent_shape.max.x = ent_shape.min.x + kEntitySizeX;
     ent_shape.max.y = ent_shape.min.y + kEntitySizeY;
 
+    auto last_pos = hero.get_position();
     last_tile = map.get_tile(ent_shape.min.x + 4, ent_shape.min.y + 4, v.continent);
 
     Tile center_tile {-1, -1, -1};
@@ -1425,13 +1441,46 @@ void Ingame::move_hero(int move_flags, float dt)
     /* Deal with the consequences of the collision. */
     if (collide_x || collide_y) {
         /* Try to collide with it, and see if it's an event tile. */
-        if (events(collided_tile)) {
+        if (hero.get_mount() == Mount::Walk && events(collided_tile)) {
             last_event_tile = collided_tile;
             /* Move into it. */
             ent_shape.min.x += dx;
             ent_shape.max.x += dx;
             ent_shape.min.y += dy;
             ent_shape.max.y += dy;
+        }
+        /* Walked into the boat tile. */
+        else if (collided_tile.tx == v.boat_x && collided_tile.ty == v.boat_y && v.continent == v.boat_c) {
+            hero.set_mount(Mount::Boat);
+            /* Move into it. */
+            ent_shape.min.x += dx;
+            ent_shape.max.x += dx;
+            ent_shape.min.y += dy;
+            ent_shape.max.y += dy;
+        }
+        /* Dismount. */
+        else if (hero.get_mount() == Mount::Boat) {
+            hero.set_mount(Mount::Walk);
+            /* Move into it. */
+            ent_shape.min.x += dx;
+            ent_shape.max.x += dx;
+            ent_shape.min.y += dy;
+            ent_shape.max.y += dy;
+            v.boat_x = last_tile.tx;
+            v.boat_y = last_tile.ty;
+
+            boat.set_flip(hero.get_flip());
+
+            auto hp = glm::vec2(ent_shape.min.x - kEntityOffsetX, ent_shape.min.y - kEntityOffsetY);
+            auto bp = last_pos;
+
+            glm::vec4 a {hp.x, hp.y, 0.0f, 1.0f};
+            glm::vec4 b {bp.x, bp.y, 0.0f, 1.0f};
+
+            auto push_away_from_land_dir = glm::normalize(a - b);
+            push_away_from_land_dir.x *= -8.0f;
+            push_away_from_land_dir.y *= -8.0f;
+            boat.set_position(last_pos + glm::vec2 {push_away_from_land_dir.x, push_away_from_land_dir.y});
         }
     }
     /* Not colliding; if the tile is different to the previous one, update it and
