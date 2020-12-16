@@ -8,6 +8,7 @@ namespace bty {
 class Timer {
 public:
     Timer(float duration_s, std::function<void()> callback);
+    void set_timer(float duration);
     void tick(float dt);
     void reset();
     void trigger();

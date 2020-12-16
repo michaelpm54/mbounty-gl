@@ -39,6 +39,7 @@ Ingame::Ingame(GLFWwindow *window, bty::SceneStack &ss, bty::DialogStack &ds, bt
     , view_puzzle(ss, assets)
     , day_timer(16.0f, std::bind(&Ingame::day_tick, this))
     , timestop_timer(0.25f, std::bind(&Ingame::timestop_tick, this))
+    , automove_timer(0.0f, std::bind(&Ingame::automove_tick, this))
     , kings_castle(ss, ds, assets, hud, v, gen)
     , shop(ss, assets, v, hud)
     , town(ss, ds, assets, v, gen, hud, view_contract, boat)
@@ -94,7 +95,7 @@ void Ingame::setup(int hero, int diff)
 
     v.auto_move = false;
     v.auto_move_dir = {0, 0};
-    v.auto_move_timer = 0.0f;
+    automove_timer.reset();
 
     for (int i = 0; i < 14; i++) {
         v.spells[i] = 5;
@@ -249,9 +250,11 @@ void Ingame::update(float dt)
     }
 
     if (v.auto_move) {
-        auto_move(dt);
+        automove(dt);
+        automove_timer.tick(dt);
     }
-    else {
+
+    if (!v.auto_move) {
         move_hero(get_move_input(), dt);
     }
 
@@ -1589,7 +1592,7 @@ void Ingame::sail_to(int continent)
         auto pos = hero.get_center();
 
         v.auto_move_dir = {0, 0};
-        v.auto_move_timer = 1;
+        automove_timer.set_timer(1);
         hero.set_moving(true);
 
         if (pos.x < 0) {
@@ -1610,34 +1613,34 @@ void Ingame::sail_to(int continent)
     }
     else {
         hero.set_moving(true);
-        v.auto_move_timer = 1;
         hero.set_moving(true);
         v.auto_move_dir = {0, 0};
 
         switch (continent) {
             case 0:
                 // Up
+                automove_timer.set_timer(1.0f);
                 v.auto_move_dir.y = -1;
                 hero.set_flip(false);
                 hero.move_to_tile(map.get_tile(11, 64 - 1, v.continent));
                 break;
             case 1:
                 // Right
-                v.auto_move_timer = 0.4f;
+                automove_timer.set_timer(0.4f);
                 v.auto_move_dir.x = 1;
                 hero.set_flip(false);
                 hero.move_to_tile(map.get_tile(0, 64 - 25, v.continent));
                 break;
             case 2:
                 // Down
-                v.auto_move_timer = 0.6f;
+                automove_timer.set_timer(0.6f);
                 v.auto_move_dir.y = 1;
                 hero.set_flip(false);
                 hero.move_to_tile(map.get_tile(14, 0, v.continent));
                 break;
             case 3:
                 // Up
-                v.auto_move_timer = 1;
+                automove_timer.set_timer(1);
                 v.auto_move_dir.y = -1;
                 hero.set_flip(false);
                 hero.move_to_tile(map.get_tile(9, 64 - 1, v.continent));
@@ -1758,26 +1761,6 @@ void Ingame::update_mobs(float dt)
 
         move_mob(*mob, dt, dir);
     }
-}
-
-void Ingame::auto_move(float dt)
-{
-    v.auto_move_timer -= dt;
-    if (v.auto_move_timer <= 0) {
-        v.auto_move = false;
-    }
-
-    float speed = 100;
-    float vel = speed * dt;
-    float dx = v.auto_move_dir.x * vel;
-    float dy = v.auto_move_dir.y * vel;
-
-    /*
-    auto manifold = hero.move(dx, dy, map, v.continent);
-    hero.set_position(manifold.new_position);
-    update_visited_tiles();
-    update_camera();
-	*/
 }
 
 void Ingame::collide_sign(const Tile &tile)
@@ -2374,4 +2357,13 @@ std::vector<Mob *> Ingame::get_mobs_in_range(int x, int y, int range)
     }
 
     return moblist;
+}
+
+void Ingame::automove_tick()
+{
+    v.auto_move = false;
+}
+
+void Ingame::automove(float dt)
+{
 }

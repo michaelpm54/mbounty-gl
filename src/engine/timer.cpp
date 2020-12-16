@@ -10,6 +10,11 @@ Timer::Timer(float duration, std::function<void()> callback)
 {
 }
 
+void Timer::set_timer(float duration)
+{
+    this->duration = duration;
+}
+
 void Timer::tick(float dt)
 {
     timer += dt;

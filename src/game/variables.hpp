@@ -38,7 +38,6 @@ struct Variables {
     std::array<int, 5> counts;
     std::array<int, 5> morales;
     bool auto_move;
-    float auto_move_timer;
     glm::ivec2 auto_move_dir;
     std::array<const unsigned char *, 4> tiles;
     int x;

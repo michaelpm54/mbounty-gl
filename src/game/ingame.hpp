@@ -83,23 +83,25 @@ private:
     /* Pause menu helpers */
     void dismiss_slot(int slot);
 
-    /* Clocks */
     void end_week_budget(bool search);
     void end_week_astrology(bool search);
+
+    /* Timers */
     void day_tick();
     void timestop_tick();
+    void automove_tick();
 
     /* Movement */
     bool move_increment(c2AABB &box, float dx, float dy, Tile &center_tile, Tile &collided_tile, bool (Ingame::*can_move)(int), bool mob);
     int get_move_input();
     void update_camera();
-    void auto_move(float dt);
     void sail_to(int continent);
     void update_visited_tiles();
     void move_hero(int flags, float dt);
     void move_hero_to(int x, int y, int c);
     void move_mob(Mob &entity, float dt, const glm::vec2 &dir);
     void fly_land();
+    void automove(float dt);
 
     /* Collision */
     bool hero_can_move(int id);
@@ -150,6 +152,7 @@ private:
     /* Clocks */
     bty::Timer day_timer;
     bty::Timer timestop_timer;
+    bty::Timer automove_timer;
 
     /* Collision */
     KingsCastle kings_castle;
