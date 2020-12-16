@@ -240,6 +240,12 @@ void Ingame::key(int key, int action)
         else if (key == GLFW_KEY_F) {
             fly_land();
         }
+        else if (key == GLFW_KEY_J) {
+            sail_to(0);
+        }
+        else if (key == GLFW_KEY_L) {
+            sail_to(3);
+        }
     }
 }
 
@@ -1446,11 +1452,9 @@ void Ingame::move_hero(int move_flags, float dt)
     float vel = speed * dt * hero.get_speed_multiplier();
     float dx = dir.x * vel;
     float dy = dir.y * vel;
-    auto pos = hero.get_position();
 
     /* Create shape. */
     auto aabb = hero.get_aabb();
-
     auto last_pos = hero.get_position();
     last_tile = map.get_tile(aabb.min.x + 4, aabb.min.y + 4, v.continent);
 
@@ -1568,7 +1572,6 @@ void Ingame::sail_to(int continent)
         auto pos = hero.get_center();
 
         v.auto_move_dir = {0, 0};
-        automove_timer.set_timer(1);
         hero.set_moving(true);
 
         if (pos.x < 0) {
@@ -2334,4 +2337,26 @@ void Ingame::automove_tick()
 
 void Ingame::automove(float dt)
 {
+    float vel = 120.0f * dt;
+    float dx = v.auto_move_dir.x * vel;
+    float dy = v.auto_move_dir.y * vel;
+
+    auto aabb = hero.get_aabb();
+    auto last_pos = hero.get_position();
+    last_tile = map.get_tile(aabb.min.x + 4, aabb.min.y + 4, v.continent);
+
+    Tile center_tile {-1, -1, -1};
+    Tile collided_tile {-1, -1, -1};
+
+    move_increment(aabb, dx, 0, center_tile, collided_tile, &Ingame::hero_can_move, false);
+    move_increment(aabb, 0, dy, center_tile, collided_tile, &Ingame::hero_can_move, false);
+
+    hero.set_position(aabb.min.x - kEntityOffsetX, aabb.min.y - kEntityOffsetY);
+
+    if (center_tile.tx != last_tile.tx || center_tile.ty != last_tile.ty) {
+        last_tile = center_tile;
+        last_event_tile = {-1, -1, -1};
+    }
+
+    update_camera();
 }
