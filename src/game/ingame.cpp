@@ -1425,8 +1425,9 @@ void Ingame::move_hero(int move_flags, float dt)
     /* Deal with the consequences of the collision. */
     if (collide_x || collide_y) {
         /* Try to collide with it, and see if it's an event tile. */
-        if (collide(collided_tile)) {
+        if (events(collided_tile)) {
             last_event_tile = collided_tile;
+            /* Move into it. */
             ent_shape.min.x += dx;
             ent_shape.max.x += dx;
             ent_shape.min.y += dy;
@@ -1778,7 +1779,7 @@ void Ingame::collide_sign(const Tile &tile)
     }
 }
 
-bool Ingame::collide(const Tile &tile)
+bool Ingame::events(const Tile &tile)
 {
     bool event_tile {true};
 
