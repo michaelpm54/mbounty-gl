@@ -38,6 +38,7 @@ class SceneStack;
 
 class Hud;
 struct GLFWwindow;
+struct c2AABB;
 
 class Ingame : public bty::Scene {
 public:
@@ -46,7 +47,7 @@ public:
     void update(float dt) override;
     void key(int key, int action) override;
     void draw(bty::Gfx &gfx, glm::mat4 &camera) override;
-    
+
     void setup(int hero, int diff);
 
 private:
@@ -88,6 +89,7 @@ private:
     void update_timestop_clock(float dt);
 
     /* Movement */
+    bool move_increment(c2AABB &box, float dx, float dy, Tile &center_tile, Tile &collided_tile);
     int get_move_input();
     void update_camera();
     void auto_move(float dt);
@@ -97,7 +99,7 @@ private:
     void move_hero_to(int x, int y, int c);
 
     /* Collision */
-    void collide(const Tile &tile);
+    bool collide(const Tile &tile);
     void collide_sign(const Tile &tile);
     void collide_town(const Tile &tile);
     void collide_shop(const Tile &tile);
@@ -166,6 +168,13 @@ private:
 
     int last_water_x {-1};
     int last_water_y {-1};
+
+    bty::Rect cr;
+    bty::Text tile_text;
+    Tile last_tile {-1, -1, -1};
+    Tile last_event_tile {-1, -1, -1};
+
+    bool debug {false};
 };
 
-#endif    // BTY_INGAME_INGAME_HPP_
+#endif    // BTY_GAME_INGAME_HPP_

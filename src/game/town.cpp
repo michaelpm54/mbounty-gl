@@ -87,7 +87,7 @@ void Town::update(float dt)
 
 void Town::key(int key, int action)
 {
-    if (action == GLFW_RELEASE) {
+    if (action == GLFW_RELEASE || action == GLFW_REPEAT) {
         return;
     }
 

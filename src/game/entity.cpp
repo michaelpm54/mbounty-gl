@@ -110,7 +110,7 @@ Entity::Entity(const bty::Texture *texture, const glm::vec2 &position)
 {
 }
 
-Entity::CollisionManifold Entity::move(float dx, float dy, Map &map, int continent)
+Entity::CollisionManifold Entity::move_manifold(float dx, float dy, Map &map, int continent)
 {
     static constexpr glm::vec4 kCheckedColour {0.4f, 0.8f, 0.7f, 0.8f};
     static constexpr glm::vec4 kCollidableColour {0.4f, 0.4f, 0.8f, 0.8f};

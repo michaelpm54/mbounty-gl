@@ -44,6 +44,7 @@ Ingame::Ingame(GLFWwindow *window, bty::SceneStack &ss, bty::DialogStack &ds, bt
     , s_battle(ss, ds, assets, v, gen, view_army, view_char)
     , s_garrison(ss, ds, assets, hud, v, gen)
     , s_victory(ss, ds, assets, v, hud)
+    , cr({0.2f, 0.4f, 0.7f, 0.9f}, {8, 8}, {0, 0})
 {
     for (int i = 0; i < UnitId::UnitCount; i++) {
         unit_textures[i] = assets.get_texture(fmt::format("units/{}.png", i), {2, 2});
@@ -57,6 +58,8 @@ Ingame::Ingame(GLFWwindow *window, bty::SceneStack &ss, bty::DialogStack &ds, bt
 
     boat.set_position(11 * 48.0f + 8.0f, 58 * 40.0f + 8.0f);
     boat.set_texture(assets.get_texture("hero/boat-stationary.png", {2, 1}));
+
+    tile_text.create(4, 7, "X -1\nY -1\nT -1", assets.get_font());
 }
 
 void Ingame::setup(int hero, int diff)
@@ -197,6 +200,11 @@ void Ingame::draw(bty::Gfx &gfx, glm::mat4 &)
     }
     hero.draw(gfx, map_cam);
     hud.draw(gfx, ui_cam);
+
+    if (debug) {
+        gfx.draw_rect(cr, map_cam);
+        gfx.draw_text(tile_text, ui_cam);
+    }
 }
 
 void Ingame::key(int key, int action)
@@ -229,6 +237,9 @@ void Ingame::key(int key, int action)
         else if (key == GLFW_KEY_E) {
             v.days = 1;
             day_clock = 15.99f;
+        }
+        else if (key == GLFW_KEY_F1) {
+            debug = !debug;
         }
     }
 }
@@ -1313,8 +1324,45 @@ int Ingame::get_move_input()
     return move_flags;
 }
 
+bool Ingame::move_increment(c2AABB &box, float dx, float dy, Tile &center_tile, Tile &collided_tile)
+{
+    box.min.x += dx;
+    box.max.x += dx;
+    box.min.y += dy;
+    box.max.y += dy;
+
+    /* Test. */
+    center_tile = map.get_tile(box.min.x + 4, box.min.y + 4, v.continent);
+
+    /* Tile center is the same as the last event tile we collided with.
+		If we're not overlapping any other tiles, don't collide. */
+    if (center_tile.tx == last_event_tile.tx && center_tile.ty == last_event_tile.ty) {
+        return false;
+    }
+
+    /* Collided; undo move and register it. */
+    if (center_tile.id != Tile_Grass) {
+        box.min.x -= dx;
+        box.max.x -= dx;
+        box.min.y -= dy;
+        box.max.y -= dy;
+        collided_tile = center_tile;
+        return true;
+    }
+    /* Didn't collide; confirm move. */
+    else {
+        v.x = center_tile.tx;
+        v.y = center_tile.ty;
+        return false;
+    }
+}
+
 void Ingame::move_hero(int move_flags, float dt)
 {
+    if (debug) {
+        cr.set_color({0.0f, 0.0f, 0.7f, 0.9f});
+    }
+
     if (move_flags == DIR_FLAG_NONE) {
         hero.set_moving(false);
         return;
@@ -1331,89 +1379,84 @@ void Ingame::move_hero(int move_flags, float dt)
 
     glm::vec2 dir {0.0f};
 
-    if (move_flags & DIR_FLAG_UP)
+    if (move_flags & DIR_FLAG_UP) {
         dir.y -= 1.0f;
-    if (move_flags & DIR_FLAG_DOWN)
+    }
+    if (move_flags & DIR_FLAG_DOWN) {
         dir.y += 1.0f;
-    if (move_flags & DIR_FLAG_LEFT)
+    }
+    if (move_flags & DIR_FLAG_LEFT) {
         dir.x -= 1.0f;
-    if (move_flags & DIR_FLAG_RIGHT)
+    }
+    if (move_flags & DIR_FLAG_RIGHT) {
         dir.x += 1.0f;
+    }
 
-    float speed = hero.get_mount() == Mount::Fly ? 500.0f : 100.0f;
+    auto mount = hero.get_mount();
+    float speed = mount == Mount::Fly ? 300.0f : 100.0f;
     float vel = speed * dt;
     float dx = dir.x * vel;
     float dy = dir.y * vel;
+    auto pos = hero.get_position();
 
-    auto manifold = hero.move(dx, dy, map, v.continent);
-    hero.set_position(manifold.new_position);
+    static constexpr float kEntitySizeX = 8.0f;
+    static constexpr float kEntitySizeY = 8.0f;
+    static constexpr float kEntityOffsetX = (44.0f / 2.0f) - (kEntitySizeX / 2.0f);
+    static constexpr float kEntityOffsetY = 8.0f + (32.0f / 2.0f) - (kEntitySizeY / 2.0f);
 
-    for (auto &tile : manifold.collided_tiles) {
-        collide(tile);
+    int range = 3;
+    int offset = range / 2;
+
+    /* Create shape. */
+    c2AABB ent_shape;
+    ent_shape.min.x = pos.x + kEntityOffsetX;
+    ent_shape.min.y = pos.y + kEntityOffsetY;
+    ent_shape.max.x = ent_shape.min.x + kEntitySizeX;
+    ent_shape.max.y = ent_shape.min.y + kEntitySizeY;
+
+    last_tile = map.get_tile(ent_shape.min.x + 4, ent_shape.min.y + 4, v.continent);
+
+    Tile center_tile {-1, -1, -1};
+    Tile collided_tile {-1, -1, -1};
+
+    bool collide_x = move_increment(ent_shape, dx, 0, center_tile, collided_tile);
+    bool collide_y = move_increment(ent_shape, 0, dy, center_tile, collided_tile);
+
+    /* Deal with the consequences of the collision. */
+    if (collide_x || collide_y) {
+        /* Try to collide with it, and see if it's an event tile. */
+        if (collide(collided_tile)) {
+            last_event_tile = collided_tile;
+            ent_shape.min.x += dx;
+            ent_shape.max.x += dx;
+            ent_shape.min.y += dy;
+            ent_shape.max.y += dy;
+        }
+    }
+    /* Not colliding; if the tile is different to the previous one, update it and
+		forget about the last event tile meaning we can once again collide with it. */
+    else if (center_tile.tx != last_tile.tx || center_tile.ty != last_tile.ty) {
+        last_tile = center_tile;
+        last_event_tile = {-1, -1, -1};
     }
 
-    if (auto ht = hero.get_center(); !v.auto_move && (ht.x < 0 || ht.x > 3072 || ht.y < 0 || ht.y > 40 * 64)) {
-        std::vector<bty::DialogDef::StringDef> continents;
+    cr.set_position(ent_shape.min.x, ent_shape.min.y);
+    hero.set_position(ent_shape.min.x - kEntityOffsetX, ent_shape.min.y - kEntityOffsetY);
 
-        for (int i = 0; i < 4; i++) {
-            if (gen.sail_maps_found[i]) {
-                continents.push_back({10, 3 + i, kContinentNames[i]});
-            }
+    if (debug) {
+        if (collide_x && collide_y) {
+            cr.set_color({0.75f, 0.95f, 0.73f, 0.9f});
         }
-
-        ds.show_dialog({
-            .x = 1,
-            .y = 18,
-            .w = 30,
-            .h = 9,
-            .strings = {{3, 1, "Sail to which continent?"}},
-            .options = continents,
-            .callbacks = {
-                .confirm = std::bind(&Ingame::sail_to, this, std::placeholders::_1),
-            },
-        });
+        else if (collide_x) {
+            cr.set_color({0.7f, 0.0f, 0.0f, 0.9f});
+        }
+        else if (collide_y) {
+            cr.set_color({0.75f, 0.35f, 0.73f, 0.9f});
+        }
     }
-    else {
-        auto hero_tile = hero.get_tile();
 
-        if (manifold.changed_tile) {
-            if (manifold.new_tile.id == Tile_Grass && hero_tile.id >= Tile_WaterIRT && hero_tile.id <= Tile_Water) {
-                last_water_x = hero_tile.tx;
-                last_water_y = hero_tile.ty;
-            }
-            v.x = manifold.new_tile.tx;
-            v.y = manifold.new_tile.ty;
-        }
-
-        if (hero.get_mount() == Mount::Boat && hero_tile.id == Tile_Grass) {
-            c2AABB hero_box;
-            hero_box.min.x = ht.x;
-            hero_box.min.y = ht.y;
-            hero_box.max.x = hero_box.min.x + 44.0f;
-            hero_box.max.y = hero_box.min.y + 32.0f;
-            c2AABB tile_box;
-            tile_box.min.x = v.x * 48.0f;
-            tile_box.min.y = v.y * 40.0f;
-            tile_box.max.x = tile_box.min.x + 48.0f;
-            tile_box.max.y = tile_box.min.y + 40.0f;
-            c2Manifold m;
-            c2AABBtoAABBManifold(hero_box, tile_box, &m);
-            for (int i = 0; i < m.count; i++) {
-                if (std::abs(m.depths[i]) >= 20.0f) {
-                    hero.set_mount(Mount::Walk);
-                    v.boat_x = last_water_x;
-                    v.boat_y = last_water_y;
-                    v.boat_c = v.continent;
-                    boat.set_position(v.boat_x * 48.0f + 8.0f, v.boat_y * 40.0f + 8.0f);
-                    break;
-                }
-            }
-        }
-        else if (v.x == v.boat_x && v.y == v.boat_y && v.continent == v.boat_c && hero.get_mount() == Mount::Walk && hero_tile.id >= Tile_WaterIRT && hero_tile.id <= Tile_Water) {
-            hero.set_mount(Mount::Boat);
-        }
-
-        update_visited_tiles();
+    if (debug) {
+        tile_text.set_string(fmt::format("X {}\nY {}\nT {}{}{}", v.x, v.y, map.get_tile(v.x, v.y, v.continent).id, collide_x || collide_y ? "\nC " : "", collide_x || collide_y ? std::to_string(collided_tile.id) : ""));
     }
 
     update_camera();
@@ -1648,6 +1691,7 @@ void Ingame::update_mobs(float dt)
             float dx = dir.x * vel;
             float dy = dir.y * vel;
 
+            /*
             auto manifold = mob.entity.move(dx, dy, map, v.continent);
 
             mob.entity.set_position(manifold.new_position);
@@ -1684,6 +1728,7 @@ void Ingame::update_mobs(float dt)
             auto tile = mob.entity.get_tile();
             mob.tile.x = tile.tx;
             mob.tile.y = tile.ty;
+			*/
         }
     }
 }
@@ -1700,10 +1745,12 @@ void Ingame::auto_move(float dt)
     float dx = v.auto_move_dir.x * vel;
     float dy = v.auto_move_dir.y * vel;
 
+    /*
     auto manifold = hero.move(dx, dy, map, v.continent);
     hero.set_position(manifold.new_position);
     update_visited_tiles();
     update_camera();
+	*/
 }
 
 void Ingame::collide_sign(const Tile &tile)
@@ -1731,8 +1778,10 @@ void Ingame::collide_sign(const Tile &tile)
     }
 }
 
-void Ingame::collide(const Tile &tile)
+bool Ingame::collide(const Tile &tile)
 {
+    bool event_tile {true};
+
     switch (tile.id) {
         case Tile_Sign:
             [[fallthrough]];
@@ -1790,8 +1839,11 @@ void Ingame::collide(const Tile &tile)
             collide_shop(tile);
             break;
         default:
+            event_tile = false;
             break;
     }
+
+    return event_tile;
 }
 
 void Ingame::collide_shop(const Tile &tile)

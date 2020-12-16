@@ -180,6 +180,10 @@ void Map::reset()
 
 void Map::set_tile(const Tile &tile, int continent, int id)
 {
+    if (tile.tx < 0 || tile.tx > 63 || tile.ty < 0 || tile.ty > 63) {
+        return;
+    }
+
     tiles_[continent][tile.tx + tile.ty * 64] = id;
 
     float tex_adv_x = 1.0f / (tilesets_[0]->width / 50.0f);

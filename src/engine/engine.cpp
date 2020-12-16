@@ -1,9 +1,8 @@
 #include "engine.hpp"
 
-#include <chrono>
-
 #include <spdlog/spdlog.h>
 
+#include <chrono>
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "game/ingame.hpp"
@@ -46,8 +45,7 @@ void Engine::run()
         auto prev_time = time_now;
         time_now = steady_clock::now();
         ++frame_count;
-        if (time_point_cast<seconds>(time_now) != time_point_cast<seconds>(prev_time))
-        {
+        if (time_point_cast<seconds>(time_now) != time_point_cast<seconds>(prev_time)) {
             frame_rate = frame_count;
             frame_count = 0;
         }
@@ -80,14 +78,13 @@ void Engine::run()
 
 void Engine::key(int key, int action)
 {
+    if (key == GLFW_KEY_F1 && action == GLFW_PRESS) {
+        debug = !debug;
+    }
+
     switch (key) {
         case GLFW_KEY_Q:
             quit();
-            break;
-        case GLFW_KEY_F1:
-            if (action == GLFW_PRESS) {
-                debug = !debug;
-            }
             break;
         default:
             if (hud.get_error()) {
