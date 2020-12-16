@@ -1478,12 +1478,17 @@ void Ingame::move_hero(int move_flags, float dt)
         if (hero.get_mount() == Mount::Walk && events(collided_tile, teleport)) {
             last_event_tile = collided_tile;
 
-            if (!teleport) {
+            if (!teleport && collided_tile.id != Tile_CastleB) {
                 /* Move into it. */
                 ent_shape.min.x += dx;
                 ent_shape.max.x += dx;
                 ent_shape.min.y += dy;
                 ent_shape.max.y += dy;
+            }
+            else if (collided_tile.id == Tile_CastleB) {
+                /* Move /away/ from it. */
+                ent_shape.min.y -= dy * 3;
+                ent_shape.max.y -= dy * 3;
             }
             center_tile = map.get_tile(ent_shape.min.x + 4, ent_shape.min.y + 4, v.continent);
         }
