@@ -2034,36 +2034,99 @@ void Ingame::collide_artifact(const Tile &tile)
 {
     map.set_tile(tile, v.continent, Tile_Grass);
 
-    switch (tile.id) {
-        case Tile_AfctRing:
-            gen.artifacts_found[ArtiRingOfHeroism] = true;
+    static constexpr const int artifact_ids[8] = {
+        Tile_AfctScroll,
+        Tile_AfctShield,
+        Tile_AfctCrown,
+        Tile_AfctAmulet,
+        Tile_AfctRing,
+        Tile_AfctAnchor,
+        Tile_AfctBook,
+        Tile_AfctSword,
+    };
+
+    int artifact = -1;
+
+    for (int i = 0; i < 8; i++) {
+        if (tile.id == artifact_ids[i]) {
+            artifact = i;
             break;
-        case Tile_AfctAmulet:
-            gen.artifacts_found[ArtiAmuletOfAugmentation] = true;
-            break;
-        case Tile_AfctAnchor:
-            gen.artifacts_found[ArtiAnchorOfAdmirality] = true;
-            break;
-        case Tile_AfctCrown:
-            gen.artifacts_found[ArtiCrownOfCommand] = true;
-            break;
-        case Tile_AfctScroll:
-            gen.artifacts_found[ArtiArticlesOfNobility] = true;
-            break;
-        case Tile_AfctShield:
-            gen.artifacts_found[ArtiShieldOfProtection] = true;
-            break;
-        case Tile_AfctSword:
-            gen.artifacts_found[ArtiSwordOfProwess] = true;
-            break;
-        case Tile_AfctBook:
-            gen.artifacts_found[ArtiBookOfNecros] = true;
-            break;
-        default:
-            break;
+        }
     }
 
+    gen.artifacts_found[artifact] = true;
+
     hud.set_puzzle(gen.villains_captured.data(), gen.artifacts_found.data());
+
+    static constexpr const char *const kArtifactMessages[8] = {
+        {
+            "  Freeing a virtuous maiden\n"
+            "   from the clutches of a\n"
+            "  despicable criminal, you\n"
+            "      have been granted\n\n"
+            "  The Articles of Nobility!",
+        },
+        {
+            "  Challenged to a joust by\n"
+            " the dread Dark Knight, you\n"
+            " quickly dispose of him and\n"
+            "           receive\n\n"
+            "  The Shield of Protection!\n",
+        },
+        {
+            "  Resting on a throne in a\n"
+            "  phantom castle, you have\n"
+            "            found\n\n"
+            "    The Crown of Command!",
+        },
+        {
+            " Hidden within an enchanted\n"
+            "       grove, you find\n\n\n"
+            " The Amulet of Augmentation!",
+        },
+        {
+            " Ridding the countryside of\n"
+            "   a ferocious beast, the\n"
+            "Magistrate presents you with\n\n"
+            "    The Ring of Heroism!",
+        },
+        {
+            "You discover ancient scrolls\n"
+            " that describe the patterns\n"
+            " of the oceans. Mariners, in\n"
+            " gratitude, bestow upon you\n\n"
+            "  The Anchor of Admirality!",
+        },
+        {
+            " In the study of a deserted\n"
+            "  wizard's tower, you have\n"
+            "            found\n\n"
+            "     The Book of Necros!",
+        },
+        {
+            " Following rumors of a great\n"
+            "   and powerful sword, you\n"
+            "defeat its fearsome guardian\n"
+            "   and gain possession of\n\n"
+            "    The Sword of Prowess!",
+        },
+    };
+
+    static constexpr const char *const kArtifactMessageCommon = {
+        "   ...and a piece of the\n"
+        " map to the stolen scepter.",
+    };
+
+    ds.show_dialog({
+        .x = 1,
+        .y = 16,
+        .w = 30,
+        .h = 11,
+        .strings = {
+            {1, 1, kArtifactMessages[artifact]},
+            {1, 8, kArtifactMessageCommon},
+        },
+    });
 }
 
 void Ingame::defeat_pop(int ret)

@@ -23,7 +23,7 @@
 - Add game controls pause menu option
 - What happens when you ask for an audience with the king when already max rank? I think maybe there is no option.
 - Better collision?
-- Add artifact collision message
+- Add artifact effects
 - Add flying hero texture
 - Add flying key when all army can fly
 - Stop mobs from bunching up
