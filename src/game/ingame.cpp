@@ -775,9 +775,8 @@ void Ingame::place_bridge_at(int x, int y, int continent, bool horizontal)
 void Ingame::spell_bridge()
 {
     int c = v.continent;
-    auto hero_tile = hero.get_tile();
-    int x = hero_tile.tx;
-    int y = hero_tile.ty;
+    int x = v.x;
+    int y = v.y;
 
     ds.show_dialog({
         .x = 1,
@@ -1324,7 +1323,7 @@ int Ingame::get_move_input()
     return move_flags;
 }
 
-bool Ingame::can_move(int id)
+bool Ingame::hero_can_move(int id)
 {
     auto mount = hero.get_mount();
     if (mount == Mount::Walk) {
@@ -1339,7 +1338,12 @@ bool Ingame::can_move(int id)
     return false;
 }
 
-bool Ingame::move_increment(c2AABB &box, float dx, float dy, Tile &center_tile, Tile &collided_tile)
+bool Ingame::mob_can_move(int id)
+{
+    return id == Tile_Grass;
+}
+
+bool Ingame::move_increment(c2AABB &box, float dx, float dy, Tile &center_tile, Tile &collided_tile, bool (Ingame::*can_move)(int))
 {
     box.min.x += dx;
     box.max.x += dx;
@@ -1356,7 +1360,7 @@ bool Ingame::move_increment(c2AABB &box, float dx, float dy, Tile &center_tile, 
     }
 
     /* Collided; undo move and register it. */
-    if (!can_move(center_tile.id)) {
+    if (!(this->*can_move)(center_tile.id)) {
         box.min.x -= dx;
         box.max.x -= dx;
         box.min.y -= dy;
@@ -1366,10 +1370,46 @@ bool Ingame::move_increment(c2AABB &box, float dx, float dy, Tile &center_tile, 
     }
     /* Didn't collide; confirm move. */
     else {
-        v.x = center_tile.tx;
-        v.y = center_tile.ty;
         return false;
     }
+}
+
+void Ingame::move_mob(Mob &mob, float dt, const glm::vec2 &dir)
+{
+    float speed = 70.0f;
+    float vel = speed * dt;
+    float dx = dir.x * vel;
+    float dy = dir.y * vel;
+    auto last_pos = mob.entity.get_position();
+
+    static constexpr float kEntitySizeX = 8.0f;
+    static constexpr float kEntitySizeY = 8.0f;
+    static constexpr float kEntityOffsetX = (44.0f / 2.0f) - (kEntitySizeX / 2.0f);
+    static constexpr float kEntityOffsetY = 8.0f + (32.0f / 2.0f) - (kEntitySizeY / 2.0f);
+
+    int range = 3;
+    int offset = range / 2;
+
+    /* Create shape. */
+    c2AABB ent_shape;
+    ent_shape.min.x = last_pos.x + kEntityOffsetX;
+    ent_shape.min.y = last_pos.y + kEntityOffsetY;
+    ent_shape.max.x = ent_shape.min.x + kEntitySizeX;
+    ent_shape.max.y = ent_shape.min.y + kEntitySizeY;
+
+    last_tile = map.get_tile(ent_shape.min.x + 4, ent_shape.min.y + 4, v.continent);
+
+    Tile center_tile {-1, -1, -1};
+    Tile collided_tile {-1, -1, -1};
+
+    bool collide_x = move_increment(ent_shape, dx, 0, center_tile, collided_tile, &Ingame::mob_can_move);
+    bool collide_y = move_increment(ent_shape, 0, dy, center_tile, collided_tile, &Ingame::mob_can_move);
+
+    if (center_tile.tx != mob.tile.x || center_tile.ty != mob.tile.y) {
+        mob.tile = {center_tile.tx, center_tile.ty};
+    }
+
+    mob.entity.set_position(ent_shape.min.x - kEntityOffsetX, ent_shape.min.y - kEntityOffsetY);
 }
 
 void Ingame::move_hero(int move_flags, float dt)
@@ -1435,8 +1475,8 @@ void Ingame::move_hero(int move_flags, float dt)
     Tile center_tile {-1, -1, -1};
     Tile collided_tile {-1, -1, -1};
 
-    bool collide_x = move_increment(ent_shape, dx, 0, center_tile, collided_tile);
-    bool collide_y = move_increment(ent_shape, 0, dy, center_tile, collided_tile);
+    bool collide_x = move_increment(ent_shape, dx, 0, center_tile, collided_tile, &Ingame::hero_can_move);
+    bool collide_y = move_increment(ent_shape, 0, dy, center_tile, collided_tile, &Ingame::hero_can_move);
 
     /* Deal with the consequences of the collision. */
     if (collide_x || collide_y) {
@@ -1448,6 +1488,7 @@ void Ingame::move_hero(int move_flags, float dt)
             ent_shape.max.x += dx;
             ent_shape.min.y += dy;
             ent_shape.max.y += dy;
+            center_tile = map.get_tile(ent_shape.min.x + 4, ent_shape.min.y + 4, v.continent);
         }
         /* Walked into the boat tile. */
         else if (collided_tile.tx == v.boat_x && collided_tile.ty == v.boat_y && v.continent == v.boat_c) {
@@ -1457,6 +1498,7 @@ void Ingame::move_hero(int move_flags, float dt)
             ent_shape.max.x += dx;
             ent_shape.min.y += dy;
             ent_shape.max.y += dy;
+            center_tile = map.get_tile(ent_shape.min.x + 4, ent_shape.min.y + 4, v.continent);
         }
         /* Dismount. */
         else if (hero.get_mount() == Mount::Boat) {
@@ -1466,8 +1508,11 @@ void Ingame::move_hero(int move_flags, float dt)
             ent_shape.max.x += dx;
             ent_shape.min.y += dy;
             ent_shape.max.y += dy;
+            center_tile = map.get_tile(ent_shape.min.x + 4, ent_shape.min.y + 4, v.continent);
+
             v.boat_x = last_tile.tx;
             v.boat_y = last_tile.ty;
+            v.boat_c = v.continent;
 
             boat.set_flip(hero.get_flip());
 
@@ -1489,6 +1534,9 @@ void Ingame::move_hero(int move_flags, float dt)
         last_tile = center_tile;
         last_event_tile = {-1, -1, -1};
     }
+
+    v.x = center_tile.tx;
+    v.y = center_tile.ty;
 
     cr.set_position(ent_shape.min.x, ent_shape.min.y);
     hero.set_position(ent_shape.min.x - kEntityOffsetX, ent_shape.min.y - kEntityOffsetY);
@@ -1628,12 +1676,11 @@ void Ingame::sail_to(int continent)
 
 void Ingame::draw_mobs(bty::Gfx &gfx)
 {
-    const auto &hero_tile = hero.get_tile();
     for (auto i = 0u; i < gen.mobs[v.continent].size(); i++) {
         if (gen.mobs[v.continent][i].dead) {
             continue;
         }
-        if (std::abs(hero_tile.tx - gen.mobs[v.continent][i].tile.x) < 4 && std::abs(hero_tile.ty - gen.mobs[v.continent][i].tile.y) < 4) {
+        if (std::abs(v.x - gen.mobs[v.continent][i].tile.x) <= 4 && std::abs(v.y - gen.mobs[v.continent][i].tile.y) <= 4) {
             gen.mobs[v.continent][i].entity.draw(gfx, map_cam);
         }
     }
@@ -1647,7 +1694,6 @@ void Ingame::collide_teleport_cave(const Tile &tile)
 
 void Ingame::update_mobs(float dt)
 {
-    const auto &hero_tile = hero.get_tile();
     const auto &hero_pos = hero.get_position();
 
     int continent = v.continent;
@@ -1658,7 +1704,7 @@ void Ingame::update_mobs(float dt)
             continue;
         }
 
-        if (std::abs(hero_tile.tx - mob.tile.x) < 4 && std::abs(hero_tile.ty - mob.tile.y) < 4) {
+        if (std::abs(v.x - mob.tile.x) <= 4 && std::abs(v.y - mob.tile.y) <= 4) {
             const auto mob_pos = mob.entity.get_position();
 
             float distance_x = std::abs(hero_pos.x - mob_pos.x);
@@ -1736,49 +1782,7 @@ void Ingame::update_mobs(float dt)
             mob.entity.update(dt);
             mob.entity.set_flip(hero_pos.x < mob_pos.x);
 
-            float speed = 70.0f;
-            float vel = speed * dt;
-            float dx = dir.x * vel;
-            float dy = dir.y * vel;
-
-            /*
-            auto manifold = mob.entity.move(dx, dy, map, v.continent);
-
-            mob.entity.set_position(manifold.new_position);
-
-            for (auto j = 0u; j < gen.mobs[continent].size(); j++) {
-                if (i == j || gen.mobs[continent][j].dead) {
-                    continue;
-                }
-
-                auto &other_mob = gen.mobs[continent][j];
-                const auto other_mob_pos = other_mob.entity.get_position();
-
-                distance_x = std::abs(mob_pos.x - other_mob_pos.x);
-                distance_y = std::abs(mob_pos.y - other_mob_pos.y);
-
-                if (distance_x > 48.0f * 4 || distance_y > 40.0f * 4) {
-                    continue;
-                }
-
-                if (dir.x > 0.5f && other_mob_pos.x > mob_pos.x && distance_x < 12.0f) {
-                    mob.entity.Transformable::move(-dx, 0.0f);
-                }
-                else if (dir.x < -0.5f && other_mob_pos.x < mob_pos.x && distance_x < 12.0f) {
-                    mob.entity.Transformable::move(-dx, 0.0f);
-                }
-                if (dir.y > 0.5f && other_mob_pos.y > mob_pos.y && distance_y < 8.0f) {
-                    mob.entity.Transformable::move(0.0f, -dy);
-                }
-                else if (dir.y < -0.5f && other_mob_pos.y < mob_pos.y && distance_y < 8.0f) {
-                    mob.entity.Transformable::move(0.0f, -dy);
-                }
-            }
-
-            auto tile = mob.entity.get_tile();
-            mob.tile.x = tile.tx;
-            mob.tile.y = tile.ty;
-			*/
+            move_mob(mob, dt, dir);
         }
     }
 }

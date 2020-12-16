@@ -29,6 +29,7 @@
 - Add artifact collision message
 - Add flying hero texture
 - Add flying key when all army can fly
+- Stop mobs from bunching up
 
 ### Battle
 

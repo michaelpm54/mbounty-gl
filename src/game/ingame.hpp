@@ -89,7 +89,7 @@ private:
     void update_timestop_clock(float dt);
 
     /* Movement */
-    bool move_increment(c2AABB &box, float dx, float dy, Tile &center_tile, Tile &collided_tile);
+    bool move_increment(c2AABB &box, float dx, float dy, Tile &center_tile, Tile &collided_tile, bool (Ingame::*can_move)(int));
     int get_move_input();
     void update_camera();
     void auto_move(float dt);
@@ -97,9 +97,11 @@ private:
     void update_visited_tiles();
     void move_hero(int flags, float dt);
     void move_hero_to(int x, int y, int c);
+    void move_mob(Mob &entity, float dt, const glm::vec2 &dir);
 
     /* Collision */
-    bool can_move(int id);
+    bool hero_can_move(int id);
+    bool mob_can_move(int id);
     bool events(const Tile &tile);
     void collide_sign(const Tile &tile);
     void collide_town(const Tile &tile);
