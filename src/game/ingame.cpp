@@ -1349,6 +1349,15 @@ bool Ingame::move_increment(c2AABB &box, float dx, float dy, Tile &center_tile, 
     if (center_tile.tx == last_event_tile.tx && center_tile.ty == last_event_tile.ty) {
         return false;
     }
+    /* Don't endlessly loop between the two teleport caves just because
+		"technically they are different tiles." (who am I quoting?) */
+    else if (last_event_tile.id == Tile_ShopCave) {
+        for (int i = 0; i < 2; i++) {
+            if (last_event_tile.tx == gen.teleport_cave_tiles[v.continent][i].x && last_event_tile.ty == gen.teleport_cave_tiles[v.continent][i].y) {
+                return false;
+            }
+        }
+    }
 
     /* Collided; undo move and register it. */
     if (!(this->*can_move)(center_tile.id)) {
@@ -1469,16 +1478,21 @@ void Ingame::move_hero(int move_flags, float dt)
     bool collide_x = move_increment(ent_shape, dx, 0, center_tile, collided_tile, &Ingame::hero_can_move);
     bool collide_y = move_increment(ent_shape, 0, dy, center_tile, collided_tile, &Ingame::hero_can_move);
 
+    bool teleport {false};
+
     /* Deal with the consequences of the collision. */
     if (collide_x || collide_y) {
         /* Try to collide with it, and see if it's an event tile. */
-        if (hero.get_mount() == Mount::Walk && events(collided_tile)) {
+        if (hero.get_mount() == Mount::Walk && events(collided_tile, teleport)) {
             last_event_tile = collided_tile;
-            /* Move into it. */
-            ent_shape.min.x += dx;
-            ent_shape.max.x += dx;
-            ent_shape.min.y += dy;
-            ent_shape.max.y += dy;
+
+            if (!teleport) {
+                /* Move into it. */
+                ent_shape.min.x += dx;
+                ent_shape.max.x += dx;
+                ent_shape.min.y += dy;
+                ent_shape.max.y += dy;
+            }
             center_tile = map.get_tile(ent_shape.min.x + 4, ent_shape.min.y + 4, v.continent);
         }
         /* Walked into the boat tile. */
@@ -1529,10 +1543,12 @@ void Ingame::move_hero(int move_flags, float dt)
     v.x = center_tile.tx;
     v.y = center_tile.ty;
 
-    cr.set_position(ent_shape.min.x, ent_shape.min.y);
-    hero.set_position(ent_shape.min.x - kEntityOffsetX, ent_shape.min.y - kEntityOffsetY);
+    if (!teleport) {
+        hero.set_position(ent_shape.min.x - kEntityOffsetX, ent_shape.min.y - kEntityOffsetY);
+    }
 
     if (debug) {
+        cr.set_position(ent_shape.min.x, ent_shape.min.y);
         if (collide_x && collide_y) {
             cr.set_color({0.75f, 0.95f, 0.73f, 0.9f});
         }
@@ -1832,7 +1848,7 @@ void Ingame::collide_sign(const Tile &tile)
     }
 }
 
-bool Ingame::events(const Tile &tile)
+bool Ingame::events(const Tile &tile, bool &teleport)
 {
     bool event_tile {true};
 
@@ -1880,6 +1896,7 @@ bool Ingame::events(const Tile &tile)
         case Tile_ShopCave:
             if (glm::ivec2 {tile.tx, tile.ty} == gen.teleport_cave_tiles[v.continent][0] || glm::ivec2 {tile.tx, tile.ty} == gen.teleport_cave_tiles[v.continent][1]) {
                 collide_teleport_cave(tile);
+                teleport = true;
             }
             else {
                 collide_shop(tile);

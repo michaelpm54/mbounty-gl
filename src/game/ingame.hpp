@@ -102,7 +102,7 @@ private:
     /* Collision */
     bool hero_can_move(int id);
     bool mob_can_move(int id);
-    bool events(const Tile &tile);
+    bool events(const Tile &tile, bool &teleport);
     void collide_sign(const Tile &tile);
     void collide_town(const Tile &tile);
     void collide_shop(const Tile &tile);
