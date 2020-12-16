@@ -24,7 +24,6 @@
 - What happens when you ask for an audience with the king when already max rank? I think maybe there is no option.
 - Better collision?
 - Add artifact effects
-- Add flying hero texture
 - Add flying key when all army can fly
 - Stop mobs from bunching up
 - Alternative way of animating the tiles? Loading 10 full tilesets seems excessive.
