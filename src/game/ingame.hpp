@@ -98,6 +98,7 @@ private:
     void move_hero(int flags, float dt);
     void move_hero_to(int x, int y, int c);
     void move_mob(Mob &entity, float dt, const glm::vec2 &dir);
+    void fly_land();
 
     /* Collision */
     bool hero_can_move(int id);

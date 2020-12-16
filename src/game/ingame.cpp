@@ -19,6 +19,7 @@
 #include "engine/scene-stack.hpp"
 #include "game/army-gen.hpp"
 #include "game/chest.hpp"
+#define CUTE_C2_IMPLEMENTATION
 #include "game/cute_c2.hpp"
 #include "game/hud.hpp"
 #include "game/shop-gen.hpp"
@@ -231,6 +232,9 @@ void Ingame::key(int key, int action)
         }
         else if (key == GLFW_KEY_F1) {
             debug = !debug;
+        }
+        else if (key == GLFW_KEY_F) {
+            fly_land();
         }
     }
 }
@@ -1564,7 +1568,7 @@ void Ingame::move_hero(int move_flags, float dt)
     }
 
     if (debug) {
-        tile_text.set_string(fmt::format("X {}\nY {}\nT {}{}{}", v.x, v.y, map.get_tile(v.x, v.y, v.continent).id, collide_x || collide_y ? "\nC " : "", collide_x || collide_y ? std::to_string(collided_tile.id) : ""));
+        tile_text.set_string(fmt::format("X {}\nY {}\nT {}{}{}\nLast tile {} {} {}", v.x, v.y, map.get_tile(v.x, v.y, v.continent).id, collide_x || collide_y ? "\nC " : "", collide_x || collide_y ? std::to_string(collided_tile.id) : "", last_tile.tx, last_tile.ty, last_tile.id));
     }
 
     update_camera();
@@ -2298,4 +2302,72 @@ void Ingame::end_week(bool search)
     }
     day_clock = 0;
     hud.set_days(v.days);
+}
+
+void Ingame::fly_land()
+{
+    auto mount = hero.get_mount();
+
+    if (mount == Mount::Fly) {
+        static constexpr float kEntitySizeX = 8.0f;
+        static constexpr float kEntitySizeY = 8.0f;
+        static constexpr float kEntityOffsetX = (44.0f / 2.0f) - (kEntitySizeX / 2.0f);
+        static constexpr float kEntityOffsetY = 8.0f + (32.0f / 2.0f) - (kEntitySizeY / 2.0f);
+        auto pos = hero.get_position();
+        c2AABB ent_shape;
+        ent_shape.min.x = pos.x + kEntityOffsetX;
+        ent_shape.min.y = pos.y + kEntityOffsetY;
+        ent_shape.max.x = ent_shape.min.x + kEntitySizeX;
+        ent_shape.max.y = ent_shape.min.y + kEntitySizeY;
+        int range = 4;
+        int offset = range / 2;
+
+        /* No need to check surrounding tiles if we can't land on the current tile anyway. */
+        if (map.get_tile(hero.get_center(), v.continent).id != Tile_Grass) {
+            goto end_loop;
+        }
+
+        /* Make sure we're not intersecting any collidable tiles when we land. */
+        for (int i = 0; i <= range; i++) {
+            for (int j = 0; j <= range; j++) {
+                int x = v.x - offset + i;
+                int y = v.y - offset + j;
+
+                if (x == v.x && y == v.y) {
+                    continue;
+                }
+
+                if (x < 0 || x > 63 || y < 0 || y > 63) {
+                    continue;
+                }
+
+                c2AABB tile_shape;
+                tile_shape.min.x = 48.0f * x;
+                tile_shape.min.y = 40.0f * y;
+                tile_shape.max.x = tile_shape.min.x + 48.0f;
+                tile_shape.max.y = tile_shape.min.y + 40.0f;
+
+                if (map.get_tile(ent_shape.min.x, ent_shape.min.y, v.continent).id != Tile_Grass && !c2AABBtoAABB(ent_shape, tile_shape)) {
+                    goto end_loop;
+                }
+            }
+        }
+        hero.set_mount(Mount::Walk);
+    end_loop:;
+    }
+    else if (mount == Mount::Walk) {
+        bool can_fly = true;
+        for (int i = 0; i < 5; i++) {
+            if (v.army[i] == -1) {
+                continue;
+            }
+            if (!(kUnits[v.army[i]].abilities & AbilityFly)) {
+                can_fly = false;
+                break;
+            }
+        }
+        if (can_fly) {
+            hero.set_mount(Mount::Fly);
+        }
+    }
 }
