@@ -1393,9 +1393,6 @@ void Ingame::move_mob(Mob &mob, float dt, const glm::vec2 &dir)
     static constexpr float kEntityOffsetX = (44.0f / 2.0f) - (kEntitySizeX / 2.0f);
     static constexpr float kEntityOffsetY = 8.0f + (32.0f / 2.0f) - (kEntitySizeY / 2.0f);
 
-    int range = 3;
-    int offset = range / 2;
-
     /* Create shape. */
     c2AABB ent_shape;
     ent_shape.min.x = last_pos.x + kEntityOffsetX;
@@ -1464,9 +1461,6 @@ void Ingame::move_hero(int move_flags, float dt)
     static constexpr float kEntitySizeY = 8.0f;
     static constexpr float kEntityOffsetX = (44.0f / 2.0f) - (kEntitySizeX / 2.0f);
     static constexpr float kEntityOffsetY = 8.0f + (32.0f / 2.0f) - (kEntitySizeY / 2.0f);
-
-    int range = 3;
-    int offset = range / 2;
 
     /* Create shape. */
     c2AABB ent_shape;
