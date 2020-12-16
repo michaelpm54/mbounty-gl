@@ -123,6 +123,8 @@ private:
 
     void end_week(bool search);
 
+    std::vector<Mob *> get_mobs_in_range(int x, int y, int range);
+
 private:
     Variables v;
     GenVariables gen;

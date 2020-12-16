@@ -109,6 +109,7 @@ void Ingame::setup(int hero, int diff)
         gen.continent_maps_found[i] = false;
         v.tiles[i] = map.get_data(i);
         for (auto j = 0u; j < gen.mobs[i].size(); j++) {
+            gen.mobs[i][j].id = static_cast<int>(i * gen.mobs[i].size() + j);
             for (int k = 0; k < 5; k++) {
                 gen.mobs[i][j].army[k] = -1;
                 gen.mobs[i][j].counts[k] = 0;
@@ -575,7 +576,7 @@ void Ingame::gen_tiles()
 
             tiles[tile.x + tile.y * 64] = Tile_Grass;
 
-            gen.friendly_mobs[continent].push_back(num_mobs - 1);
+            gen.friendly_mobs[continent].push_back(mob.id);
         }
 
         /* Gen castle occupants */
@@ -1653,13 +1654,11 @@ void Ingame::sail_to(int continent)
 
 void Ingame::draw_mobs(bty::Gfx &gfx)
 {
-    for (auto i = 0u; i < gen.mobs[v.continent].size(); i++) {
-        if (gen.mobs[v.continent][i].dead) {
+    for (auto *mob : get_mobs_in_range(v.x, v.y, 4)) {
+        if (mob->dead) {
             continue;
         }
-        if (std::abs(v.x - gen.mobs[v.continent][i].tile.x) <= 4 && std::abs(v.y - gen.mobs[v.continent][i].tile.y) <= 4) {
-            gen.mobs[v.continent][i].entity.draw(gfx, map_cam);
-        }
+        mob->entity.draw(gfx, map_cam);
     }
 }
 
@@ -1675,92 +1674,89 @@ void Ingame::update_mobs(float dt)
 
     int continent = v.continent;
 
-    for (auto i = 0u; i < gen.mobs[continent].size(); i++) {
-        auto &mob = gen.mobs[continent][i];
-        if (mob.dead) {
+    for (auto *mob : get_mobs_in_range(v.x, v.y, 4)) {
+        if (mob->dead) {
             continue;
         }
 
-        if (std::abs(v.x - mob.tile.x) <= 4 && std::abs(v.y - mob.tile.y) <= 4) {
-            const auto mob_pos = mob.entity.get_position();
+        const auto mob_pos = mob->entity.get_position();
 
-            float distance_x = std::abs(hero_pos.x - mob_pos.x);
-            float distance_y = std::abs(hero_pos.y - mob_pos.y);
+        float distance_x = std::abs(hero_pos.x - mob_pos.x);
+        float distance_y = std::abs(hero_pos.y - mob_pos.y);
 
-            glm::vec2 dir {0.0f, 0.0f};
+        glm::vec2 dir {0.0f, 0.0f};
 
-            if (distance_x > 3.0f) {
-                dir.x = hero_pos.x > mob_pos.x ? 1.0f : -1.0f;
-            }
-
-            if (distance_y > 3.0f) {
-                dir.y = hero_pos.y > mob_pos.y ? 1.0f : -1.0f;
-            }
-
-            if (hero.get_mount() == Mount::Walk && distance_x < 12.0f && distance_y < 12.0f) {
-                for (auto j = 0u; j < gen.friendly_mobs[v.continent].size(); j++) {
-                    if (gen.friendly_mobs[v.continent][j] == i) {
-                        int size = 0;
-                        for (int i = 0; i < 5; i++) {
-                            if (v.army[i] != -1) {
-                                size++;
-                            }
-                        }
-
-                        const std::string descriptor = fmt::format("{} {}", bty::get_descriptor(mob.counts[0]), kUnits[mob.army[0]].name_plural);
-
-                        if (size == 5) {
-                            ds.show_dialog({
-                                .x = 1,
-                                .y = 21,
-                                .w = 30,
-                                .h = 6,
-                                .strings = {
-                                    {1, 1, descriptor},
-                                    {3, 3, " flee in terror at the\nsight of your vast army."},
-                                },
-                                .callbacks = {.confirm = [&mob](int) {
-                                    mob.dead = true;
-                                }},
-                            });
-                        }
-                        else {
-                            ds.show_dialog({
-                                .x = 1,
-                                .y = 18,
-                                .w = 30,
-                                .h = 9,
-                                .strings = {
-                                    {1, 1, descriptor},
-                                    {3, 3, "with desires of greater\nglory, wish to join you."},
-                                },
-                                .options = {
-                                    {13, 6, "Accept"},
-                                    {13, 7, "Decline"},
-                                },
-                                .callbacks = {.confirm = [this, &mob](int opt) {
-                                    if (opt == 0) {
-                                        add_unit_to_army(mob.army[0], mob.counts[0]);
-                                    }
-                                    mob.dead = true;
-                                }},
-                            });
-                        }
-                        return;
-                    }
-                }
-
-                s_battle.show(mob.army, mob.counts, false, -1);
-                ss.push(&s_battle, std::bind(&Ingame::battle_pop, this, std::placeholders::_1));
-                battle_mob = i;
-                return;
-            }
-
-            mob.entity.update(dt);
-            mob.entity.set_flip(hero_pos.x < mob_pos.x);
-
-            move_mob(mob, dt, dir);
+        if (distance_x > 3.0f) {
+            dir.x = hero_pos.x > mob_pos.x ? 1.0f : -1.0f;
         }
+
+        if (distance_y > 3.0f) {
+            dir.y = hero_pos.y > mob_pos.y ? 1.0f : -1.0f;
+        }
+
+        if (hero.get_mount() == Mount::Walk && distance_x < 12.0f && distance_y < 12.0f) {
+            for (auto j = 0u; j < gen.friendly_mobs[v.continent].size(); j++) {
+                if (gen.friendly_mobs[v.continent][j] == mob->id) {
+                    int size = 0;
+                    for (int i = 0; i < 5; i++) {
+                        if (v.army[i] != -1) {
+                            size++;
+                        }
+                    }
+
+                    const std::string descriptor = fmt::format("{} {}", bty::get_descriptor(mob->counts[0]), kUnits[mob->army[0]].name_plural);
+
+                    if (size == 5) {
+                        ds.show_dialog({
+                            .x = 1,
+                            .y = 21,
+                            .w = 30,
+                            .h = 6,
+                            .strings = {
+                                {1, 1, descriptor},
+                                {3, 3, " flee in terror at the\nsight of your vast army."},
+                            },
+                            .callbacks = {.confirm = [&mob](int) {
+                                mob->dead = true;
+                            }},
+                        });
+                    }
+                    else {
+                        ds.show_dialog({
+                            .x = 1,
+                            .y = 18,
+                            .w = 30,
+                            .h = 9,
+                            .strings = {
+                                {1, 1, descriptor},
+                                {3, 3, "with desires of greater\nglory, wish to join you."},
+                            },
+                            .options = {
+                                {13, 6, "Accept"},
+                                {13, 7, "Decline"},
+                            },
+                            .callbacks = {.confirm = [this, mob](int opt) {
+                                if (opt == 0) {
+                                    add_unit_to_army(mob->army[0], mob->counts[0]);
+                                }
+                                mob->dead = true;
+                            }},
+                        });
+                    }
+                    return;
+                }
+            }
+
+            s_battle.show(mob->army, mob->counts, false, -1);
+            ss.push(&s_battle, std::bind(&Ingame::battle_pop, this, std::placeholders::_1));
+            battle_mob = mob->id;
+            return;
+        }
+
+        mob->entity.update(dt);
+        mob->entity.set_flip(hero_pos.x < mob_pos.x);
+
+        move_mob(*mob, dt, dir);
     }
 }
 
@@ -2365,4 +2361,17 @@ void Ingame::timestop_tick()
     else {
         hud.set_timestop(v.timestop);
     }
+}
+
+std::vector<Mob *> Ingame::get_mobs_in_range(int x, int y, int range)
+{
+    std::vector<Mob *> moblist;
+
+    for (auto &mob : gen.mobs[v.continent]) {
+        if (std::abs(x - mob.tile.x) <= range && std::abs(y - mob.tile.y) <= range) {
+            moblist.push_back(&mob);
+        }
+    }
+
+    return moblist;
 }

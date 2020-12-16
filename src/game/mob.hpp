@@ -12,6 +12,7 @@ struct Mob {
     glm::ivec2 tile;
     std::array<int, 5> army;
     std::array<int, 5> counts;
+    int id;
 };
 
 #endif    // BTY_GAME_MOB_HPP_
