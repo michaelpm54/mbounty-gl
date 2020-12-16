@@ -5,6 +5,7 @@
 #include "engine/dialog.hpp"
 #include "engine/scene.hpp"
 #include "engine/textbox.hpp"
+#include "engine/timer.hpp"
 #include "game/battle.hpp"
 #include "game/defeat.hpp"
 #include "game/dir-flags.hpp"
@@ -85,8 +86,8 @@ private:
     /* Clocks */
     void end_week_budget(bool search);
     void end_week_astrology(bool search);
-    void update_day_clock(float dt);
-    void update_timestop_clock(float dt);
+    void day_tick();
+    void timestop_tick();
 
     /* Movement */
     bool move_increment(c2AABB &box, float dx, float dy, Tile &center_tile, Tile &collided_tile, bool (Ingame::*can_move)(int), bool mob);
@@ -145,8 +146,8 @@ private:
     ViewPuzzle view_puzzle;
 
     /* Clocks */
-    float day_clock;
-    float timestop_timer;
+    bty::Timer day_timer;
+    bty::Timer timestop_timer;
 
     /* Collision */
     KingsCastle kings_castle;

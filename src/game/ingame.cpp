@@ -37,6 +37,8 @@ Ingame::Ingame(GLFWwindow *window, bty::SceneStack &ss, bty::DialogStack &ds, bt
     , view_continent(ss, assets)
     , view_contract(ss, assets, v, gen, hud.get_contract())
     , view_puzzle(ss, assets)
+    , day_timer(16.0f, std::bind(&Ingame::day_tick, this))
+    , timestop_timer(0.25f, std::bind(&Ingame::timestop_tick, this))
     , kings_castle(ss, ds, assets, hud, v, gen)
     , shop(ss, assets, v, hud)
     , town(ss, ds, assets, v, gen, hud, view_contract, boat)
@@ -74,7 +76,8 @@ void Ingame::setup(int hero, int diff)
     hud.set_color(color);
     hud.set_hud_frame();
 
-    day_clock = 0;
+    day_timer.reset();
+    timestop_timer.reset();
 
     v.weeks_passed = 0;
     v.days_passed_this_week = 0;
@@ -177,7 +180,6 @@ void Ingame::setup(int hero, int diff)
     }
 
     v.timestop = 0;
-    timestop_timer = 0;
 
     gen_tiles();
 
@@ -228,7 +230,7 @@ void Ingame::key(int key, int action)
         }
         else if (key == GLFW_KEY_E) {
             v.days = 1;
-            day_clock = 15.99f;
+            day_timer.trigger();
         }
         else if (key == GLFW_KEY_F1) {
             debug = !debug;
@@ -256,10 +258,14 @@ void Ingame::update(float dt)
     hero.update(dt);
 
     if (v.timestop) {
-        update_timestop_clock(dt);
+        timestop_timer.tick(dt);
+        /* Update their animations. */
+        for (auto &mob : gen.mobs[v.continent]) {
+            mob.entity.update(dt);
+        }
     }
     else {
-        update_day_clock(dt);
+        day_timer.tick(dt);
         update_mobs(dt);
     }
 
@@ -813,7 +819,7 @@ void Ingame::spell_bridge()
 
 void Ingame::spell_timestop()
 {
-    timestop_timer = 0;
+    timestop_timer.reset();
     v.timestop += v.spell_power * 10;
     if (v.timestop > 9999) {
         v.timestop = 9999;
@@ -1574,49 +1580,6 @@ void Ingame::move_hero(int move_flags, float dt)
     update_camera();
 }
 
-void Ingame::update_day_clock(float dt)
-{
-    day_clock += dt;
-    if (day_clock >= 16) {
-        day_clock = 0;
-        v.days--;
-        if (v.days == 0) {
-            hud.set_days(v.days);
-            s_defeat.show(v.hero);
-            ss.push(&s_defeat, std::bind(&Ingame::defeat_pop, this, std::placeholders::_1));
-        }
-        else {
-            v.days_passed_this_week++;
-            if (v.days_passed_this_week == 5) {
-                v.days_passed_this_week = 0;
-                v.weeks_passed++;
-                end_week_astrology(false);
-                hud.set_gold(v.gold);
-            }
-            hud.set_days(v.days);
-        }
-    }
-}
-
-void Ingame::update_timestop_clock(float dt)
-{
-    timestop_timer += dt;
-
-    if (timestop_timer >= 0.25f) {
-        v.timestop--;
-        timestop_timer = 0;
-        hud.set_timestop(v.timestop);
-    }
-
-    if (v.timestop == 0) {
-        hud.clear_timestop();
-    }
-
-    for (auto &mob : gen.mobs[v.continent]) {
-        mob.entity.update(dt);
-    }
-}
-
 void Ingame::sail_to(int continent)
 {
     v.auto_move = true;
@@ -2300,7 +2263,7 @@ void Ingame::end_week(bool search)
         end_week_astrology(search);
         hud.set_gold(v.gold);
     }
-    day_clock = 0;
+    day_timer.reset();
     hud.set_days(v.days);
 }
 
@@ -2369,5 +2332,37 @@ void Ingame::fly_land()
         if (can_fly) {
             hero.set_mount(Mount::Fly);
         }
+    }
+}
+
+void Ingame::day_tick()
+{
+    v.days--;
+    if (v.days == 0) {
+        hud.set_days(v.days);
+        s_defeat.show(v.hero);
+        ss.push(&s_defeat, std::bind(&Ingame::defeat_pop, this, std::placeholders::_1));
+    }
+    else {
+        v.days_passed_this_week++;
+        if (v.days_passed_this_week == 5) {
+            v.days_passed_this_week = 0;
+            v.weeks_passed++;
+            end_week_astrology(false);
+            hud.set_gold(v.gold);
+        }
+        hud.set_days(v.days);
+    }
+}
+
+void Ingame::timestop_tick()
+{
+    v.timestop--;
+
+    if (v.timestop == 0) {
+        hud.clear_timestop();
+    }
+    else {
+        hud.set_timestop(v.timestop);
     }
 }
