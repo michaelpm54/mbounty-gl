@@ -65,9 +65,19 @@ bool Hero::can_move(int id, int x, int y, int c)
         case Mount::Boat:
             return id <= Tile_GrassInFrontOfCastle || id == Tile_BridgeHorizontal || id == Tile_BridgeVertical || id == Tile_WaterConnector || (id >= Tile_WaterIRT && id <= Tile_Water);
         case Mount::Walk:
-            return id <= Tile_GrassInFrontOfCastle || id == Tile_MobBlocker || id == Tile_BridgeHorizontal || id == Tile_BridgeVertical || (x == boat_x && y == boat_y && c == boat_c);
+            return id <= Tile_GrassInFrontOfCastle || id == Tile_MobBlocker || id == Tile_BridgeHorizontal || id == Tile_BridgeVertical || (id >= Tile_SandELT && id <= Tile_Sand);
         default:
             break;
     }
     return false;
+}
+
+float Hero::get_speed_multiplier() const
+{
+    return speed_multiplier;
+}
+
+void Hero::set_speed_multiplier(float n)
+{
+    speed_multiplier = n;
 }

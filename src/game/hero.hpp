@@ -23,6 +23,9 @@ public:
     Mount get_mount() const;
     void set_moving(bool val);
 
+    float get_speed_multiplier() const;
+    void set_speed_multiplier(float n);
+
 private:
     void update_texture();
 
@@ -37,6 +40,7 @@ private:
     int &boat_x;
     int &boat_y;
     int &boat_c;
+    float speed_multiplier {1};
 };
 
 #endif    // BTY_GAME_HERO_HPP_

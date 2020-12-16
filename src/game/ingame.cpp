@@ -1316,17 +1316,7 @@ int Ingame::get_move_input()
 
 bool Ingame::hero_can_move(int id)
 {
-    auto mount = hero.get_mount();
-    if (mount == Mount::Walk) {
-        return id == Tile_Grass;
-    }
-    else if (mount == Mount::Boat) {
-        return id >= Tile_WaterIRT && id <= Tile_Water;
-    }
-    else if (mount == Mount::Fly) {
-        return true;
-    }
-    return false;
+    return hero.can_move(id, 0, 0, 0);
 }
 
 bool Ingame::mob_can_move(int id)
@@ -1448,8 +1438,8 @@ void Ingame::move_hero(int move_flags, float dt)
     }
 
     auto mount = hero.get_mount();
-    float speed = mount == Mount::Fly ? 300.0f : 100.0f;
-    float vel = speed * dt;
+    float speed = mount == Mount::Fly ? 300.0f : 120.0f;
+    float vel = speed * dt * hero.get_speed_multiplier();
     float dx = dir.x * vel;
     float dy = dir.y * vel;
     auto pos = hero.get_position();
@@ -1536,6 +1526,12 @@ void Ingame::move_hero(int move_flags, float dt)
     /* Not colliding; if the tile is different to the previous one, update it and
 		forget about the last event tile meaning we can once again collide with it. */
     else if (center_tile.tx != last_tile.tx || center_tile.ty != last_tile.ty) {
+        if (center_tile.id >= Tile_SandELT && center_tile.id <= Tile_Sand) {
+            hero.set_speed_multiplier(0.6f);
+        }
+        else {
+            hero.set_speed_multiplier(1.0f);
+        }
         last_tile = center_tile;
         last_event_tile = {-1, -1, -1};
     }
