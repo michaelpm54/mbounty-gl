@@ -42,7 +42,7 @@ void Dialog::prev()
 
     int found = -1;
 
-    for (auto i = 0u; i < options_.size(); i++) {
+    for (int i = 0; i < static_cast<int>(options_.size()); i++) {
         int selection = (selection_ - i - 1 + options_.size()) % std::max(static_cast<int>(options_.size()), 1);
         if (options_[selection].enabled() && options_[selection].visible()) {
             found = selection;
