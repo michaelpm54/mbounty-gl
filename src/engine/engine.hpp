@@ -3,8 +3,9 @@
 
 #include <memory>
 
-#include "engine/scene-stack.hpp"
 #include "engine/dialog-stack.hpp"
+#include "engine/scene-stack.hpp"
+#include "game/game-options.hpp"
 #include "game/hud.hpp"
 #include "gfx/gfx.hpp"
 #include "window/window-engine-interface.hpp"
@@ -36,10 +37,12 @@ private:
     glm::mat4 view;
     bool run_ {true};
 
-    bool debug{false};
+    bool debug {false};
     Text fps_label;
     Text fps;
     Text frame_time;
+
+    GameOptions game_options;
 };
 
 }    // namespace bty

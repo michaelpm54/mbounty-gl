@@ -17,6 +17,7 @@ set(MBOUNTYGL_SRC
 	src/engine/scene-stack.cpp
 	src/engine/dialog-stack.cpp
 	src/engine/timer.cpp
+	src/game/game-controls.cpp
 	src/game/garrison.cpp
 	src/game/victory.cpp
 	src/game/wizard.cpp

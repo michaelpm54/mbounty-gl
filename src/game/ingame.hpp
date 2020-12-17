@@ -1,6 +1,8 @@
 #ifndef BTY_GAME_INGAME_HPP_
 #define BTY_GAME_INGAME_HPP_
 
+struct GameOptions;
+
 #include "engine/dialog-stack.hpp"
 #include "engine/dialog.hpp"
 #include "engine/scene.hpp"
@@ -9,6 +11,7 @@
 #include "game/battle.hpp"
 #include "game/defeat.hpp"
 #include "game/dir-flags.hpp"
+#include "game/game-controls.hpp"
 #include "game/garrison.hpp"
 #include "game/gen-variables.hpp"
 #include "game/hero.hpp"
@@ -43,7 +46,7 @@ struct c2AABB;
 
 class Ingame : public bty::Scene {
 public:
-    Ingame(GLFWwindow *window, bty::SceneStack &ss, bty::DialogStack &ds, bty::Assets &assets, Hud &hud);
+    Ingame(GLFWwindow *window, bty::SceneStack &ss, bty::DialogStack &ds, bty::Assets &assets, Hud &hud, GameOptions &game_options);
 
     void update(float dt) override;
     void key(int key, int action) override;
@@ -132,6 +135,7 @@ private:
     GenVariables gen;
 
     GLFWwindow *window;
+    GameOptions &game_options;
     bty::SceneStack &ss;
     bty::DialogStack &ds;
     Hud &hud;
@@ -164,6 +168,7 @@ private:
     Battle s_battle;
     Garrison s_garrison;
     Victory s_victory;
+    GameControls s_controls;
 
     int battle_mob {-1};
     int garrison_castle_id {-1};

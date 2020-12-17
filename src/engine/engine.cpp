@@ -32,7 +32,7 @@ void Engine::run()
 {
     using namespace std::chrono;
 
-    Ingame ingame(window_->handle, scene_stack, dialog_stack, assets, hud);
+    Ingame ingame(window_->handle, scene_stack, dialog_stack, assets, hud, game_options);
     Intro intro(scene_stack, dialog_stack, assets, ingame);
 
     scene_stack.push(&intro, nullptr);

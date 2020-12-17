@@ -26,8 +26,9 @@
 #include "gfx/gfx.hpp"
 #include "window/glfw.hpp"
 
-Ingame::Ingame(GLFWwindow *window, bty::SceneStack &ss, bty::DialogStack &ds, bty::Assets &assets, Hud &hud)
+Ingame::Ingame(GLFWwindow *window, bty::SceneStack &ss, bty::DialogStack &ds, bty::Assets &assets, Hud &hud, GameOptions &game_options)
     : window(window)
+    , game_options(game_options)
     , ss(ss)
     , ds(ds)
     , hud(hud)
@@ -48,6 +49,7 @@ Ingame::Ingame(GLFWwindow *window, bty::SceneStack &ss, bty::DialogStack &ds, bt
     , s_battle(ss, ds, assets, v, gen, view_army, view_char)
     , s_garrison(ss, ds, assets, hud, v, gen)
     , s_victory(ss, ds, assets, v, hud)
+    , s_controls(ss, assets, game_options)
     , cr({0.2f, 0.4f, 0.7f, 0.9f}, {8, 8}, {0, 0})
 {
     for (int i = 0; i < UnitId::UnitCount; i++) {
@@ -76,6 +78,7 @@ void Ingame::setup(int hero, int diff)
     ds.set_default_color(color);
     hud.set_color(color);
     hud.set_hud_frame();
+    s_controls.set_color(color);
 
     day_timer.reset();
     timestop_timer.reset();
@@ -1304,6 +1307,9 @@ void Ingame::pause()
                         break;
                     case 8:
                         dismiss();
+                        break;
+                    case 9:
+                        ss.push(&s_controls, nullptr);
                         break;
                     default:
                         break;
