@@ -86,3 +86,8 @@ void GameControls::set_color(bty::BoxColor color)
 {
     dialog.set_color(color);
 }
+
+void GameControls::set_battle(bool battle)
+{
+    dialog.set_position(battle ? 10 : 6, 10);
+}

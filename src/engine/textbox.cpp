@@ -20,6 +20,7 @@ void TextBox::create(
 {
     font_ = &assets.get_font();
     lines_.clear();
+    cell_positions.clear();
 
     auto &border = assets.get_border();
 
@@ -70,6 +71,10 @@ void TextBox::set_position(int x__, int y__)
 
     background_.set_position({x + 5, y + 5});
     background_outline_.set_position({x + 4, y + 4});
+
+    for (int i = 0; i < lines_.size(); i++) {
+        lines_[i].set_position(cell_positions[i].x * 8.0f + x, cell_positions[i].y * 8.0f + y);
+    }
 }
 
 void TextBox::draw(Gfx &gfx, glm::mat4 &camera)
@@ -97,6 +102,7 @@ Text *TextBox::add_line(int x, int y, std::string const &str)
     Text text;
     text.create(x_ + x, y_ + y, str, *font_);
     lines_.push_back(std::move(text));
+    cell_positions.push_back({x, y});
     lines_visible_.push_back(true);
 
     return &lines_.back();
@@ -137,6 +143,7 @@ void TextBox::clear()
 {
     lines_.clear();
     lines_visible_.clear();
+    cell_positions.clear();
 }
 
 }    // namespace bty

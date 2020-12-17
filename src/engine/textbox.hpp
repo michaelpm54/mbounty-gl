@@ -48,6 +48,7 @@ private:
     float height_;
 
 protected:
+    std::vector<glm::ivec2> cell_positions;
     std::deque<Text> lines_;
     const Font *font_;
     int x_;

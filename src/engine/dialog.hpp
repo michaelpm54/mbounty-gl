@@ -64,6 +64,7 @@ private:
     void update_arrow();
 
 private:
+    std::vector<glm::ivec2> cell_positions;
     std::deque<Option> options_;
     Sprite arrow_;
     int selection_ {0};

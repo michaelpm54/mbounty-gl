@@ -19,6 +19,8 @@ class DialogStack;
 class SceneStack;
 }    // namespace bty
 
+struct GameOptions;
+class GameControls;
 struct Variables;
 struct GenVariables;
 struct Unit;
@@ -27,7 +29,7 @@ class ViewCharacter;
 
 class Battle : public bty::Scene {
 public:
-    Battle(bty::SceneStack &ss, bty::DialogStack &ds, bty::Assets &assets, Variables &v, GenVariables &gen, ViewArmy &view_army, ViewCharacter &view_character);
+    Battle(bty::SceneStack &ss, bty::DialogStack &ds, bty::Assets &assets, Variables &v, GenVariables &gen, ViewArmy &view_army, ViewCharacter &view_character, GameControls &game_controls, GameOptions &game_options);
 
     void draw(bty::Gfx &gfx, glm::mat4 &camera) override;
     void key(int key, int action) override;
@@ -105,7 +107,6 @@ private:
     void pause();
     void view_army();
     void use_magic();
-    void controls(int selection = 0);
     void give_up();
 
     /* Pause menu helpers */
@@ -119,6 +120,7 @@ private:
     GenVariables &gen;
     ViewArmy &s_view_army;
     ViewCharacter &s_view_character;
+    GameControls &s_controls;
     BattleState state_ {BattleState::Moving};
     BattleState last_state_ {BattleState::Moving};
     glm::mat4 camera_ {1.0f};
@@ -182,6 +184,8 @@ private:
 
     std::array<int, 30> terrain;
     int castle_id {-1};
+
+    GameOptions &game_options;
 };
 
 #endif    // BTY_GAME_BATTLE_HPP_

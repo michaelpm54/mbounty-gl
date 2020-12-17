@@ -165,10 +165,10 @@ private:
     Wizard s_wizard;
 
     Defeat s_defeat;
-    Battle s_battle;
     Garrison s_garrison;
     Victory s_victory;
     GameControls s_controls;
+    Battle s_battle;
 
     int battle_mob {-1};
     int garrison_castle_id {-1};

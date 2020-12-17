@@ -19,6 +19,7 @@ public:
     void draw(bty::Gfx &gfx, glm::mat4 &camera) override;
     void update(float dt) override;
     void set_color(bty::BoxColor color);
+    void set_battle(bool battle);
 
 private:
     bty::SceneStack &ss;

@@ -13,6 +13,8 @@
 #include "engine/dialog-stack.hpp"
 #include "engine/scene-stack.hpp"
 #include "game/army-gen.hpp"
+#include "game/game-controls.hpp"
+#include "game/game-options.hpp"
 #include "game/gen-variables.hpp"
 #include "game/variables.hpp"
 #include "gfx/gfx.hpp"
@@ -152,13 +154,15 @@ static constexpr char const *kStatuses[] = {
     "{} are out of control!",
 };
 
-Battle::Battle(bty::SceneStack &ss, bty::DialogStack &ds, bty::Assets &assets, Variables &v, GenVariables &gen, ViewArmy &view_army_, ViewCharacter &view_character_)
+Battle::Battle(bty::SceneStack &ss, bty::DialogStack &ds, bty::Assets &assets, Variables &v, GenVariables &gen, ViewArmy &view_army_, ViewCharacter &view_character_, GameControls &game_controls, GameOptions &game_options)
     : ss(ss)
     , ds(ds)
     , v(v)
     , gen(gen)
     , s_view_army(view_army_)
     , s_view_character(view_character_)
+    , s_controls(game_controls)
+    , game_options(game_options)
 {
     camera_ = glm::ortho(0.0f, 320.0f, 224.0f, 0.0f, -1.0f, 1.0f);
 
@@ -1292,7 +1296,10 @@ void Battle::menu_confirm(int opt)
             set_state(BattleState::Waiting);
             break;
         case 5:
-            controls();
+            s_controls.set_battle(true);
+            ss.push(&s_controls, [this](int) {
+                delay_duration_ = game_options.combat_delay * 0.24f;
+            });
             break;
         case 6:
             give_up();
@@ -1700,53 +1707,6 @@ bool Battle::any_enemy_around() const
         }
     }
     return false;
-}
-
-void Battle::controls(int selection)
-{
-    auto *dialog = ds.show_dialog({
-        .x = 10,
-        .y = 10,
-        .w = 20,
-        .h = 9,
-        .strings = {
-            {4, 1, "Game Control"},
-            {4, 2, "____________"},
-        },
-        .options = {
-            {4, 4, "Music on"},
-            {4, 5, "Sound on"},
-            {4, 6, fmt::format("Combat delay {}", delay_)},
-        },
-        .callbacks = {
-            .confirm = [this](int opt) {
-                switch (opt) {
-                    case 0:
-                        break;
-                    case 1:
-                        break;
-                    case 2:
-                        delay_ = (delay_ + 1) % 10;
-                        controls(opt);
-                        break;
-                    default:
-                        break;
-                }
-            },
-            .left = [this](bty::Dialog &d) {
-                delay_ = (delay_ - 1 + 10) % 10;
-                d.get_options()[2].set_string(fmt::format("Combat delay {}", delay_));
-            },
-            .right = [this](bty::Dialog &d) {
-                delay_ = (delay_ + 1) % 10;
-                d.get_options()[2].set_string(fmt::format("Combat delay {}", delay_));
-            },
-        },
-    });
-
-    dialog->set_selection(selection);
-
-    delay_duration_ = delay_ * 0.24f;
 }
 
 void Battle::pause()

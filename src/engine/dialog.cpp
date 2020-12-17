@@ -65,8 +65,10 @@ void Dialog::set_position(int x, int y)
     TextBox::set_position(x, y);
 
     for (auto i = 0u; i < options_.size(); i++) {
-        options_[i].set_position({x_ + x, y_ + y});
+        options_[i].set_position({cell_positions[i].x * 8 + 8 * x, cell_positions[i].y * 8 + 8 * y});
     }
+
+    update_arrow();
 }
 
 /* clang-format off */
@@ -82,6 +84,7 @@ void Dialog::create(
     TextBox::set_size(w, h);
 
     options_.clear();
+    cell_positions.clear();
     arrow_.set_texture(assets.get_texture("arrow.png", {2, 2}));
     selection_ = -1;
 
@@ -94,6 +97,7 @@ Option *Dialog::add_option(int x, int y, const std::string &str)
     opt.create(x_ + x, y_ + y, str, *font_);
 
     options_.push_back(std::move(opt));
+    cell_positions.push_back({x, y});
 
     set_selection(0);
 
@@ -169,6 +173,7 @@ int Dialog::get_selection() const
 void Dialog::clear_options()
 {
     options_.clear();
+    cell_positions.clear();
     selection_ = -1;
 }
 

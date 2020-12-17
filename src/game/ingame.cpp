@@ -46,10 +46,10 @@ Ingame::Ingame(GLFWwindow *window, bty::SceneStack &ss, bty::DialogStack &ds, bt
     , town(ss, ds, assets, v, gen, hud, view_contract, boat)
     , s_wizard(ss, assets, v, hud)
     , s_defeat(ss, ds, assets, hud)
-    , s_battle(ss, ds, assets, v, gen, view_army, view_char)
     , s_garrison(ss, ds, assets, hud, v, gen)
     , s_victory(ss, ds, assets, v, hud)
     , s_controls(ss, assets, game_options)
+    , s_battle(ss, ds, assets, v, gen, view_army, view_char, s_controls, game_options)
     , cr({0.2f, 0.4f, 0.7f, 0.9f}, {8, 8}, {0, 0})
 {
     for (int i = 0; i < UnitId::UnitCount; i++) {
@@ -1309,6 +1309,7 @@ void Ingame::pause()
                         dismiss();
                         break;
                     case 9:
+                        s_controls.set_battle(false);
                         ss.push(&s_controls, nullptr);
                         break;
                     default:
