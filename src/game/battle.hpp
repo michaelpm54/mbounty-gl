@@ -26,10 +26,31 @@ struct GenVariables;
 struct Unit;
 class ViewArmy;
 class ViewCharacter;
+class Hud;
+
+enum ActionId {
+    AidMeleeAttack,
+    AidShootAttack,
+    AidMagicAttack,
+    AidTryMove,
+    AidMove,
+    AidFly,
+    AidWait,
+    AidPass,
+    AidRetaliate,
+    AidTryShoot,
+};
+
+struct Action {
+    ActionId id;
+    glm::ivec2 from;
+    glm::ivec2 to;
+    std::string fmtstr;
+};
 
 class Battle : public bty::Scene {
 public:
-    Battle(bty::SceneStack &ss, bty::DialogStack &ds, bty::Assets &assets, Variables &v, GenVariables &gen, ViewArmy &view_army, ViewCharacter &view_character, GameControls &game_controls, GameOptions &game_options);
+    Battle(bty::SceneStack &ss, bty::DialogStack &ds, bty::Assets &assets, Variables &v, GenVariables &gen, ViewArmy &view_army, ViewCharacter &view_character, GameControls &game_controls, GameOptions &game_options, Hud &hud);
 
     void draw(bty::Gfx &gfx, glm::mat4 &camera) override;
     void key(int key, int action) override;
@@ -39,19 +60,16 @@ public:
 
 private:
     enum class BattleState {
-        Moving,
+        Grounded,
         Waiting,
         Flying,
         Attack,
         PauseToDisplayDamage,
         Retaliation,
         Menu,
-        Shooting,
-        Magic,
         GiveUp,
         ViewArmy,
         ViewCharacter,
-        TemporaryMessage,
         Delay,
         IsFrozen,
         Pass,
@@ -65,32 +83,28 @@ private:
         int hp;
         int injury;
         int ammo;
+        int moves;
+        int waits;
+        int x;
+        int y;
         bool out_of_control;
         bool frozen;
+        bool flying;
+        bool retaliated;
     };
 
     void move_unit_to(int team, int unit, int x, int y);
     void confirm();
-    void move_confirm();
-    void shoot_confirm();
     void magic_confirm();
     void move_cursor(int dir);
-    void status();
     void status_wait(const Unit &unit);
     void status_fly(const Unit &unit);
     void status_attack(const Unit &unit);
     void status_retaliation(const Unit &unit);
-    void next_unit();
-    void update_cursor();
-    void update_current();
     void reset_moves();
-    void reset_waits();
-    void set_state(BattleState state);
-    void land();
-    void attack(int from_team, int from_unit, int to_team, int to_unit);
+    int attack(int from_team, int from_unit, int to_team, int to_unit, bool shoot, bool magic, bool retaliation);
     std::tuple<int, bool> get_unit(int x, int y) const;
-    void update_unit_info();
-    void damage(int from_team, int from_unit, int to_team, int to_unit, bool is_ranged, bool is_external, int external_damage, bool retaliation);
+    int damage(int from_team, int from_unit, int to_team, int to_unit, bool is_ranged, bool is_external, int external_damage, bool retaliation);
     void clear_dead_units();
     void update_counts();
     void use_spell(int spell);
@@ -102,6 +116,7 @@ private:
     bool check_end();
     void victory();
     bool any_enemy_around() const;
+    bool any_enemy_around(int team, int unit) const;
 
     /* Pause menu */
     void pause();
@@ -113,6 +128,39 @@ private:
     void menu_confirm(int opt);
     void give_up_confirm(int opt);
 
+    std::string get_name() const;
+
+    int check_waiting() const;
+    int get_next_unit() const;
+    void next_team();
+    void set_move_state();
+    UnitState &get_unit();
+    void delay_then(std::function<void()> callback);
+    void on_move();
+    void set_status(const std::string &msg, bool wait_for_enter = false);
+    void show_hit_marker(int x, int y);
+    void hide_hit_marker();
+
+    enum Cursor {
+        Fly,
+        Move,
+        Melee,
+        Shoot,
+        Magic,
+        None,
+    };
+
+    void set_cursor_mode(Cursor cursor);
+    void do_action(Action action);
+
+    void afn_try_move(Action action);
+    void afn_move(Action action);
+    void afn_attack(Action action);
+    void afn_retaliate(Action action);
+    void afn_wait(Action action);
+    void afn_pass(Action action);
+    void afn_try_shoot(Action action);
+
 private:
     bty::SceneStack &ss;
     bty::DialogStack &ds;
@@ -121,27 +169,22 @@ private:
     ViewArmy &s_view_army;
     ViewCharacter &s_view_character;
     GameControls &s_controls;
-    BattleState state_ {BattleState::Moving};
-    BattleState last_state_ {BattleState::Moving};
     glm::mat4 camera_ {1.0f};
     bty::Sprite bg_;
     bty::Sprite frame_;
     bty::Rect bar_;
     bty::Sprite cursor_;
     bty::Sprite current_;
-    std::array<std::array<glm::ivec2, 5>, 2> positions_;
     std::array<std::array<bty::Text, 5>, 2> counts_;
     std::array<std::array<bty::Sprite, 5>, 2> sprites_;
     std::array<const bty::Texture *, 25> unit_textures_;
     int cx_ {0};
     int cy_ {0};
-    bty::Text status_;
     glm::ivec2 active_ {0, 0};
     std::array<std::array<int, 5>, 2> armies_;
     std::array<std::array<int, 5>, 2> moves_left_;
     std::array<std::array<int, 5>, 2> waits_used_;
     std::array<std::array<bool, 5>, 2> flown_this_turn_;
-    std::array<std::array<bool, 5>, 2> retaliated_this_turn_;
     int cursor_distance_x_ {0};
     int cursor_distance_y_ {0};
     const bty::Texture *move_;
@@ -157,8 +200,6 @@ private:
     int last_kills_ {0};
 
     std::array<std::array<UnitState, 5>, 2> unit_states_;
-
-    BattleState state_before_menu_ {BattleState::Moving};
 
     int using_spell_ {-1};
     bool used_spell_this_turn_ {false};
@@ -186,6 +227,19 @@ private:
     int castle_id {-1};
 
     GameOptions &game_options;
+    Hud &hud;
+
+    bool status_changed {false};
+
+    std::function<void()> delay_callback {nullptr};
+    bool draw_hit_marker {false};
+
+    const bty::Texture *current_friendly;
+    const bty::Texture *current_enemy;
+    Cursor cursor_mode {Cursor::Move};
+
+    bool in_delay {false};
+    bool cursor_constrained {false};
 };
 
 #endif    // BTY_GAME_BATTLE_HPP_

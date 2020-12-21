@@ -16,6 +16,7 @@
 #include "game/game-controls.hpp"
 #include "game/game-options.hpp"
 #include "game/gen-variables.hpp"
+#include "game/hud.hpp"
 #include "game/variables.hpp"
 #include "gfx/gfx.hpp"
 #include "window/glfw.hpp"
@@ -66,95 +67,7 @@ static constexpr char const *kEncounterVictoryMessage = {
 	)raw",
 };
 
-enum StatusId {
-    ATTACK_MOVE,
-    ATTACK_SHOOT_MOVE,
-    SHOOT,
-    CANT_ATTACK_FRIENDLY,
-    WAIT,
-    FLY,
-    ERR_FLY_OCCUPIED,
-    ERR_MOVE_OCCUPIED,
-    ATTACK,
-    RETALIATION,
-    NO_COMBAT_SPELL,
-    NEED_TARGET,
-    NEED_ENEMY,
-    SELECT_LIGHTNING,
-    LIGHTNING_KILLS,
-    INVALID_SPELL_TARGET,
-    SELECT_FIREBALL,
-    FIREBALL_KILLS,
-    SELECT_TURN_UNDEAD,
-    TURN_UNDEAD_NO_EFFECT,
-    TURN_UNDEAD_KILLS,
-    ONE_SPELL_PER_TURN,
-    SELECT_TELEPORT,
-    SELECT_TELEPORT_LOCATION,
-    INVALID_TELEPORT_DESTINATION,
-    TELEPORT_USED,
-    CLONE_SELECT,
-    CLONE_MUST_SELECT_FRIENDLY,
-    CLONE_USED,
-    FREEZE_SELECT,
-    FREEZE_USED,
-    RESURRECT_SELECT,
-    RESURRECT_USED,
-    DRAGON_IMMUNE_CLONE,
-    DRAGON_IMMUNE_TELEPORT,
-    DRAGON_IMMUNE_FIREBALL,
-    DRAGON_IMMUNE_LIGHTNING,
-    DRAGON_IMMUNE_FREEZE,
-    DRAGON_IMMUNE_RESURRECT,
-    DRAGON_IMMUNE_TURN_UNDEAD,
-    OUT_OF_CONTROL,
-};
-
-static constexpr char const *kStatuses[] = {
-    "{} Attack or Move {}",
-    "{} Attack, Shoot or Move {}",
-    "{} Shoot ({} left)",
-    "   You can't attack your own army!",
-    "{} wait",
-    "{} fly",
-    " You can't land on an occupied area!",
-    " You can't move to an occupied area!",
-    "{} attack {}, {} die",
-    "{} retaliate, killing {}",
-    "   You have no Combat spell to cast!",
-    "      You must target somebody!",
-    "   You must select an opposing army!",
-    "  Select enemy army to electricute.",
-    "Lightning kills {} {}",
-    "   You must select an opposing army!",
-    "     Select enemy army to blast.",
-    "Fireball kills {} {}",
-    "     Select enemy army to turn.",
-    "Turn has no effect on {}",
-    "Turn undead kills {}",
-    "You may only cast one spell per round!",
-    "       Select army to teleport.",
-    " Select new location to teleport army.",
-    "  You must teleport to an empty area!",
-    "{} are teleported",
-    "     Select your army to clone",
-    "    You must select your own army!",
-    "{} {} are cloned",
-    "     Select enemy army to freeze.",
-    "{} are frozen",
-    "   Select your army to resurrect.",
-    "{} {} are resurrected",
-    "Clone has no effect on Dragons",
-    "Teleport has no effect on Dragons",
-    "Fireball has no effect on Dragons",
-    "Lightning has no effect on Dragons",
-    "Freeze has no effect on Dragons",
-    "Resurrect has no effect on Dragons",
-    "Turn has no effect on Dragons",
-    "{} are out of control!",
-};
-
-Battle::Battle(bty::SceneStack &ss, bty::DialogStack &ds, bty::Assets &assets, Variables &v, GenVariables &gen, ViewArmy &view_army_, ViewCharacter &view_character_, GameControls &game_controls, GameOptions &game_options)
+Battle::Battle(bty::SceneStack &ss, bty::DialogStack &ds, bty::Assets &assets, Variables &v, GenVariables &gen, ViewArmy &view_army_, ViewCharacter &view_character_, GameControls &game_controls, GameOptions &game_options, Hud &hud)
     : ss(ss)
     , ds(ds)
     , v(v)
@@ -163,6 +76,7 @@ Battle::Battle(bty::SceneStack &ss, bty::DialogStack &ds, bty::Assets &assets, V
     , s_view_character(view_character_)
     , s_controls(game_controls)
     , game_options(game_options)
+    , hud(hud)
 {
     camera_ = glm::ortho(0.0f, 320.0f, 224.0f, 0.0f, -1.0f, 1.0f);
 
@@ -177,9 +91,9 @@ Battle::Battle(bty::SceneStack &ss, bty::DialogStack &ds, bty::Assets &assets, V
     bar_.set_color(color);
     bar_.set_size(304, 9);
     bar_.set_position(8, 7);
-    current_.set_texture(assets.get_texture("battle/active-unit.png", {5, 2}));
-    status_.set_font(font);
-    status_.set_position(8, 8);
+    current_friendly = assets.get_texture("battle/active-unit.png", {5, 2});
+    current_enemy = assets.get_texture("battle/enemy.png", {10, 1});
+    current_.set_texture(current_friendly);
     hit_marker_.set_texture(assets.get_texture("battle/damage-marker.png", {4, 1}));
     hit_marker_.set_animation_repeat(false);
 
@@ -201,18 +115,9 @@ Battle::Battle(bty::SceneStack &ss, bty::DialogStack &ds, bty::Assets &assets, V
 
 void Battle::draw(bty::Gfx &gfx, glm::mat4 &)
 {
-    bool tmp_msg {false};
-    BattleState tmp_state_;
-    if (state_ == BattleState::TemporaryMessage) {
-        tmp_msg = true;
-        tmp_state_ = state_;
-        state_ = last_state_;
-    }
-
     gfx.draw_sprite(bg_, camera_);
-    gfx.draw_sprite(frame_, camera_);
-    gfx.draw_rect(bar_, camera_);
-    gfx.draw_text(status_, camera_);
+
+    hud.draw(gfx, camera_);
 
     gfx.draw_sprite(current_, camera_);
 
@@ -225,9 +130,7 @@ void Battle::draw(bty::Gfx &gfx, glm::mat4 &)
         }
     }
 
-    if (state_ == BattleState::Moving || state_ == BattleState::Flying || state_ == BattleState::Waiting || state_ == BattleState::Menu || state_ == BattleState::Shooting || state_ == BattleState::Magic || state_ == BattleState::IsFrozen || state_ == BattleState::Delay || state_ == BattleState::Pass) {
-        gfx.draw_sprite(cursor_, camera_);
-    }
+    gfx.draw_sprite(cursor_, camera_);
 
     for (int i = 0; i < 2; i++) {
         for (int j = 0; j < 5; j++) {
@@ -238,76 +141,38 @@ void Battle::draw(bty::Gfx &gfx, glm::mat4 &)
         }
     }
 
-    if (state_ == BattleState::Attack || state_ == BattleState::Retaliation) {
+    if (draw_hit_marker) {
         gfx.draw_sprite(hit_marker_, camera_);
-    }
-
-    if (tmp_msg) {
-        state_ = tmp_state_;
     }
 }
 
 void Battle::key(int key, int action)
 {
-    switch (state_) {
-        case BattleState::Magic:
-            [[fallthrough]];
-        case BattleState::Shooting:
-            [[fallthrough]];
-        case BattleState::Flying:
-            [[fallthrough]];
-        case BattleState::Moving:
-            switch (action) {
-                case GLFW_PRESS:
-                    switch (key) {
-                        case GLFW_KEY_LEFT:
-                            move_cursor(0);
-                            break;
-                        case GLFW_KEY_RIGHT:
-                            move_cursor(1);
-                            break;
-                        case GLFW_KEY_UP:
-                            move_cursor(2);
-                            break;
-                        case GLFW_KEY_DOWN:
-                            move_cursor(3);
-                            break;
-                        case GLFW_KEY_ENTER:
-                            confirm();
-                            break;
-                        case GLFW_KEY_SPACE:
-                            pause();
-                            break;
-                        case GLFW_KEY_V:
-                            victory();
-                            break;
-                        default:
-                            break;
-                    }
-                    break;
-                default:
-                    break;
-            }
+    if (action != GLFW_PRESS || in_delay) {
+        return;
+    }
+
+    switch (key) {
+        case GLFW_KEY_LEFT:
+            move_cursor(0);
             break;
-        case BattleState::TemporaryMessage:
-            switch (action) {
-                case GLFW_PRESS:
-                    switch (key) {
-                        case GLFW_KEY_BACKSPACE:
-                            [[fallthrough]];
-                        case GLFW_KEY_SPACE:
-                            [[fallthrough]];
-                        case GLFW_KEY_ENTER:
-                            set_state(state_before_menu_);
-                            status();
-                            break;
-                        default:
-                            break;
-                    }
-                    break;
-                default:
-                    break;
-            }
+        case GLFW_KEY_RIGHT:
+            move_cursor(1);
+            break;
+        case GLFW_KEY_UP:
+            move_cursor(2);
+            break;
+        case GLFW_KEY_DOWN:
+            move_cursor(3);
+            break;
+        case GLFW_KEY_ENTER:
+            confirm();
+            break;
+        case GLFW_KEY_SPACE:
+            pause();
+            break;
+        case GLFW_KEY_V:
+            victory();
             break;
         default:
             break;
@@ -316,75 +181,24 @@ void Battle::key(int key, int action)
 
 void Battle::update(float dt)
 {
-    switch (state_) {
-        case BattleState::Waiting:
-            delay_timer_ += dt;
-            if (delay_timer_ >= delay_duration_) {
-                delay_timer_ = 0;
-                next_unit();
+    if (draw_hit_marker) {
+        hit_marker_.update(dt);
+        if (hit_marker_.is_animation_done()) {
+            hide_hit_marker();
+        }
+    }
+
+    if (in_delay) {
+        delay_timer_ += dt;
+        if (delay_timer_ >= delay_duration_) {
+            in_delay = false;
+            delay_timer_ = 0;
+            if (delay_callback) {
+                auto cb = delay_callback;
+                delay_callback = nullptr;
+                cb();
             }
-            break;
-        case BattleState::Retaliation:
-            [[fallthrough]];
-        case BattleState::Attack:
-            if (hit_marker_.is_animation_done()) {
-                set_state(BattleState::PauseToDisplayDamage);
-            }
-            else {
-                hit_marker_.update(dt);
-            }
-            break;
-        case BattleState::PauseToDisplayDamage:
-            delay_timer_ += dt;
-            if (delay_timer_ >= delay_duration_) {
-                if (using_spell_ != -1) {    // no retaliation on magic
-                    using_spell_ = -1;
-                    clear_dead_units();
-                    update_counts();
-                    set_state(state_before_menu_);
-                    set_cursor_position(positions_[active_.x][active_.y].x, positions_[active_.x][active_.y].y);
-                    update_unit_info();
-                }
-                else if (was_shooting_) {    // no retaliation on shooting
-                    clear_dead_units();
-                    update_counts();
-                    next_unit();
-                    was_shooting_ = false;
-                }
-                else if (!do_retaliate || retaliated_this_turn_[last_attacked_team_][last_attacked_unit_]) {    // no retaliation on retaliation
-                    clear_dead_units();
-                    update_counts();
-                    next_unit();
-                }
-                else if (do_retaliate && !retaliated_this_turn_[last_attacked_team_][last_attacked_unit_]) {    // retaliate
-                    do_retaliate = false;
-                    retaliated_this_turn_[last_attacked_team_][last_attacked_unit_] = true;
-                    attack(last_attacked_team_, last_attacked_unit_, last_attacking_team_, last_attacking_unit_);
-                    set_state(BattleState::Retaliation);
-                    status();
-                }
-                check_end();
-            }
-            break;
-        case BattleState::Delay:
-            delay_timer_ += dt;
-            if (delay_timer_ >= delay_duration_) {
-                delay_timer_ = 0;
-                set_state(state_before_menu_);
-                set_cursor_position(positions_[active_.x][active_.y].x, positions_[active_.x][active_.y].y);
-            }
-            break;
-        case BattleState::Pass:
-            [[fallthrough]];
-        case BattleState::IsFrozen:
-            delay_timer_ += dt;
-            if (delay_timer_ >= delay_duration_) {
-                delay_timer_ = 0;
-                next_unit();
-            }
-            break;
-        default:
-            break;
+        }
     }
 
     for (int i = 0; i < 2; i++) {
@@ -400,8 +214,18 @@ void Battle::update(float dt)
     current_.update(dt);
 }
 
+std::string Battle::get_name() const
+{
+    if (active_.x == -1 || active_.y == -1) {
+        return "INVALID";
+    }
+    return kUnits[armies_[active_.x][active_.y]].name_plural;
+}
+
 void Battle::show(std::array<int, 5> &enemy_army, std::array<int, 5> &enemy_counts, bool siege, int castle_id)
 {
+    hud.set_blank_frame();
+
     this->enemy_army = &enemy_army;
     this->enemy_counts = &enemy_counts;
     this->siege = siege;
@@ -441,35 +265,16 @@ void Battle::show(std::array<int, 5> &enemy_army, std::array<int, 5> &enemy_coun
     bar_.set_color(bty::get_box_color(v.diff));
 
     delay_timer_ = 0;
-    last_state_ = BattleState::Moving;
-    state_ = BattleState::Moving;
     last_attacking_team_ = -1;
     last_attacking_unit_ = -1;
     last_attacked_team_ = -1;
     last_attacked_unit_ = -1;
 
-    /* Initialise states */
-    for (int i = 0; i < 2; i++) {
-        for (int j = 0; j < 5; j++) {
-            armies_[i][j] = -1;
-
-            auto &us = unit_states_[i][j];
-            us.id = -1;
-            us.start_count = 0;
-            us.turn_count = 0;
-            us.count = 0;
-            us.ammo = 0;
-            us.hp = 0;
-            us.injury = 0;
-            us.out_of_control = false;
-            us.frozen = false;
-        }
-    }
-
     int *armies[] = {v.army.data(), enemy_army.data()};
     int *counts[] = {v.counts.data(), enemy_counts.data()};
 
     /* Set armies from shared v. */
+    /* Initialise states */
     for (int i = 0; i < 2; i++) {
         for (int j = 0; j < 5; j++) {
             armies_[i][j] = armies[i][j];
@@ -483,6 +288,12 @@ void Battle::show(std::array<int, 5> &enemy_army, std::array<int, 5> &enemy_coun
             us.injury = 0;
             us.ammo = unit.initial_ammo;
             us.out_of_control = (us.hp * us.count) > v.leadership;
+            us.flying = !!(unit.abilities & AbilityFly);
+            us.moves = unit.initial_moves;
+            us.waits = 0;
+            us.out_of_control = false;
+            us.frozen = false;
+            us.retaliated = false;
         }
     }
 
@@ -545,11 +356,6 @@ void Battle::show(std::array<int, 5> &enemy_army, std::array<int, 5> &enemy_coun
             /* Set counts */
             counts_[i][j].set_position(sprites_[i][j].get_position() + glm::vec2(24.0f, 26.0f));
             counts_[i][j].set_string(std::to_string(unit_states_[i][j].count));
-
-            /* Set states */
-            const auto &unit = kUnits[armies_[i][j]];
-            moves_left_[i][j] = unit.initial_moves;
-            waits_used_[i][j] = 0;
         }
     }
 
@@ -557,16 +363,32 @@ void Battle::show(std::array<int, 5> &enemy_army, std::array<int, 5> &enemy_coun
         return;
     }
 
-    reset_moves();
-    reset_waits();
     active_ = {0, 0};
-    update_unit_info();
+    set_move_state();
+}
 
-    cx_ = kStartingPositions[type][0][0].x;
-    cy_ = kStartingPositions[type][0][0].y;
-    update_cursor();
-    update_current();
-    status();
+void Battle::set_move_state()
+{
+    auto &unit = get_unit();
+
+    if (unit.flying) {
+        set_status(fmt::format("{} fly", get_name()));
+        set_cursor_mode(Cursor::Fly);
+    }
+    else {
+        set_status(fmt::format("{} Attack or Move {}", get_name(), unit.moves));
+        set_cursor_mode(Cursor::Move);
+    }
+
+    current_.set_position(16.0f + unit.x * 48.0f, 24.0f + unit.y * 40.0f);
+    set_cursor_position(unit.x, unit.y);
+
+    if (active_.x == 1) {
+        current_.set_texture(current_enemy);
+    }
+    else {
+        current_.set_texture(current_friendly);
+    }
 }
 
 void Battle::move_unit_to(int team, int unit, int x, int y)
@@ -584,23 +406,25 @@ void Battle::move_unit_to(int team, int unit, int x, int y)
     float y_ = 24.0f + y * 40.0f;
     sprites_[team][unit].set_position(x_, y_);
     counts_[team][unit].set_position(x_ + 24.0f, y_ + 26.0f);
-    positions_[team][unit] = {x, y};
+    unit_states_[team][unit].x = x;
+    unit_states_[team][unit].y = y;
     cursor_distance_x_ = 0;
     cursor_distance_y_ = 0;
-    update_current();
 }
 
 void Battle::move_cursor(int dir)
 {
+    const auto &unit {get_unit()};
+
     switch (dir) {
         case 0:    // left
             if (cx_ == 0) {
                 return;
             }
-            if (state_ == BattleState::Flying || state_ == BattleState::Magic || state_ == BattleState::Shooting) {
+            if (!cursor_constrained) {
                 cx_--;
             }
-            else if (state_ == BattleState::Moving && cursor_distance_x_ > -1) {
+            else if (cursor_distance_x_ > -1) {
                 cx_--;
                 cursor_distance_x_--;
             }
@@ -609,10 +433,10 @@ void Battle::move_cursor(int dir)
             if (cx_ == 5) {
                 return;
             }
-            if (state_ == BattleState::Flying || state_ == BattleState::Magic || state_ == BattleState::Shooting) {
+            if (!cursor_constrained) {
                 cx_++;
             }
-            else if (state_ == BattleState::Moving && cursor_distance_x_ < 1) {
+            else if (cursor_distance_x_ < 1) {
                 cx_++;
                 cursor_distance_x_++;
             }
@@ -621,10 +445,10 @@ void Battle::move_cursor(int dir)
             if (cy_ == 0) {
                 return;
             }
-            if (state_ == BattleState::Flying || state_ == BattleState::Magic || state_ == BattleState::Shooting) {
+            if (!cursor_constrained) {
                 cy_--;
             }
-            else if (state_ == BattleState::Moving && cursor_distance_y_ > -1) {
+            else if (cursor_distance_y_ > -1) {
                 cy_--;
                 cursor_distance_y_--;
             }
@@ -633,10 +457,10 @@ void Battle::move_cursor(int dir)
             if (cy_ == 4) {
                 return;
             }
-            if (state_ == BattleState::Flying || state_ == BattleState::Magic || state_ == BattleState::Shooting) {
+            if (!cursor_constrained) {
                 cy_++;
             }
-            else if (state_ == BattleState::Moving && cursor_distance_y_ < 1) {
+            else if (cursor_distance_y_ < 1) {
                 cy_++;
                 cursor_distance_y_++;
             }
@@ -645,295 +469,39 @@ void Battle::move_cursor(int dir)
             break;
     }
 
-    update_cursor();
+    set_cursor_position(cx_, cy_);
 
-    if (state_ == BattleState::Moving) {
+    if (cursor_constrained) {
         auto [unit, enemy] = get_unit(cx_, cy_);
         (void)unit;
         if (enemy) {
-            cursor_.set_texture(melee_);
+            set_cursor_mode(Cursor::Melee);
         }
         else {
-            cursor_.set_texture(move_);
+            set_cursor_mode(Cursor::Move);
         }
     }
 }
 
 void Battle::confirm()
 {
-    switch (state_) {
-        case BattleState::Flying:
-            land();
+    switch (cursor_mode) {
+        case Cursor::Melee:
+            [[fallthrough]];
+        case Cursor::Move:
+            [[fallthrough]];
+        case Cursor::Fly:
+            do_action({AidTryMove, active_, {cx_, cy_}});
             break;
-        case BattleState::Moving:
-            move_confirm();
+        case Cursor::Shoot:
+            do_action({AidTryShoot, active_, {cx_, cy_}});
             break;
-        case BattleState::Magic:
+        case Cursor::Magic:
             magic_confirm();
             break;
-        case BattleState::Shooting:
-            shoot_confirm();
-            break;
         default:
             break;
     }
-}
-
-void Battle::land()
-{
-    auto [unit, enemy] = get_unit(cx_, cy_);
-    (void)enemy;
-
-    if (unit != -1 && unit != active_.y) {
-        status_.set_string(kStatuses[ERR_FLY_OCCUPIED]);
-        return;
-    }
-
-    for (int i = 0; i < 30; i++) {
-        if (terrain[cx_ + cy_ * 6] != 0) {
-            status_.set_string(kStatuses[ERR_FLY_OCCUPIED]);
-            return;
-        }
-    }
-
-    /* Don't count landing in place as flying. */
-    if (unit != active_.y) {
-        flown_this_turn_[active_.x][active_.y] = true;
-    }
-    set_state(BattleState::Moving);
-    move_unit_to(active_.x, active_.y, cx_, cy_);
-
-    status_.set_string(fmt::format(kStatuses[ATTACK_MOVE], kUnits[armies_[active_.x][active_.y]].name_plural, moves_left_[active_.x][active_.y]));
-}
-
-void Battle::move_confirm()
-{
-    if (cx_ == positions_[active_.x][active_.y].x && cy_ == positions_[active_.x][active_.y].y) {
-        if (unit_states_[active_.x][active_.y].ammo == 0 || any_enemy_around()) {
-            waits_used_[active_.x][active_.y]++;
-            set_state(BattleState::Waiting);
-        }
-        else {
-            set_state(BattleState::Shooting);
-        }
-        return;
-    }
-
-    auto [unit, enemy] = get_unit(cx_, cy_);
-
-    if (enemy) {
-        do_retaliate = true;
-        set_state(BattleState::Attack);
-        return;
-    }
-    else {
-        if (unit != -1) {
-            status_.set_string(kStatuses[ERR_MOVE_OCCUPIED]);
-            return;
-        }
-    }
-
-    for (int i = 0; i < 30; i++) {
-        if (terrain[cx_ + cy_ * 6] != 0) {
-            status_.set_string(kStatuses[ERR_MOVE_OCCUPIED]);
-            return;
-        }
-    }
-
-    move_unit_to(active_.x, active_.y, cx_, cy_);
-
-    moves_left_[active_.x][active_.y]--;
-
-    if (moves_left_[active_.x][active_.y] == 0) {
-        next_unit();
-    }
-    else {
-        if (unit_states_[active_.x][active_.y].out_of_control) {
-            status_.set_string(fmt::format(kStatuses[OUT_OF_CONTROL], kUnits[armies_[active_.x][active_.y]].name_plural));
-        }
-        else if (unit_states_[active_.x][active_.y].ammo && !any_enemy_around()) {
-            status_.set_string(fmt::format(kStatuses[ATTACK_SHOOT_MOVE], kUnits[armies_[active_.x][active_.y]].name_plural, moves_left_[active_.x][active_.y]));
-        }
-        else {
-            status_.set_string(fmt::format(kStatuses[ATTACK_MOVE], kUnits[armies_[active_.x][active_.y]].name_plural, moves_left_[active_.x][active_.y]));
-        }
-    }
-}
-
-void Battle::next_unit()
-{
-    if (check_end()) {
-        return;
-    }
-
-    delay_timer_ = 0;
-
-    bool loop_back_for_waits {false};
-    bool next_team {false};
-
-    /* There was a unit waiting */
-    for (int i = 0; i < 5; i++) {
-        int index = (i + 1 + active_.y) % 5;
-
-        if (armies_[active_.x][index] == -1) {
-            continue;
-        }
-
-        if (waits_used_[active_.x][index] < 2 && moves_left_[active_.x][index] > 0 && !unit_states_[active_.x][index].frozen) {
-            loop_back_for_waits = true;
-            active_.y = index;
-            break;
-        }
-    }
-
-    /* Nobody on this team has any moves or waits left */
-    if (!loop_back_for_waits) {
-        active_.x = active_.x == 1 ? 0 : 1;
-        for (int i = 0; i < 5; i++) {
-            if (armies_[active_.x][i] == -1) {
-                continue;
-            }
-            active_.y = i;
-            if (unit_states_[active_.x][active_.y].frozen && !any_enemy_around()) {
-                set_state(BattleState::IsFrozen);
-            }
-            reset_moves();
-            reset_waits();
-            next_team = true;
-            break;
-        }
-    }
-
-    /* Next unit in team because somebody hasn't moved or waited yet */
-    if (!next_team && !loop_back_for_waits) {
-        for (int i = 0; i < 5; i++) {
-            if (armies_[active_.x][i] == -1) {
-                continue;
-            }
-            int index = (i + 1 + active_.y) % 5;
-            if (waits_used_[active_.x][index] < 2 && moves_left_[active_.x][index] > 0) {
-                active_.y = index;
-                if (unit_states_[active_.x][active_.y].frozen) {
-                    set_state(BattleState::IsFrozen);
-                }
-                break;
-            }
-        }
-    }
-
-    update_unit_info();
-}
-
-void Battle::update_unit_info()
-{
-    cx_ = positions_[active_.x][active_.y].x;
-    cy_ = positions_[active_.x][active_.y].y;
-    update_cursor();
-    update_current();
-    cursor_distance_x_ = 0;
-    cursor_distance_y_ = 0;
-    const auto &unit = kUnits[armies_[active_.x][active_.y]];
-    if ((unit.abilities & AbilityFly) && !flown_this_turn_[active_.x][active_.y]) {
-        if (!any_enemy_around()) {
-            set_state(BattleState::Flying);
-        }
-        else {
-            set_state(BattleState::Moving);
-        }
-    }
-    else {
-        if (unit_states_[active_.x][active_.y].out_of_control) {
-            status_.set_string(fmt::format(kStatuses[OUT_OF_CONTROL], kUnits[armies_[active_.x][active_.y]].name_plural));
-        }
-        else if (unit_states_[active_.x][active_.y].ammo && !any_enemy_around()) {
-            status_.set_string(fmt::format(kStatuses[ATTACK_SHOOT_MOVE], kUnits[armies_[active_.x][active_.y]].name_plural, moves_left_[active_.x][active_.y]));
-        }
-        else {
-            status_.set_string(fmt::format(kStatuses[ATTACK_MOVE], kUnits[armies_[active_.x][active_.y]].name_plural, moves_left_[active_.x][active_.y]));
-        }
-        set_state(BattleState::Moving);
-    }
-    status();
-}
-
-void Battle::status()
-{
-    const auto &unit = kUnits[armies_[active_.x][active_.y]];
-    switch (state_) {
-        case BattleState::Moving:
-            break;
-        case BattleState::Waiting:
-            status_wait(unit);
-            break;
-        case BattleState::Flying:
-            status_fly(unit);
-            break;
-        case BattleState::Attack:
-            status_attack(unit);
-            break;
-        case BattleState::Retaliation:
-            status_retaliation(unit);
-            break;
-        default:
-            break;
-    }
-}
-
-void Battle::status_wait(const Unit &unit)
-{
-    status_.set_string(fmt::format(kStatuses[WAIT], unit.name_plural));
-}
-
-void Battle::status_fly(const Unit &unit)
-{
-    status_.set_string(fmt::format(kStatuses[FLY], unit.name_plural));
-}
-
-void Battle::status_attack(const Unit &unit)
-{
-    const Unit &target = kUnits[armies_[last_attacked_team_][last_attacked_unit_]];
-
-    if (last_state_ == BattleState::Magic) {
-        switch (using_spell_) {
-            case 2:
-                status_.set_string(fmt::format(kStatuses[FIREBALL_KILLS], last_kills_, target.name_plural));
-                break;
-            case 3:
-                status_.set_string(fmt::format(kStatuses[LIGHTNING_KILLS], last_kills_, target.name_plural));
-                break;
-            case 6:
-                if (!(target.abilities & AbilityUndead)) {
-                    status_.set_string(fmt::format(kStatuses[TURN_UNDEAD_NO_EFFECT], target.name_plural));
-                }
-                else {
-                    status_.set_string(fmt::format(kStatuses[TURN_UNDEAD_KILLS], last_kills_, target.name_plural));
-                    break;
-                }
-                break;
-            default:
-                break;
-        }
-    }
-    else {
-        status_.set_string(fmt::format(kStatuses[ATTACK], unit.name_plural, target.name_plural, last_kills_));
-    }
-}
-
-// FIXME: use the parameter
-void Battle::status_retaliation(const Unit &)
-{
-    const Unit &target = kUnits[armies_[last_attacking_team_][last_attacking_unit_]];
-    status_.set_string(fmt::format(kStatuses[RETALIATION], target.name_plural, last_kills_));
-}
-
-void Battle::update_cursor()
-{
-    cursor_.set_position(16.0f + cx_ * 48.0f, 24.0f + cy_ * 40.0f);
-}
-
-void Battle::update_current()
-{
-    current_.set_position(16.0f + positions_[active_.x][active_.y].x * 48.0f, 24.0f + positions_[active_.x][active_.y].y * 40.0f);
 }
 
 void Battle::reset_moves()
@@ -945,122 +513,76 @@ void Battle::reset_moves()
             }
 
             const auto &unit = kUnits[armies_[i][j]];
-            moves_left_[i][j] = unit.initial_moves;
             flown_this_turn_[i][j] = false;
-            retaliated_this_turn_[i][j] = false;
 
             auto &us = unit_states_[i][j];
             us.turn_count = us.count;
             us.hp = unit.hp;
             us.injury = 0;
             us.out_of_control = (us.hp * us.count) > v.leadership;
+            us.flying = (unit.abilities & AbilityFly) && !any_enemy_around();
+            us.moves = unit.initial_moves;
+            us.waits = 0;
+            us.retaliated = false;
         }
     }
 
     used_spell_this_turn_ = false;
 }
 
-void Battle::reset_waits()
+void Battle::show_hit_marker(int x, int y)
 {
-    for (int i = 0; i < 2; i++) {
-        for (int j = 0; j < 5; j++) {
-            if (armies_[i][j] == -1) {
-                continue;
-            }
-            waits_used_[i][j] = 0;
-        }
-    }
-}
-
-void Battle::set_state(BattleState state)
-{
-    auto [unit, enemy] = get_unit(cx_, cy_);
-
-    if (state == BattleState::Menu) {
-        state_before_menu_ = state_;
-    }
-
-    last_state_ = state_;
-    state_ = state;
-
-    switch (state) {
-        case BattleState::Waiting:
-            status();
-            break;
-        case BattleState::Moving:
-            if (unit_states_[active_.x][active_.y].frozen) {
-                set_state(BattleState::IsFrozen);
-            }
-            cursor_.set_texture(move_);
-            status();
-            break;
-        case BattleState::Flying:
-            if (unit_states_[active_.x][active_.y].frozen) {
-                set_state(BattleState::IsFrozen);
-            }
-            cursor_.set_texture(move_);
-            status();
-            break;
-        case BattleState::Attack:
-            attack(active_.x, active_.y, active_.x == 1 ? 0 : 1, unit);
-            status();
-            break;
-        case BattleState::Retaliation:
-            break;
-        case BattleState::Magic:
-            cursor_.set_texture(magic_);
-            break;
-        case BattleState::IsFrozen:
-            delay_timer_ = 0;
-            status_.set_string(fmt::format(kStatuses[FREEZE_USED], kUnits[armies_[active_.x][active_.y]].name_plural));
-            break;
-        case BattleState::Shooting:
-            cursor_.set_texture(shoot_);
-            status_.set_string(fmt::format(kStatuses[SHOOT], kUnits[armies_[active_.x][active_.y]].name_plural, unit_states_[active_.x][active_.y].ammo));
-            break;
-        default:
-            break;
-    }
-}
-
-void Battle::attack(int from_team, int from_unit, int to_team, int to_unit)
-{
-    delay_timer_ = 0;
+    float x_ = 16.0f + x * 48.0f;
+    float y_ = 24.0f + y * 40.0f;
 
     hit_marker_.reset_animation();
-    hit_marker_.set_position(sprites_[to_team][to_unit].get_position());
+    hit_marker_.set_position(x_, y_);
+
+    draw_hit_marker = true;
+}
+
+void Battle::hide_hit_marker()
+{
+    draw_hit_marker = false;
+}
+
+int Battle::attack(int from_team, int from_unit, int to_team, int to_unit, bool shoot, bool magic, bool retaliation)
+{
+    show_hit_marker(unit_states_[to_team][to_unit].x, unit_states_[to_team][to_unit].y);
 
     last_attacking_team_ = from_team;
     last_attacking_unit_ = from_unit;
     last_attacked_team_ = to_team;
     last_attacked_unit_ = to_unit;
 
-    if (using_spell_ == -1) {
+    int magic_damage = 0;
+
+    if (!magic) {
         moves_left_[from_team][from_unit] = 0;
     }
+    else {
+        int spell_power = v.spell_power;
 
-    int spell_damage = 0;
-    int spell_power = v.spell_power;
-
-    if (using_spell_ != -1) {
-        switch (using_spell_) {
-            case 2:
-                spell_damage = 25 * spell_power;
-                break;
-            case 3:
-                spell_damage = 10 * spell_power;
-                break;
-            case 6:
-                if (kUnits[armies_[to_team][to_unit]].abilities & AbilityUndead) {
-                    spell_damage = 50 * spell_power;
-                }
-                break;
-            default:
-                break;
+        if (using_spell_ != -1) {
+            switch (using_spell_) {
+                case 2:
+                    magic_damage = 25 * spell_power;
+                    break;
+                case 3:
+                    magic_damage = 10 * spell_power;
+                    break;
+                case 6:
+                    if (kUnits[armies_[to_team][to_unit]].abilities & AbilityUndead) {
+                        magic_damage = 50 * spell_power;
+                    }
+                    break;
+                default:
+                    break;
+            }
         }
     }
 
-    damage(from_team, from_unit, to_team, to_unit, state_ == BattleState::Shooting, using_spell_ != -1, spell_damage, from_team != active_.x);
+    return damage(from_team, from_unit, to_team, to_unit, shoot, magic, magic_damage, retaliation);
 }
 
 std::tuple<int, bool> Battle::get_unit(int x, int y) const
@@ -1072,7 +594,7 @@ std::tuple<int, bool> Battle::get_unit(int x, int y) const
             if (armies_[i][j] == -1) {
                 continue;
             }
-            if (pos == positions_[i][j]) {
+            if (pos == glm::ivec2 {unit_states_[i][j].x, unit_states_[i][j].y}) {
                 if (i != active_.x) {
                     return {j, true};
                 }
@@ -1100,7 +622,7 @@ float morale_modifier(int morale)
                                             : 0.5f;
 }
 
-void Battle::damage(int from_team, int from_unit, int to_team, int to_unit, bool is_ranged, bool is_external, int external_damage, bool retaliation)
+int Battle::damage(int from_team, int from_unit, int to_team, int to_unit, bool is_ranged, bool is_external, int external_damage, bool retaliation)
 {
     bool has_sword = gen.artifacts_found[ArtiSwordOfProwess];
     bool has_shield = gen.artifacts_found[ArtiShieldOfProtection];
@@ -1120,10 +642,6 @@ void Battle::damage(int from_team, int from_unit, int to_team, int to_unit, bool
     }
 
     bool cancel_attack = false;
-
-    bool retaliate = false;
-    if (!retaliation && !is_ranged && !is_external)
-        retaliate = true;
 
     int scythe_kills = 0;
     int final_damage = 0;
@@ -1197,7 +715,8 @@ void Battle::damage(int from_team, int from_unit, int to_team, int to_unit, bool
     else {
         //stack dies
         unit_state_b.count = 0;
-        positions_[to_team][to_unit] = {-1, -1};
+        unit_state_b.x = -1;
+        unit_state_b.y = -1;
         final_damage = unit_state_b.turn_count * unit_state_b.hp;
     }
 
@@ -1222,6 +741,8 @@ void Battle::damage(int from_team, int from_unit, int to_team, int to_unit, bool
             }
         }
     }
+
+    return last_kills_;
 }
 
 /* It's convenient to do this after any status messages are
@@ -1273,6 +794,229 @@ void Battle::view_army()
     ss.push(&s_view_army, nullptr);
 }
 
+void Battle::do_action(Action action)
+{
+    switch (action.id) {
+        case AidTryMove:
+            afn_try_move(action);
+            break;
+        case AidMove:
+            afn_move(action);
+            break;
+        case AidMeleeAttack:
+            afn_attack(action);
+            break;
+        case AidShootAttack:
+            afn_attack(action);
+            break;
+        case AidRetaliate:
+            afn_retaliate(action);
+            break;
+        case AidWait:
+            afn_wait(action);
+            break;
+        case AidPass:
+            afn_pass(action);
+            break;
+        case AidTryShoot:
+            afn_try_shoot(action);
+            break;
+        default:
+            break;
+    }
+}
+
+void Battle::afn_wait(Action action)
+{
+    set_status(fmt::format("{} wait", get_name()));
+    unit_states_[action.from.x][action.from.y].waits++;
+    delay_then([this]() {
+        on_move();
+    });
+}
+
+void Battle::afn_pass(Action action)
+{
+    set_status(fmt::format("{} pass", get_name()));
+    unit_states_[action.from.x][action.from.y].moves = 0;
+    delay_then([this]() {
+        on_move();
+    });
+}
+
+void Battle::afn_try_move(Action action)
+{
+    /* Tile was not empty. */
+    if (terrain[action.to.x + action.to.y * 6] != 0) {
+        if (unit_states_[action.from.x][action.from.y].flying) {
+            set_status(" You can't land on an occupied area!");
+        }
+        else {
+            set_status(" You can't move to an occupied area!");
+        }
+    }
+    else {
+        auto [target, enemy] = get_unit(action.to.x, action.to.y);
+
+        /* Tile contains a unit. */
+        if (target != -1) {
+            /* Tile was an enemy unit. */
+            if (enemy) {
+                do_action({AidMeleeAttack, action.from, {enemy ? !active_.x : active_.x, target}});
+            }
+            /* Targeted self. */
+            else if (target == active_.y) {
+                /* Can shoot. */
+                if (cursor_mode != Cursor::Shoot && get_unit().ammo > 0 && !any_enemy_around()) {
+                    set_cursor_mode(Cursor::Shoot);
+                    set_status(fmt::format("{} Shoot ({} left)", get_name(), get_unit().ammo));
+                }
+                /* Already shooting, want to wait. */
+                else {
+                    do_action({AidWait, action.from});
+                }
+            }
+            /* Tile was terrain or friendly unit. */
+            else {
+                set_status(" You can't move to an occupied area!");
+            }
+        }
+        else {
+            do_action({AidMove, action.from, action.to});
+        }
+    }
+}
+
+void Battle::afn_attack(Action action)
+{
+    bool shoot = cursor_mode == Cursor::Shoot;
+    bool magic = cursor_mode == Cursor::Magic;
+
+    set_cursor_mode(Cursor::None);
+
+    int kills = attack(action.from.x, action.from.y, action.to.x, action.to.y, shoot, magic, false);
+
+    set_status(fmt::format("{} attack {}, {} die", get_name(), kUnits[armies_[action.to.x][action.to.y]].name_plural, kills));
+    get_unit().moves = 0;
+
+    delay_then([this, action, shoot, magic]() {
+        counts_[action.to.x][action.to.y].set_string(std::to_string(unit_states_[action.to.x][action.to.y].count));
+        if (!shoot && !magic && !unit_states_[action.to.x][action.to.y].retaliated) {
+            unit_states_[action.to.x][action.to.y].retaliated = true;
+            do_action({AidRetaliate, action.to, action.from});
+        }
+        else {
+            clear_dead_units();
+            on_move();
+        }
+    });
+}
+
+void Battle::delay_then(std::function<void()> callback)
+{
+    in_delay = true;
+    delay_timer_ = 0;
+    delay_callback = callback;
+}
+
+void Battle::afn_retaliate(Action action)
+{
+    int kills = attack(action.from.x, action.from.y, action.to.x, action.to.y, false, false, true);
+    set_status(fmt::format("{} retaliate, killing {}", kUnits[armies_[action.from.x][action.from.y]].name_plural, kills));
+
+    delay_then([this, action]() {
+        counts_[action.to.x][action.to.y].set_string(std::to_string(unit_states_[action.to.x][action.to.y].count));
+        clear_dead_units();
+        on_move();
+    });
+}
+
+void Battle::next_team()
+{
+    active_.x = active_.x == 1 ? 0 : 1;
+
+    int index = 0;
+
+    while (armies_[active_.x][index] == -1 && index < 5) {
+        index++;
+    }
+
+    if (index == 5) {
+        spdlog::warn("No units left. Battle over?");
+    }
+    else {
+        active_.y = index;
+        reset_moves();
+        if (unit_states_[active_.x][active_.y].frozen && !any_enemy_around()) {
+            set_status(fmt::format("{} are frozen", get_name()));
+            delay_then([this]() {
+                on_move();
+            });
+        }
+        else {
+            set_move_state();
+        }
+    }
+
+    if (active_.x == 1) {
+        current_.set_texture(current_enemy);
+    }
+    else {
+        current_.set_texture(current_friendly);
+    }
+}
+
+int Battle::get_next_unit() const
+{
+    for (int i = 0; i < 5; i++) {
+        int idx = (active_.y + i + 1) % 5;
+        if (idx == active_.y || armies_[active_.x][idx] == -1) {
+            continue;
+        }
+        if (unit_states_[active_.x][idx].moves == 0 || unit_states_[active_.x][idx].waits == 2) {
+            continue;
+        }
+        return idx;
+    }
+    return -1;
+}
+
+void Battle::on_move()
+{
+    int next_unit = get_next_unit();
+    if (next_unit == -1) {
+        next_team();
+        cursor_distance_x_ = 0;
+        cursor_distance_y_ = 0;
+    }
+    else {
+        active_.y = next_unit;
+        cursor_distance_x_ = 0;
+        cursor_distance_y_ = 0;
+    }
+    set_move_state();
+}
+
+void Battle::afn_move(Action action)
+{
+    if (unit_states_[action.from.x][action.from.y].flying) {
+        unit_states_[action.from.x][action.from.y].flying = false;
+        set_cursor_mode(Cursor::Move);
+    }
+    else {
+        unit_states_[action.from.x][action.from.y].moves--;
+        if (unit_states_[action.from.x][action.from.y].moves == 0) {
+            on_move();
+        }
+    }
+
+    cursor_distance_x_ = 0;
+    cursor_distance_y_ = 0;
+
+    move_unit_to(action.from.x, action.from.y, action.to.x, action.to.y);
+    set_move_state();
+}
+
 void Battle::menu_confirm(int opt)
 {
     switch (opt) {
@@ -1287,13 +1031,10 @@ void Battle::menu_confirm(int opt)
             use_magic();
             break;
         case 3:
-            moves_left_[active_.x][active_.y] = 0;
-            status_.set_string(fmt::format("{} pass", kUnits[armies_[active_.x][active_.y]].name_plural));
-            set_state(BattleState::Pass);
+            do_action({AidPass, active_});
             break;
         case 4:
-            waits_used_[active_.x][active_.y]++;
-            set_state(BattleState::Waiting);
+            do_action({AidWait, active_});
             break;
         case 5:
             s_controls.set_battle(true);
@@ -1313,7 +1054,6 @@ void Battle::give_up_confirm(int opt)
 {
     switch (opt) {
         case 0:
-            set_state(state_before_menu_);
             break;
         case 1:
             for (int i = 0; i < 5; i++) {
@@ -1331,29 +1071,29 @@ void Battle::use_spell(int spell)
 {
     using_spell_ = spell - 7;
 
-    set_state(BattleState::Magic);
+    set_cursor_mode(Cursor::Magic);
 
     switch (using_spell_) {
         case 0:    // clone
-            status_.set_string(kStatuses[CLONE_SELECT]);
+            set_status("     Select your army to clone");
             break;
         case 1:    // teleport
-            status_.set_string(kStatuses[SELECT_TELEPORT]);
+            set_status("       Select army to teleport.");
             break;
         case 2:    // fireball
-            status_.set_string(kStatuses[SELECT_FIREBALL]);
+            set_status("     Select enemy army to blast.");
             break;
         case 3:    // lightning
-            status_.set_string(kStatuses[SELECT_LIGHTNING]);
+            set_status("  Select enemy army to electricute.");
             break;
         case 4:    // freeze
-            status_.set_string(kStatuses[FREEZE_SELECT]);
+            set_status("     Select enemy army to freeze.");
             break;
         case 5:    // resurrect
-            status_.set_string(kStatuses[RESURRECT_SELECT]);
+            set_status("   Select your army to resurrect.");
             break;
         case 6:    // turn undead
-            status_.set_string(kStatuses[SELECT_TURN_UNDEAD]);
+            set_status("     Select enemy army to turn.");
             break;
         default:
             break;
@@ -1373,19 +1113,18 @@ void Battle::magic_confirm()
     switch (using_spell_) {
         case 0:    // clone
             if (target == -1) {
-                status_.set_string(kStatuses[NEED_TARGET]);
+                set_status("      You must target somebody!");
             }
             else {
                 if (enemy) {
-                    status_.set_string(kStatuses[CLONE_MUST_SELECT_FRIENDLY]);
+                    set_status("    You must select your own army!");
                 }
                 else {
                     if (is_immune) {
-                        status_.set_string(kStatuses[DRAGON_IMMUNE_CLONE]);
+                        set_status("Clone has no effect on Dragons");
                     }
                     else {
                         clone();
-                        set_state(BattleState::Delay);
                     }
                 }
             }
@@ -1393,21 +1132,20 @@ void Battle::magic_confirm()
         case 1:    // teleport
             if (selecting_teleport_location_) {
                 if (target != -1) {
-                    status_.set_string(kStatuses[INVALID_TELEPORT_DESTINATION]);
+                    set_status("  You must teleport to an empty area!");
                 }
                 else {
                     teleport();
-                    set_state(BattleState::Delay);
                 }
             }
             else if (target == -1) {
-                status_.set_string(kStatuses[NEED_TARGET]);
+                set_status("      You must target somebody!");
             }
             else if (is_immune) {
-                status_.set_string(kStatuses[DRAGON_IMMUNE_TELEPORT]);
+                set_status("Teleport has no effect on Dragons");
             }
             else {
-                status_.set_string(kStatuses[SELECT_TELEPORT_LOCATION]);
+                set_status(" Select new location to teleport army.");
                 selecting_teleport_location_ = true;
                 cursor_.set_texture(move_);
                 teleport_team_ = enemy ? 1 : 0;
@@ -1416,74 +1154,72 @@ void Battle::magic_confirm()
             break;
         case 2:    // fireball
             if (target != -1 && !enemy) {
-                status_.set_string(kStatuses[NEED_ENEMY]);
+                set_status("   You must select an opposing army!");
             }
             else if (target == -1) {
-                status_.set_string(kStatuses[NEED_TARGET]);
+                set_status("      You must target somebody!");
             }
             else if (is_immune) {
-                status_.set_string(kStatuses[DRAGON_IMMUNE_FIREBALL]);
+                set_status("Fireball has no effect on Dragons");
             }
             else {
-                set_state(BattleState::Attack);
+                do_action({AidMagicAttack, active_, {enemy ? !active_.x : active_.x, target}});
             }
             break;
         case 3:    // lightning
             if (target != -1 && !enemy) {
-                status_.set_string(kStatuses[NEED_ENEMY]);
+                set_status("   You must select an opposing army!");
             }
             else if (target == -1) {
-                status_.set_string(kStatuses[NEED_TARGET]);
+                set_status("      You must target somebody!");
             }
             else if (is_immune) {
-                status_.set_string(kStatuses[DRAGON_IMMUNE_LIGHTNING]);
+                set_status("Lightning has no effect on Dragons");
             }
             else {
-                set_state(BattleState::Attack);
+                do_action({AidMagicAttack, active_, {enemy ? !active_.x : active_.x, target}});
             }
             break;
         case 4:    // freeze
             if (target != -1 && !enemy) {
-                status_.set_string(kStatuses[NEED_ENEMY]);
+                set_status("   You must select an opposing army!");
             }
             else if (target == -1) {
-                status_.set_string(kStatuses[NEED_TARGET]);
+                set_status("      You must target somebody!");
             }
             else if (is_immune) {
-                status_.set_string(kStatuses[DRAGON_IMMUNE_FIREBALL]);
+                set_status("Fireball has no effect on Dragons");
             }
             else {
                 freeze();
-                set_state(BattleState::Delay);
             }
             break;
         case 5:    // resurrect
             if (target != -1 && enemy) {
-                status_.set_string(kStatuses[CLONE_MUST_SELECT_FRIENDLY]);
+                set_status("    You must select your own army!");
             }
             else if (target == -1) {
-                status_.set_string(kStatuses[NEED_TARGET]);
+                set_status("      You must target somebody!");
             }
             else if (is_immune) {
-                status_.set_string(kStatuses[DRAGON_IMMUNE_RESURRECT]);
+                set_status("Resurrect has no effect on Dragons");
             }
             else {
                 resurrect();
-                set_state(BattleState::Delay);
             }
             break;
         case 6:    // turn undead
             if (target == -1) {
-                status_.set_string(kStatuses[NEED_TARGET]);
+                set_status("      You must target somebody!");
             }
             else if (is_immune) {
-                status_.set_string(kStatuses[DRAGON_IMMUNE_TURN_UNDEAD]);
+                set_status("Turn has no effect on Dragons");
             }
             else if (!enemy) {
-                status_.set_string(kStatuses[INVALID_SPELL_TARGET]);
+                set_status("   You must select an opposing army!");
             }
             else {
-                set_state(BattleState::Attack);
+                do_action({AidMagicAttack, active_, {enemy ? !active_.x : active_.x, target}});
             }
             break;
         default:
@@ -1495,7 +1231,11 @@ void Battle::teleport()
 {
     selecting_teleport_location_ = false;
     move_unit_to(teleport_team_, teleport_target_, cx_, cy_);
-    status_.set_string(fmt::format(kStatuses[TELEPORT_USED], kUnits[armies_[teleport_team_][teleport_target_]].name_plural));
+    current_.set_position(16.0f + get_unit().x * 48.0f, 24.0f + get_unit().y * 40.0f);
+    set_status(fmt::format("{} are teleported", kUnits[armies_[teleport_team_][teleport_target_]].name_plural));
+    delay_then([this]() {
+        set_move_state();
+    });
 }
 
 void Battle::clone()
@@ -1503,15 +1243,21 @@ void Battle::clone()
     int clone_amount = 10 * v.spell_power;
     auto [unit, enemy] = get_unit(cx_, cy_);
     unit_states_[0][unit].count += clone_amount;
-    status_.set_string(fmt::format(kStatuses[CLONE_USED], clone_amount, kUnits[armies_[0][unit]].name_plural));
+    set_status(fmt::format("{} {} are cloned", clone_amount, kUnits[armies_[0][unit]].name_plural));
     update_counts();
+    delay_then([this]() {
+        set_move_state();
+    });
 }
 
 void Battle::freeze()
 {
     auto [unit, enemy] = get_unit(cx_, cy_);
     unit_states_[1][unit].frozen = true;
-    status_.set_string(fmt::format(kStatuses[FREEZE_USED], kUnits[armies_[1][unit]].name_plural));
+    set_status(fmt::format("{} are frozen", kUnits[armies_[1][unit]].name_plural));
+    delay_then([this]() {
+        set_move_state();
+    });
 }
 
 void Battle::resurrect()
@@ -1522,35 +1268,18 @@ void Battle::resurrect()
     num_resurrected = std::min(num_resurrected, us.start_count - us.count);
     us.count += num_resurrected;
     v.followers_killed = std::max(0, v.followers_killed - num_resurrected);
-    status_.set_string(fmt::format(kStatuses[RESURRECT_USED], num_resurrected, kUnits[armies_[0][unit]].name_plural));
+    set_status(fmt::format("{} {} are resurrected", num_resurrected, kUnits[armies_[0][unit]].name_plural));
     update_counts();
+    delay_then([this]() {
+        on_move();
+    });
 }
 
 void Battle::set_cursor_position(int x, int y)
 {
     cx_ = x;
     cy_ = y;
-    cursor_distance_x_ = 0;
-    cursor_distance_y_ = 0;
     cursor_.set_position(16.0f + cx_ * 48.0f, 24.0f + cy_ * 40.0f);
-}
-
-void Battle::shoot_confirm()
-{
-    auto [unit, enemy] = get_unit(cx_, cy_);
-
-    if (unit == -1) {
-        status_.set_string(kStatuses[NEED_TARGET]);
-    }
-    else {
-        if (!enemy) {
-            status_.set_string(kStatuses[CANT_ATTACK_FRIENDLY]);
-        }
-        else {
-            was_shooting_ = true;
-            set_state(BattleState::Attack);
-        }
-    }
 }
 
 bool Battle::check_end()
@@ -1696,8 +1425,13 @@ void Battle::victory()
 
 bool Battle::any_enemy_around() const
 {
-    int x = positions_[active_.x][active_.y].x;
-    int y = positions_[active_.x][active_.y].y;
+    return any_enemy_around(active_.x, active_.y);
+}
+
+bool Battle::any_enemy_around(int team, int unit) const
+{
+    int x = unit_states_[team][unit].x;
+    int y = unit_states_[team][unit].y;
     for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 3; j++) {
             auto [unit, enemy] = get_unit(x - 1 + i, y - 1 + j);
@@ -1757,8 +1491,7 @@ and send you back to
 void Battle::use_magic()
 {
     if (used_spell_this_turn_) {
-        status_.set_string(kStatuses[ONE_SPELL_PER_TURN]);
-        set_state(BattleState::TemporaryMessage);
+        set_status("You may only cast one spell per round!", true);
         return;
     }
 
@@ -1815,5 +1548,69 @@ void Battle::use_magic()
         for (int i = 7; i < 14; i++) {
             opt[i].disable();
         }
+    }
+}
+
+void Battle::set_status(const std::string &msg, bool wait_for_enter)
+{
+    if (wait_for_enter) {
+        hud.set_error(msg);
+    }
+    else {
+        hud.set_title(msg);
+    }
+}
+
+Battle::UnitState &Battle::get_unit()
+{
+    return unit_states_[active_.x][active_.y];
+}
+
+void Battle::afn_try_shoot(Action action)
+{
+    auto [unit, enemy] = get_unit(action.to.x, action.to.y);
+    if (unit == -1) {
+        set_status("      You must target somebody!");
+    }
+    else {
+        if (enemy) {
+            do_action({AidShootAttack, action.from, {!active_.x, unit}});
+        }
+        else if (unit == active_.y) {
+            do_action({AidWait, action.from});
+        }
+        else {
+            set_status("   You must select an opposing army!");
+        }
+    }
+}
+
+void Battle::set_cursor_mode(Cursor c)
+{
+    cursor_mode = c;
+    switch (c) {
+        case Cursor::Fly:
+            cursor_.set_texture(move_);
+            cursor_constrained = false;
+            break;
+        case Cursor::Move:
+            cursor_.set_texture(move_);
+            cursor_constrained = true;
+            break;
+        case Cursor::Melee:
+            cursor_.set_texture(melee_);
+            cursor_constrained = true;
+            break;
+        case Cursor::Shoot:
+            cursor_.set_texture(shoot_);
+            cursor_constrained = false;
+            break;
+        case Cursor::Magic:
+            cursor_.set_texture(magic_);
+            cursor_constrained = false;
+            break;
+        default:
+            cursor_.set_texture(nullptr);
+            break;
     }
 }

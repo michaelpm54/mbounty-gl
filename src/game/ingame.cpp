@@ -49,7 +49,7 @@ Ingame::Ingame(GLFWwindow *window, bty::SceneStack &ss, bty::DialogStack &ds, bt
     , s_garrison(ss, ds, assets, hud, v, gen)
     , s_victory(ss, ds, assets, v, hud)
     , s_controls(ss, assets, game_options)
-    , s_battle(ss, ds, assets, v, gen, view_army, view_char, s_controls, game_options)
+    , s_battle(ss, ds, assets, v, gen, view_army, view_char, s_controls, game_options, hud)
     , cr({0.2f, 0.4f, 0.7f, 0.9f}, {8, 8}, {0, 0})
 {
     for (int i = 0; i < UnitId::UnitCount; i++) {
@@ -2103,6 +2103,9 @@ void Ingame::defeat_pop(int ret)
 
 void Ingame::battle_pop(int ret)
 {
+    hud.set_hud_frame();
+    hud.set_hero(v.hero, v.rank);
+    hud.set_days(v.days);
     hud.set_gold(v.gold);
     hud.set_contract(v.contract);
     hud.set_siege(v.siege);

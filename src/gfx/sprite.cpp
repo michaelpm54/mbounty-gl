@@ -15,8 +15,7 @@ Sprite::Sprite(const Texture *texture, const glm::vec2 &position)
 void Sprite::set_texture(const Texture *texture)
 {
     if (!texture) {
-        spdlog::warn("Sprite::set_texture: nullptr");
-        return;
+        // spdlog::warn("Sprite::set_texture: nullptr");
     }
     else if (texture == texture_) {
         return;
@@ -24,10 +23,11 @@ void Sprite::set_texture(const Texture *texture)
 
     texture_ = texture;
 
-    set_size(texture->frame_width, texture->frame_height);
-
-    if (texture->num_frames_x && texture->num_frames_y) {
-        load_animation();
+    if (texture) {
+        set_size(static_cast<float>(texture->frame_width), static_cast<float>(texture->frame_height));
+        if (texture->num_frames_x && texture->num_frames_y) {
+            load_animation();
+        }
     }
 }
 
