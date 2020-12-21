@@ -46,6 +46,7 @@ struct Action {
     glm::ivec2 from;
     glm::ivec2 to;
     std::string fmtstr;
+    bool retaliate {false};
 };
 
 class Battle : public bty::Scene {
@@ -127,6 +128,9 @@ private:
     void battle_on_move(bool do_ui = true);
     void battle_do_action(Action action);
     void battle_use_spell(int spell);
+    int battle_get_ranged_unit() const;
+    int battle_get_lowest_hp_unit() const;
+    glm::ivec2 board_get_adjacent_tile(int player_unit) const;
 
     void afn_try_move(Action action);
     void afn_move(Action action);

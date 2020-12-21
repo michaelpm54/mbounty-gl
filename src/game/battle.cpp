@@ -847,12 +847,15 @@ void Battle::battle_do_action(Action action)
             afn_move(action);
             break;
         case AidMeleeAttack:
+            action.retaliate = true;
             afn_attack(action);
             break;
         case AidShootAttack:
+            action.retaliate = false;
             afn_attack(action);
             break;
         case AidRetaliate:
+            action.retaliate = false;
             afn_retaliate(action);
             break;
         case AidWait:
@@ -944,7 +947,7 @@ void Battle::afn_attack(Action action)
 
     battle_delay_then([this, action, shoot, magic]() {
         counts_[action.to.x][action.to.y].set_string(std::to_string(unit_states_[action.to.x][action.to.y].count));
-        if (!shoot && !magic && !unit_states_[action.to.x][action.to.y].retaliated) {
+        if (action.retaliate) {
             unit_states_[action.to.x][action.to.y].retaliated = true;
             battle_do_action({AidRetaliate, action.to, action.from});
         }
@@ -1674,32 +1677,11 @@ void Battle::ai_make_action()
         while (!did_move && tries < 5) {
             tries++;
 
-            /* Find the ranged unit with the most damage. */
-            int most_ranged_damage = 0;
-            for (int i = 0; i < 5; i++) {
-                if (armies_[0][i] == -1) {
-                    continue;
-                }
-                if (unit_states_[0][i].ammo) {
-                    if (kUnits[armies_[0][i]].ranged_damage_max * unit_states_[0][i].count >= most_ranged_damage) {
-                        target = i;
-                    }
-                }
-            }
+            int target = battle_get_ranged_unit();
 
             /* No ranged units found, find the lowest HP unit. */
             if (target == -1) {
-                int min_hp = std::numeric_limits<int>::max();
-                for (int i = 0; i < 5; i++) {
-                    if (armies_[0][i] == -1) {
-                        continue;
-                    }
-
-                    if (unit_states_[0][i].hp <= min_hp) {
-                        min_hp = unit_states_[0][i].hp;
-                        target = i;
-                    }
-                }
+                target = battle_get_lowest_hp_unit();
             }
 
             if (target != -1) {
@@ -1723,31 +1705,11 @@ void Battle::ai_make_action()
             }
 
             /* Find an unoccupied adjacent tile. */
-            int target_x = -1;
-            int target_y = -1;
-            for (int i = 0; i < 3; i++) {
-                for (int j = 0; j < 3; j++) {
-                    int x = unit_states_[0][target].x - 1 + i;
-                    int y = unit_states_[0][target].y - 1 + j;
-                    if (x < 0 || x > 5 || y < 0 || y > 4) {
-                        continue;
-                    }
-                    if (terrain[x + y * 6] != 0) {
-                        continue;
-                    }
-                    auto [index, enemy] = board_get_unit_at(x, y);
-                    if (index != -1) {
-                        continue;
-                    }
-                    target_x = x;
-                    target_y = y;
-                    break;
-                }
-            }
+            glm::ivec2 tile = board_get_adjacent_tile(target);
 
             /* If we couldn't find an adjacent tile, try the next unit. */
-            if (target_x != -1 && target_y != -1) {
-                battle_do_action({AidTryMove, active_, {target_x, target_y}});
+            if (tile.x != -1 && tile.y != -1) {
+                battle_do_action({AidTryMove, active_, {tile.x, tile.y}});
                 did_move = !unit.flying;
             }
         }
@@ -1757,4 +1719,80 @@ void Battle::ai_make_action()
             spdlog::warn("Couldn't find a fly target!");
         }
     }
+    else if (unit.ammo > 0 && !board_any_enemy_around()) {
+        int target = battle_get_ranged_unit();
+        if (target == -1) {
+            target = battle_get_lowest_hp_unit();
+        }
+        auto tile = board_get_adjacent_tile(target);
+        if (tile.x == -1 && tile.y == -1) {
+            spdlog::warn("Couldn't find a shoot target!");
+        }
+        else {
+            battle_do_action({AidShootAttack, active_, {0, target}});
+        }
+    }
+}
+
+int Battle::battle_get_ranged_unit() const
+{
+    int target = -1;
+    int most_ranged_damage = 0;
+    for (int i = 0; i < 5; i++) {
+        if (armies_[0][i] == -1) {
+            continue;
+        }
+        if (unit_states_[0][i].ammo) {
+            if (kUnits[armies_[0][i]].ranged_damage_max * unit_states_[0][i].count >= most_ranged_damage) {
+                target = i;
+            }
+        }
+    }
+    return target;
+}
+
+glm::ivec2 Battle::board_get_adjacent_tile(int player_unit) const
+{
+    glm::ivec2 tile {-1, -1};
+
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+            int x = unit_states_[0][player_unit].x - 1 + i;
+            int y = unit_states_[0][player_unit].y - 1 + j;
+            if (x < 0 || x > 5 || y < 0 || y > 4) {
+                continue;
+            }
+            if (terrain[x + y * 6] != 0) {
+                continue;
+            }
+            auto [index, enemy] = board_get_unit_at(x, y);
+            if (index != -1) {
+                continue;
+            }
+            tile.x = x;
+            tile.y = y;
+            break;
+        }
+    }
+
+    return tile;
+}
+
+int Battle::battle_get_lowest_hp_unit() const
+{
+    int target = -1;
+    int min_hp = std::numeric_limits<int>::max();
+
+    for (int i = 0; i < 5; i++) {
+        if (armies_[0][i] == -1) {
+            continue;
+        }
+
+        if (unit_states_[0][i].hp <= min_hp) {
+            min_hp = unit_states_[0][i].hp;
+            target = i;
+        }
+    }
+
+    return target;
 }
