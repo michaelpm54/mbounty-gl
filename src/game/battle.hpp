@@ -59,20 +59,13 @@ public:
     void show(std::array<int, 5> &enemy_army, std::array<int, 5> &enemy_counts, bool siege, int castle_id);
 
 private:
-    enum class BattleState {
-        Grounded,
-        Waiting,
-        Flying,
-        Attack,
-        PauseToDisplayDamage,
-        Retaliation,
-        Menu,
-        GiveUp,
-        ViewArmy,
-        ViewCharacter,
-        Delay,
-        IsFrozen,
-        Pass,
+    enum class Cursor {
+        Fly,
+        Move,
+        Melee,
+        Shoot,
+        Magic,
+        None,
     };
 
     struct UnitState {
@@ -93,65 +86,43 @@ private:
         bool retaliated;
     };
 
-    void move_unit_to(int team, int unit, int x, int y);
-    void confirm();
-    void magic_confirm();
-    void move_cursor(int dir);
-    void status_wait(const Unit &unit);
-    void status_fly(const Unit &unit);
-    void status_attack(const Unit &unit);
-    void status_retaliation(const Unit &unit);
-    void reset_moves();
-    int attack(int from_team, int from_unit, int to_team, int to_unit, bool shoot, bool magic, bool retaliation);
-    std::tuple<int, bool> get_unit(int x, int y) const;
-    int damage(int from_team, int from_unit, int to_team, int to_unit, bool is_ranged, bool is_external, int external_damage, bool retaliation);
-    void clear_dead_units();
-    void update_counts();
-    void use_spell(int spell);
-    void teleport();
-    void clone();
-    void freeze();
-    void resurrect();
-    void set_cursor_position(int x, int y);
-    bool check_end();
-    void victory();
-    bool any_enemy_around() const;
-    bool any_enemy_around(int team, int unit) const;
+    void board_move_unit_to(int team, int unit, int x, int y);
+    bool board_any_enemy_around() const;
+    bool board_any_enemy_around(int team, int unit) const;
+    void board_clear_dead_units();
+    std::tuple<int, bool> board_get_unit_at(int x, int y) const;
 
-    /* Pause menu */
-    void pause();
-    void view_army();
-    void use_magic();
-    void give_up();
+    void ui_move_cursor_dir(int dir);
+    void ui_show_hit_marker(int x, int y);
+    void ui_hide_hit_marker();
+    void ui_set_cursor_position(int x, int y);
+    void ui_update_counts();
+    void ui_confirm();
+    void ui_confirm_spell();
+    void ui_confirm_menu(int opt);
+    void ui_confirm_give_up(int opt);
+    void ui_set_status(const std::string &msg, bool wait_for_enter = false);
+    void ui_set_cursor_mode(Cursor cursor);
 
-    /* Pause menu helpers */
-    void menu_confirm(int opt);
-    void give_up_confirm(int opt);
+    void pause_show();
+    void pause_view_army();
+    void pause_use_magic();
+    void pause_give_up();
 
-    std::string get_name() const;
-
-    int check_waiting() const;
-    int get_next_unit() const;
-    void next_team();
-    void set_move_state();
-    UnitState &get_unit();
-    void delay_then(std::function<void()> callback);
-    void on_move();
-    void set_status(const std::string &msg, bool wait_for_enter = false);
-    void show_hit_marker(int x, int y);
-    void hide_hit_marker();
-
-    enum Cursor {
-        Fly,
-        Move,
-        Melee,
-        Shoot,
-        Magic,
-        None,
-    };
-
-    void set_cursor_mode(Cursor cursor);
-    void do_action(Action action);
+    void battle_reset_moves();
+    int battle_attack(int from_team, int from_unit, int to_team, int to_unit, bool shoot, bool magic, bool retaliation);
+    int battle_damage(int from_team, int from_unit, int to_team, int to_unit, bool is_ranged, bool is_external, int external_damage, bool retaliation);
+    bool battle_check_end();
+    void battle_victory();
+    std::string battle_get_name() const;
+    int battle_get_next_unit() const;
+    void battle_switch_team();
+    void battle_set_move_state();
+    UnitState &battle_get_unit();
+    void battle_delay_then(std::function<void()> callback);
+    void battle_on_move();
+    void battle_do_action(Action action);
+    void battle_use_spell(int spell);
 
     void afn_try_move(Action action);
     void afn_move(Action action);
@@ -160,6 +131,11 @@ private:
     void afn_wait(Action action);
     void afn_pass(Action action);
     void afn_try_shoot(Action action);
+
+    void spell_teleport();
+    void spell_clone();
+    void spell_freeze();
+    void spell_resurrect();
 
 private:
     bty::SceneStack &ss;
@@ -182,9 +158,6 @@ private:
     int cy_ {0};
     glm::ivec2 active_ {0, 0};
     std::array<std::array<int, 5>, 2> armies_;
-    std::array<std::array<int, 5>, 2> moves_left_;
-    std::array<std::array<int, 5>, 2> waits_used_;
-    std::array<std::array<bool, 5>, 2> flown_this_turn_;
     int cursor_distance_x_ {0};
     int cursor_distance_y_ {0};
     const bty::Texture *move_;
@@ -192,52 +165,31 @@ private:
     const bty::Texture *shoot_;
     const bty::Texture *magic_;
     bty::Sprite hit_marker_;
-
-    int last_attacking_team_ {-1};
-    int last_attacking_unit_ {-1};
-    int last_attacked_team_ {-1};
-    int last_attacked_unit_ {-1};
-    int last_kills_ {0};
-
     std::array<std::array<UnitState, 5>, 2> unit_states_;
-
     int using_spell_ {-1};
     bool used_spell_this_turn_ {false};
-
     bool selecting_teleport_location_ {false};
     int teleport_target_ {-1};
     int teleport_team_ {-1};
     float delay_timer_ {0};
     bool was_shooting_ {false};
-
     bool do_retaliate {false};
-
     int delay_ {1};
     float delay_duration_ {1.2f};
-
     bool siege {false};
-
     std::array<int, 5> *enemy_army;
     std::array<int, 5> *enemy_counts;
-
     const bty::Texture *encounter_bg;
     const bty::Texture *siege_bg;
-
     std::array<int, 30> terrain;
     int castle_id {-1};
-
     GameOptions &game_options;
     Hud &hud;
-
-    bool status_changed {false};
-
     std::function<void()> delay_callback {nullptr};
     bool draw_hit_marker {false};
-
     const bty::Texture *current_friendly;
     const bty::Texture *current_enemy;
     Cursor cursor_mode {Cursor::Move};
-
     bool in_delay {false};
     bool cursor_constrained {false};
 };
