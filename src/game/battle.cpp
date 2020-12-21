@@ -150,25 +150,40 @@ void Battle::key(int key, int action)
 
     switch (key) {
         case GLFW_KEY_LEFT:
-            ui_move_cursor_dir(0);
+            if (active_.x == 0) {
+                ui_move_cursor_dir(0);
+            }
             break;
         case GLFW_KEY_RIGHT:
-            ui_move_cursor_dir(1);
+            if (active_.x == 0) {
+                ui_move_cursor_dir(1);
+            }
             break;
         case GLFW_KEY_UP:
-            ui_move_cursor_dir(2);
+            if (active_.x == 0) {
+                ui_move_cursor_dir(2);
+            }
             break;
         case GLFW_KEY_DOWN:
-            ui_move_cursor_dir(3);
+            if (active_.x == 0) {
+                ui_move_cursor_dir(3);
+            }
             break;
         case GLFW_KEY_ENTER:
-            ui_confirm();
+            if (active_.x == 0) {
+                ui_confirm();
+            }
             break;
         case GLFW_KEY_SPACE:
             pause_show();
             break;
         case GLFW_KEY_V:
             battle_victory();
+            break;
+        case GLFW_KEY_N:
+            battle_get_unit().moves = 0;
+            battle_on_move(false);
+            ui_on_move(true);
             break;
         default:
             break;
@@ -208,6 +223,14 @@ void Battle::update(float dt)
 
     cursor_.update(dt);
     current_.update(dt);
+
+    if (active_.x == 1) {
+        if (in_delay) {
+            return;
+        }
+
+        ai_make_action();
+    }
 }
 
 std::string Battle::battle_get_name() const
@@ -354,21 +377,58 @@ void Battle::show(std::array<int, 5> &enemy_army, std::array<int, 5> &enemy_coun
     }
 
     active_ = {0, 0};
-    battle_set_move_state();
+    ui_on_move();
 }
 
-void Battle::battle_set_move_state()
+void Battle::ui_on_move(bool force_immediate)
+{
+    if (active_.x == 0) {
+        ui_update_status();
+        ui_update_cursor();
+    }
+    else if (active_.x == 1) {
+        ui_set_cursor_mode(Cursor::None);
+
+        if (force_immediate) {
+            ui_update_status();
+        }
+        else {
+            battle_delay_then([this]() {
+                ui_update_status();
+            });
+        }
+    }
+
+    ui_update_current_unit();
+}
+
+void Battle::ui_update_cursor()
+{
+    auto &unit = battle_get_unit();
+
+    if (unit.flying) {
+        ui_set_cursor_mode(Cursor::Fly);
+    }
+    else {
+        ui_set_cursor_mode(Cursor::Move);
+    }
+}
+
+void Battle::ui_update_status()
 {
     auto &unit = battle_get_unit();
 
     if (unit.flying) {
         ui_set_status(fmt::format("{} fly", battle_get_name()));
-        ui_set_cursor_mode(Cursor::Fly);
     }
     else {
         ui_set_status(fmt::format("{} Attack or Move {}", battle_get_name(), unit.moves));
-        ui_set_cursor_mode(Cursor::Move);
     }
+}
+
+void Battle::ui_update_current_unit()
+{
+    auto &unit = battle_get_unit();
 
     current_.set_position(16.0f + unit.x * 48.0f, 24.0f + unit.y * 40.0f);
     ui_set_cursor_position(unit.x, unit.y);
@@ -937,7 +997,7 @@ void Battle::battle_switch_team()
             });
         }
         else {
-            battle_set_move_state();
+            ui_on_move();
         }
     }
 
@@ -964,7 +1024,7 @@ int Battle::battle_get_next_unit() const
     return -1;
 }
 
-void Battle::battle_on_move()
+void Battle::battle_on_move(bool do_ui)
 {
     int next_unit = battle_get_next_unit();
     if (next_unit == -1) {
@@ -977,7 +1037,9 @@ void Battle::battle_on_move()
         cursor_distance_x_ = 0;
         cursor_distance_y_ = 0;
     }
-    battle_set_move_state();
+    if (do_ui) {
+        ui_on_move();
+    }
 }
 
 void Battle::afn_move(Action action)
@@ -997,7 +1059,7 @@ void Battle::afn_move(Action action)
     cursor_distance_y_ = 0;
 
     board_move_unit_to(action.from.x, action.from.y, action.to.x, action.to.y);
-    battle_set_move_state();
+    ui_on_move();
 }
 
 void Battle::ui_confirm_menu(int opt)
@@ -1217,7 +1279,7 @@ void Battle::spell_teleport()
     current_.set_position(16.0f + battle_get_unit().x * 48.0f, 24.0f + battle_get_unit().y * 40.0f);
     ui_set_status(fmt::format("{} are teleported", kUnits[armies_[teleport_team_][teleport_target_]].name_plural));
     battle_delay_then([this]() {
-        battle_set_move_state();
+        ui_on_move();
     });
 }
 
@@ -1229,7 +1291,7 @@ void Battle::spell_clone()
     ui_set_status(fmt::format("{} {} are cloned", clone_amount, kUnits[armies_[0][unit]].name_plural));
     ui_update_counts();
     battle_delay_then([this]() {
-        battle_set_move_state();
+        ui_on_move();
     });
 }
 
@@ -1239,7 +1301,7 @@ void Battle::spell_freeze()
     unit_states_[1][unit].frozen = true;
     ui_set_status(fmt::format("{} are frozen", kUnits[armies_[1][unit]].name_plural));
     battle_delay_then([this]() {
-        battle_set_move_state();
+        ui_on_move();
     });
 }
 
@@ -1595,5 +1657,104 @@ void Battle::ui_set_cursor_mode(Cursor c)
         default:
             cursor_.set_texture(nullptr);
             break;
+    }
+}
+
+void Battle::ai_make_action()
+{
+    auto &unit = battle_get_unit();
+
+    if (unit.flying) {
+        bool did_move {false};
+
+        std::vector<int> tried_units;
+
+        int tries = 0;
+        int target = -1;
+        while (!did_move && tries < 5) {
+            tries++;
+
+            /* Find the ranged unit with the most damage. */
+            int most_ranged_damage = 0;
+            for (int i = 0; i < 5; i++) {
+                if (armies_[0][i] == -1) {
+                    continue;
+                }
+                if (unit_states_[0][i].ammo) {
+                    if (kUnits[armies_[0][i]].ranged_damage_max * unit_states_[0][i].count >= most_ranged_damage) {
+                        target = i;
+                    }
+                }
+            }
+
+            /* No ranged units found, find the lowest HP unit. */
+            if (target == -1) {
+                int min_hp = std::numeric_limits<int>::max();
+                for (int i = 0; i < 5; i++) {
+                    if (armies_[0][i] == -1) {
+                        continue;
+                    }
+
+                    if (unit_states_[0][i].hp <= min_hp) {
+                        min_hp = unit_states_[0][i].hp;
+                        target = i;
+                    }
+                }
+            }
+
+            if (target != -1) {
+                bool tried_unit {false};
+                for (int j = 0; j < tried_units.size(); j++) {
+                    if (tried_units[j] == target) {
+                        tried_unit = true;
+                        break;
+                    }
+                }
+
+                if (!tried_unit) {
+                    tried_units.push_back(target);
+                }
+                else {
+                    continue;
+                }
+            }
+            else {
+                continue;
+            }
+
+            /* Find an unoccupied adjacent tile. */
+            int target_x = -1;
+            int target_y = -1;
+            for (int i = 0; i < 3; i++) {
+                for (int j = 0; j < 3; j++) {
+                    int x = unit_states_[0][target].x - 1 + i;
+                    int y = unit_states_[0][target].y - 1 + j;
+                    if (x < 0 || x > 5 || y < 0 || y > 4) {
+                        continue;
+                    }
+                    if (terrain[x + y * 6] != 0) {
+                        continue;
+                    }
+                    auto [index, enemy] = board_get_unit_at(x, y);
+                    if (index != -1) {
+                        continue;
+                    }
+                    target_x = x;
+                    target_y = y;
+                    break;
+                }
+            }
+
+            /* If we couldn't find an adjacent tile, try the next unit. */
+            if (target_x != -1 && target_y != -1) {
+                battle_do_action({AidTryMove, active_, {target_x, target_y}});
+                did_move = !unit.flying;
+            }
+        }
+
+        /* Couldn't find a target. */
+        if (!did_move) {
+            spdlog::warn("Couldn't find a fly target!");
+        }
     }
 }

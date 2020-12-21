@@ -103,6 +103,10 @@ private:
     void ui_confirm_give_up(int opt);
     void ui_set_status(const std::string &msg, bool wait_for_enter = false);
     void ui_set_cursor_mode(Cursor cursor);
+    void ui_on_move(bool force_immediate = false);
+    void ui_update_cursor();
+    void ui_update_status();
+    void ui_update_current_unit();
 
     void pause_show();
     void pause_view_army();
@@ -120,7 +124,7 @@ private:
     void battle_set_move_state();
     UnitState &battle_get_unit();
     void battle_delay_then(std::function<void()> callback);
-    void battle_on_move();
+    void battle_on_move(bool do_ui = true);
     void battle_do_action(Action action);
     void battle_use_spell(int spell);
 
@@ -136,6 +140,8 @@ private:
     void spell_clone();
     void spell_freeze();
     void spell_resurrect();
+
+    void ai_make_action();
 
 private:
     bty::SceneStack &ss;
