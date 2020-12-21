@@ -1732,6 +1732,38 @@ void Battle::ai_make_action()
             battle_do_action({AidShootAttack, active_, {0, target}});
         }
     }
+    else {
+        /* Attack lowest HP adjacent unit. */
+        if (board_any_enemy_around()) {
+            int lowest_hp_unit = -1;
+            int lowest_hp = std::numeric_limits<int>::max();
+            for (int i = 0; i < 3; i++) {
+                for (int j = 0; j < 3; j++) {
+                    int x = unit_states_[1][active_.y].x - 1 + i;
+                    int y = unit_states_[1][active_.y].y - 1 + j;
+                    if (x < 0 || x > 5 || y < 0 || y > 4) {
+                        continue;
+                    }
+                    if (terrain[x + y * 6] != 0) {
+                        continue;
+                    }
+                    auto [index, enemy] = board_get_unit_at(x, y);
+                    if (index == -1 || !enemy) {
+                        continue;
+                    }
+                    if (unit_states_[0][index].hp <= lowest_hp) {
+                        lowest_hp = unit_states_[0][index].hp;
+                        lowest_hp_unit = index;
+                    }
+                }
+            }
+            assert(lowest_hp_unit != -1);
+            battle_do_action({AidMeleeAttack, active_, {0, lowest_hp_unit}});
+        }
+        /* Move towards best target. */
+        else {
+        }
+    }
 }
 
 int Battle::battle_get_ranged_unit() const
