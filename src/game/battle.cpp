@@ -953,7 +953,7 @@ int Battle::battle_get_next_unit() const
 {
     for (int i = 0; i < 5; i++) {
         int idx = (active_.y + i + 1) % 5;
-        if (idx == active_.y || armies_[active_.x][idx] == -1) {
+        if (armies_[active_.x][idx] == -1) {
             continue;
         }
         if (unit_states_[active_.x][idx].moves == 0 || unit_states_[active_.x][idx].waits == 2) {
