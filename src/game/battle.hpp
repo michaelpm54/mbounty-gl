@@ -92,6 +92,9 @@ private:
     bool board_any_enemy_around(int team, int unit) const;
     void board_clear_dead_units();
     std::tuple<int, bool> board_get_unit_at(int x, int y) const;
+    bool board_tile_blocked(int x, int y) const;
+    bool board_blocked() const;
+    bool board_blocked(int team, int unit) const;
 
     void ui_move_cursor_dir(int dir);
     void ui_show_hit_marker(int x, int y);
@@ -202,6 +205,9 @@ private:
     Cursor cursor_mode {Cursor::Move};
     bool in_delay {false};
     bool cursor_constrained {false};
+
+    std::array<bty::Rect, 8> cost_squares;
+    std::array<bty::Rect, 30> terrain_squares;
 };
 
 #endif    // BTY_GAME_BATTLE_HPP_

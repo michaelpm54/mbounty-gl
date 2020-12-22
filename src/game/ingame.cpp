@@ -19,6 +19,8 @@
 #include "engine/scene-stack.hpp"
 #include "game/army-gen.hpp"
 #include "game/chest.hpp"
+#include "game/game-options.hpp"
+
 #define CUTE_C2_IMPLEMENTATION
 #include "game/cute_c2.hpp"
 #include "game/hud.hpp"
@@ -209,7 +211,7 @@ void Ingame::draw(bty::Gfx &gfx, glm::mat4 &)
     hero.draw(gfx, map_cam);
     hud.draw(gfx, ui_cam);
 
-    if (debug) {
+    if (game_options.debug) {
         gfx.draw_rect(cr, map_cam);
         gfx.draw_text(tile_text, ui_cam);
     }
@@ -236,9 +238,6 @@ void Ingame::key(int key, int action)
         else if (key == GLFW_KEY_E) {
             v.days = 1;
             day_timer.trigger();
-        }
-        else if (key == GLFW_KEY_F1) {
-            debug = !debug;
         }
         else if (key == GLFW_KEY_F) {
             fly_land();
@@ -1421,7 +1420,7 @@ void Ingame::move_mob(Mob &mob, float dt, const glm::vec2 &dir)
 
 void Ingame::move_hero(int move_flags, float dt)
 {
-    if (debug) {
+    if (game_options.debug) {
         cr.set_color({0.0f, 0.0f, 0.7f, 0.9f});
     }
 
@@ -1551,7 +1550,7 @@ void Ingame::move_hero(int move_flags, float dt)
         hero.set_position(aabb.min.x - kEntityOffsetX, aabb.min.y - kEntityOffsetY);
     }
 
-    if (debug) {
+    if (game_options.debug) {
         cr.set_position(aabb.min.x, aabb.min.y);
         if (collide_x && collide_y) {
             cr.set_color({0.75f, 0.95f, 0.73f, 0.9f});
@@ -1564,7 +1563,7 @@ void Ingame::move_hero(int move_flags, float dt)
         }
     }
 
-    if (debug) {
+    if (game_options.debug) {
         tile_text.set_string(fmt::format("X {}\nY {}\nT {}{}{}\nLast tile {} {} {}", v.x, v.y, map.get_tile(v.x, v.y, v.continent).id, collide_x || collide_y ? "\nC " : "", collide_x || collide_y ? std::to_string(collided_tile.id) : "", last_tile.tx, last_tile.ty, last_tile.id));
     }
 

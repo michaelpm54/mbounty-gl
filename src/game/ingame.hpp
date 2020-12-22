@@ -188,8 +188,6 @@ private:
     bty::Text tile_text;
     Tile last_tile {-1, -1, -1};
     Tile last_event_tile {-1, -1, -1};
-
-    bool debug {false};
 };
 
 #endif    // BTY_GAME_INGAME_HPP_

@@ -107,11 +107,27 @@ Battle::Battle(bty::SceneStack &ss, bty::DialogStack &ds, bty::Assets &assets, V
             counts_[i][j].set_font(font);
         }
     }
+
+    for (int i = 0; i < 8; i++) {
+        cost_squares[i].set_size({48.0f, 40.0f});
+    }
 }
 
 void Battle::draw(bty::Gfx &gfx, glm::mat4 &)
 {
     gfx.draw_sprite(bg_, camera_);
+
+    for (int i = 0; i < 30; i++) {
+        gfx.draw_rect(terrain_squares[i], camera_);
+    }
+
+    if (game_options.debug) {
+        if (active_.x == 1 && !battle_get_unit().flying) {
+            for (int i = 0; i < 8; i++) {
+                gfx.draw_rect(cost_squares[i], camera_);
+            }
+        }
+    }
 
     hud.draw(gfx, camera_);
 
@@ -275,6 +291,15 @@ void Battle::show(std::array<int, 5> &enemy_army, std::array<int, 5> &enemy_coun
 			0, 0, 0, 0, 0, 0,
 		}};
         /* clang-format on */
+    }
+
+    for (int x = 0; x < 6; x++) {
+        for (int y = 0; y < 5; y++) {
+            int idx = x + y * 6;
+            terrain_squares[idx].set_color(terrain[idx] == 0 ? glm::vec4 {0.0f, 0.0f, 0.0f, 0.0f} : glm::vec4 {0.5f, 0.5f, 0.5f, 0.9f});
+            terrain_squares[idx].set_size({48.0f, 40.0f});
+            terrain_squares[idx].set_position({16.0f + 48.0f * x, 24.0f + 40.0f * y});
+        }
     }
 
     /* Can happen when the previous battle ended in a draw. */
@@ -1001,6 +1026,7 @@ void Battle::battle_switch_team()
         }
         else {
             ui_on_move();
+            ui_update_status();
         }
     }
 
@@ -1478,17 +1504,56 @@ bool Battle::board_any_enemy_around() const
 
 bool Battle::board_any_enemy_around(int team, int unit) const
 {
-    int x = unit_states_[team][unit].x;
-    int y = unit_states_[team][unit].y;
     for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 3; j++) {
-            auto [unit, enemy] = board_get_unit_at(x - 1 + i, y - 1 + j);
+            int x = unit_states_[team][unit].x - 1 + i;
+            int y = unit_states_[team][unit].y - 1 + j;
+            if (x < 0 || x > 5 || y < 0 || y > 4) {
+                continue;
+            }
+            if (x == unit_states_[team][unit].x && y == unit_states_[team][unit].y) {
+                continue;
+            }
+            auto [unit, enemy] = board_get_unit_at(x, y);
             if (enemy) {
                 return enemy;
             }
         }
     }
     return false;
+}
+
+bool Battle::board_tile_blocked(int x, int y) const
+{
+    if (x < 0 || x > 5 || y < 0 || y > 4) {
+        return true;
+    }
+    return terrain[x + y * 6] != 0 || std::get<0>(board_get_unit_at(x, y)) != -1;
+}
+
+bool Battle::board_blocked() const
+{
+    return board_blocked(active_.x, active_.y);
+}
+
+bool Battle::board_blocked(int team, int unit) const
+{
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+            int x = unit_states_[team][unit].x - 1 + i;
+            int y = unit_states_[team][unit].y - 1 + j;
+            if (x < 0 || x > 5 || y < 0 || y > 4) {
+                continue;
+            }
+            if (x == unit_states_[team][unit].x && y == unit_states_[team][unit].y) {
+                continue;
+            }
+            if (!board_tile_blocked(x, y)) {
+                return false;
+            }
+        }
+    }
+    return true;
 }
 
 void Battle::pause_show()
@@ -1719,6 +1784,7 @@ void Battle::ai_make_action()
             spdlog::warn("Couldn't find a fly target!");
         }
     }
+    /* Can shoot */
     else if (unit.ammo > 0 && !board_any_enemy_around()) {
         int target = battle_get_ranged_unit();
         if (target == -1) {
@@ -1732,6 +1798,7 @@ void Battle::ai_make_action()
             battle_do_action({AidShootAttack, active_, {0, target}});
         }
     }
+    /* Melee range */
     else {
         /* Attack lowest HP adjacent unit. */
         if (board_any_enemy_around()) {
@@ -1762,6 +1829,89 @@ void Battle::ai_make_action()
         }
         /* Move towards best target. */
         else {
+            if (board_blocked()) {
+                battle_do_action({AidWait, active_});
+                return;
+            }
+
+            int target = battle_get_ranged_unit();
+
+            /* No ranged units found, find the lowest HP unit. */
+            if (target == -1) {
+                target = battle_get_lowest_hp_unit();
+            }
+
+            const auto &target_unit = unit_states_[0][target];
+            const auto &current_unit = unit_states_[active_.x][active_.y];
+
+            int x = current_unit.x;
+            int y = current_unit.y;
+
+            std::array<glm::ivec2, 8> tiles = {{
+                {x - 1, y - 1},
+                {x, y - 1},
+                {x + 1, y - 1},
+                {x - 1, y},
+                {x + 1, y},
+                {x - 1, y + 1},
+                {x, y + 1},
+                {x + 1, y + 1},
+            }};
+
+            std::array<std::pair<int, int>, 8> distances;
+
+            for (int i = 0; i < 8; i++) {
+                distances[i].first = i;
+                if (board_tile_blocked(tiles[i].x, tiles[i].y)) {
+                    distances[i].second = 0xFF;
+                }
+                else {
+                    distances[i].second = std::abs(tiles[i].x - target_unit.y) + std::abs(tiles[i].y - target_unit.y);
+                }
+
+                if (game_options.debug) {
+                    if (tiles[i].x == -1 || tiles[i].y == -1) {
+                        cost_squares[i].set_position({-100, -100});
+                    }
+                    else {
+                        cost_squares[i].set_position({16.0f + tiles[i].x * 48.0f, 24.0f + tiles[i].y * 40.0f});
+                    }
+                    if (distances[i].second <= 1) {
+                        cost_squares[i].set_color({0.203, 0.835, 0.247, 0.8});
+                    }
+                    else if (distances[i].second == 2) {
+                        cost_squares[i].set_color({0.203, 0.631, 0.835, 0.8});
+                    }
+                    else if (distances[i].second == 3) {
+                        cost_squares[i].set_color({0.980, 0.447, 0, 0.8});
+                    }
+                    else {
+                        cost_squares[i].set_color({0.5f + distances[i].second * 0.08f, 0.8f - distances[i].second * 0.1f, 0.023, 0.8});
+                    }
+                }
+            }
+
+            /* We want to head towards the tile with the lowest distance to target, i.e. closest to target. */
+
+            std::sort(distances.begin(), distances.end(), [](const std::pair<int, int> &a, const std::pair<int, int> &b) {
+                return a.second < b.second;
+            });
+
+            int next_x = -1;
+            int next_y = -1;
+
+            for (int i = 0; i < 8; i++) {
+                /* When we reach 0xFF's, the rest of the array is only these so we can break. */
+                if (distances[i].second == 0xFF) {
+                    break;
+                }
+                next_x = tiles[distances[i].first].x;
+                next_y = tiles[distances[i].first].y;
+            }
+
+            if (next_x != -1 && next_y != -1) {
+                battle_do_action({AidTryMove, active_, {next_x, next_y}});
+            }
         }
     }
 }

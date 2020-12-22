@@ -37,10 +37,8 @@ private:
     glm::mat4 view;
     bool run_ {true};
 
-    bool debug {false};
     Text fps_label;
     Text fps;
-    Text frame_time;
 
     GameOptions game_options;
 };

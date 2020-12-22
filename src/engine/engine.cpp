@@ -25,7 +25,6 @@ Engine::Engine(Window &window, Assets &assets)
     window_init_callbacks(window_, &input_);
     fps_label.create(1, 3, "FPS: ", assets.get_font());
     fps.create(5, 3, "", assets.get_font());
-    frame_time.create(1, 4, "", assets.get_font());
 }
 
 void Engine::run()
@@ -57,19 +56,17 @@ void Engine::run()
         scene_stack.update(dt);
         dialog_stack.update(dt);
 
-        if (debug) {
+        if (game_options.debug) {
             fps.set_string(std::to_string(frame_rate));
-            frame_time.set_string(std::to_string(dt));
         }
 
         gfx_->clear();
         scene_stack.draw(*gfx_, view);
         dialog_stack.draw(*gfx_, view);
 
-        if (debug) {
+        if (game_options.debug) {
             gfx_->draw_text(fps_label, view);
             gfx_->draw_text(fps, view);
-            gfx_->draw_text(frame_time, view);
         }
 
         window_swap(window_);
@@ -79,7 +76,7 @@ void Engine::run()
 void Engine::key(int key, int action)
 {
     if (key == GLFW_KEY_F1 && action == GLFW_PRESS) {
-        debug = !debug;
+        game_options.debug = !game_options.debug;
     }
 
     switch (key) {
