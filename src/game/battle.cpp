@@ -89,6 +89,7 @@ Battle::Battle(bty::SceneStack &ss, bty::DialogStack &ds, bty::Assets &assets, V
     bg_.set_position(8, 24);
     current_friendly = assets.get_texture("battle/active-unit.png", {5, 2});
     current_enemy = assets.get_texture("battle/enemy.png", {10, 1});
+    current_ooc = assets.get_texture("battle/out-of-control.png", {10, 1});
     current_.set_texture(current_friendly);
     hit_marker_.set_texture(assets.get_texture("battle/damage-marker.png", {4, 1}));
     hit_marker_.set_animation_repeat(false);
@@ -240,8 +241,12 @@ void Battle::update(float dt)
     cursor_.update(dt);
     current_.update(dt);
 
-    if (active_.x == 1) {
+    if (active_.x == 1 || active_.x == 0 && battle_get_unit().out_of_control) {
         if (in_delay) {
+            return;
+        }
+
+        if (is_end) {
             return;
         }
 
@@ -259,6 +264,7 @@ std::string Battle::battle_get_name() const
 
 void Battle::show(std::array<int, 5> &enemy_army, std::array<int, 5> &enemy_counts, bool siege, int castle_id)
 {
+    is_end = false;
     hud.set_blank_frame();
 
     this->enemy_army = &enemy_army;
@@ -302,10 +308,6 @@ void Battle::show(std::array<int, 5> &enemy_army, std::array<int, 5> &enemy_coun
         }
     }
 
-    /* Can happen when the previous battle ended in a draw. */
-    /* The battle immediately ends and the player wins. */
-    battle_check_end();
-
     delay_timer_ = 0;
 
     int *armies[] = {v.army.data(), enemy_army.data()};
@@ -325,11 +327,10 @@ void Battle::show(std::array<int, 5> &enemy_army, std::array<int, 5> &enemy_coun
             us.hp = unit.hp;
             us.injury = 0;
             us.ammo = unit.initial_ammo;
-            us.out_of_control = (us.hp * us.count) > v.leadership;
+            us.out_of_control = i == 0 && (us.hp * us.count) > v.leadership;
             us.flying = !!(unit.abilities & AbilityFly);
             us.moves = unit.initial_moves;
             us.waits = 0;
-            us.out_of_control = false;
             us.frozen = false;
             us.retaliated = false;
         }
@@ -397,6 +398,8 @@ void Battle::show(std::array<int, 5> &enemy_army, std::array<int, 5> &enemy_coun
         }
     }
 
+    /* Can happen when the previous battle ended in a draw. */
+    /* The battle immediately ends and the player wins. */
     if (battle_check_end()) {
         return;
     }
@@ -458,7 +461,12 @@ void Battle::ui_update_current_unit()
     current_.set_position(16.0f + unit.x * 48.0f, 24.0f + unit.y * 40.0f);
     ui_set_cursor_position(unit.x, unit.y);
 
-    if (active_.x == 1) {
+    unit.out_of_control = active_.x == 0 && (unit.hp * unit.count) > v.leadership;
+
+    if (unit.out_of_control) {
+        current_.set_texture(current_ooc);
+    }
+    else if (active_.x == 1) {
         current_.set_texture(current_enemy);
     }
     else {
@@ -827,6 +835,7 @@ void Battle::board_clear_dead_units()
             }
         }
     }
+    battle_check_end();
 }
 
 void Battle::ui_update_counts()
@@ -1008,33 +1017,23 @@ void Battle::battle_switch_team()
 
     int index = 0;
 
-    while (armies_[active_.x][index] == -1 && index < 5) {
+    while (index < 5 && armies_[active_.x][index] == -1) {
         index++;
     }
 
-    if (index == 5) {
-        spdlog::warn("No units left. Battle over?");
-    }
-    else {
-        active_.y = index;
-        battle_reset_moves();
-        if (unit_states_[active_.x][active_.y].frozen && !board_any_enemy_around()) {
-            ui_set_status(fmt::format("{} are frozen", battle_get_name()));
-            battle_delay_then([this]() {
-                battle_on_move();
-            });
-        }
-        else {
-            ui_on_move();
-            ui_update_status();
-        }
-    }
+    assert(index != 5);
 
-    if (active_.x == 1) {
-        current_.set_texture(current_enemy);
+    active_.y = index;
+    battle_reset_moves();
+    if (unit_states_[active_.x][active_.y].frozen && !board_any_enemy_around()) {
+        ui_set_status(fmt::format("{} are frozen", battle_get_name()));
+        battle_delay_then([this]() {
+            battle_on_move();
+        });
     }
     else {
-        current_.set_texture(current_friendly);
+        ui_on_move();
+        ui_update_status();
     }
 }
 
@@ -1066,6 +1065,7 @@ void Battle::battle_on_move(bool do_ui)
         cursor_distance_x_ = 0;
         cursor_distance_y_ = 0;
     }
+
     if (do_ui) {
         ui_on_move();
     }
@@ -1130,11 +1130,7 @@ void Battle::ui_confirm_give_up(int opt)
         case 0:
             break;
         case 1:
-            for (int i = 0; i < 5; i++) {
-                (*enemy_army)[i] = armies_[1][i];
-                (*enemy_counts)[i] = unit_states_[1][i].count;
-            }
-            ss.pop(2);
+            battle_defeat();
             break;
         default:
             break;
@@ -1358,16 +1354,16 @@ void Battle::ui_set_cursor_position(int x, int y)
 
 bool Battle::battle_check_end()
 {
-    int num_dead[2] = {0, 0};
+    int num_alive[2] = {0, 0};
     for (int i = 0; i < 2; i++) {
         for (int j = 0; j < 5; j++) {
-            if (armies_[i][j] == -1) {
-                num_dead[i]++;
+            if (armies_[i][j] != -1) {
+                num_alive[i]++;
             }
         }
     }
 
-    if (num_dead[0] == 5) {
+    if (num_alive[0] == 0) {
         for (int i = 0; i < 5; i++) {
             (*enemy_army)[i] = armies_[1][i];
             (*enemy_counts)[i] = unit_states_[1][i].count;
@@ -1375,13 +1371,16 @@ bool Battle::battle_check_end()
         if (siege) {
             v.siege = false;
         }
+        is_end = true;
+        battle_defeat();
         return true;
     }
-    else if (num_dead[1] == 5) {
+    else if (num_alive[1] == 0) {
         for (int i = 0; i < 5; i++) {
             v.army[i] = armies_[0][i];
             v.counts[i] = unit_states_[0][i].count;
         }
+        is_end = true;
         battle_victory();
         return true;
     }
@@ -1497,6 +1496,15 @@ void Battle::battle_victory()
     }
 }
 
+void Battle::battle_defeat()
+{
+    for (int i = 0; i < 5; i++) {
+        (*enemy_army)[i] = armies_[1][i];
+        (*enemy_counts)[i] = unit_states_[1][i].count;
+    }
+    ss.pop(2);
+}
+
 bool Battle::board_any_enemy_around() const
 {
     return board_any_enemy_around(active_.x, active_.y);
@@ -1504,6 +1512,7 @@ bool Battle::board_any_enemy_around() const
 
 bool Battle::board_any_enemy_around(int team, int unit) const
 {
+    const auto &u = battle_get_unit();
     for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 3; j++) {
             int x = unit_states_[team][unit].x - 1 + i;
@@ -1515,6 +1524,11 @@ bool Battle::board_any_enemy_around(int team, int unit) const
                 continue;
             }
             auto [unit, enemy] = board_get_unit_at(x, y);
+
+            if (unit != -1 && u.out_of_control) {
+                return true;
+            }
+
             if (enemy) {
                 return enemy;
             }
@@ -1674,6 +1688,11 @@ void Battle::ui_set_status(const std::string &msg, bool wait_for_enter)
     }
 }
 
+const Battle::UnitState &Battle::battle_get_unit() const
+{
+    return unit_states_[active_.x][active_.y];
+}
+
 Battle::UnitState &Battle::battle_get_unit()
 {
     return unit_states_[active_.x][active_.y];
@@ -1742,11 +1761,15 @@ void Battle::ai_make_action()
         while (!did_move && tries < 5) {
             tries++;
 
-            int target = battle_get_ranged_unit();
+            int team = 0;
+            int target = battle_get_ranged_unit(&team);
 
             /* No ranged units found, find the lowest HP unit. */
             if (target == -1) {
-                target = battle_get_lowest_hp_unit();
+                target = battle_get_lowest_hp_unit(&team);
+                if (team == active_.x && target == active_.y) {
+                    target = -1;
+                }
             }
 
             if (target != -1) {
@@ -1786,9 +1809,13 @@ void Battle::ai_make_action()
     }
     /* Can shoot */
     else if (unit.ammo > 0 && !board_any_enemy_around()) {
-        int target = battle_get_ranged_unit();
+        int team = 0;
+        int target = battle_get_ranged_unit(&team);
         if (target == -1) {
-            target = battle_get_lowest_hp_unit();
+            target = battle_get_lowest_hp_unit(&team);
+            if (team == active_.x && target == active_.y) {
+                target = -1;
+            }
         }
         auto tile = board_get_adjacent_tile(target);
         if (tile.x == -1 && tile.y == -1) {
@@ -1802,12 +1829,13 @@ void Battle::ai_make_action()
     else {
         /* Attack lowest HP adjacent unit. */
         if (board_any_enemy_around()) {
+            int team = 0;
             int lowest_hp_unit = -1;
             int lowest_hp = std::numeric_limits<int>::max();
             for (int i = 0; i < 3; i++) {
                 for (int j = 0; j < 3; j++) {
-                    int x = unit_states_[1][active_.y].x - 1 + i;
-                    int y = unit_states_[1][active_.y].y - 1 + j;
+                    int x = unit_states_[active_.x][active_.y].x - 1 + i;
+                    int y = unit_states_[active_.x][active_.y].y - 1 + j;
                     if (x < 0 || x > 5 || y < 0 || y > 4) {
                         continue;
                     }
@@ -1815,17 +1843,21 @@ void Battle::ai_make_action()
                         continue;
                     }
                     auto [index, enemy] = board_get_unit_at(x, y);
-                    if (index == -1 || !enemy) {
+                    if (index == -1 || (!enemy && !unit.out_of_control)) {
                         continue;
                     }
-                    if (unit_states_[0][index].hp <= lowest_hp) {
-                        lowest_hp = unit_states_[0][index].hp;
+                    team = enemy ? active_.x == 0 ? 1 : 0 : active_.x;
+                    if (team == active_.x && index == active_.y) {
+                        continue;
+                    }
+                    if (unit_states_[team][index].hp <= lowest_hp) {
+                        lowest_hp = unit_states_[team][index].hp;
                         lowest_hp_unit = index;
                     }
                 }
             }
             assert(lowest_hp_unit != -1);
-            battle_do_action({AidMeleeAttack, active_, {0, lowest_hp_unit}});
+            battle_do_action({AidMeleeAttack, active_, {team, lowest_hp_unit}});
         }
         /* Move towards best target. */
         else {
@@ -1834,14 +1866,15 @@ void Battle::ai_make_action()
                 return;
             }
 
-            int target = battle_get_ranged_unit();
+            int team = 0;
+            int target = battle_get_ranged_unit(&team);
 
             /* No ranged units found, find the lowest HP unit. */
             if (target == -1) {
-                target = battle_get_lowest_hp_unit();
+                target = battle_get_lowest_hp_unit(&team);
             }
 
-            const auto &target_unit = unit_states_[0][target];
+            const auto &target_unit = unit_states_[team][target];
             const auto &current_unit = unit_states_[active_.x][active_.y];
 
             int x = current_unit.x;
@@ -1892,7 +1925,6 @@ void Battle::ai_make_action()
             }
 
             /* We want to head towards the tile with the lowest distance to target, i.e. closest to target. */
-
             std::sort(distances.begin(), distances.end(), [](const std::pair<int, int> &a, const std::pair<int, int> &b) {
                 return a.second < b.second;
             });
@@ -1907,6 +1939,7 @@ void Battle::ai_make_action()
                 }
                 next_x = tiles[distances[i].first].x;
                 next_y = tiles[distances[i].first].y;
+                break;
             }
 
             if (next_x != -1 && next_y != -1) {
@@ -1916,63 +1949,104 @@ void Battle::ai_make_action()
     }
 }
 
-int Battle::battle_get_ranged_unit() const
+int Battle::battle_get_ranged_unit(int *team_) const
 {
+    int team_a = -1;
+
+    if (battle_get_unit().out_of_control) {
+        team_a = 0;
+    }
+    else {
+        team_a = !active_.x;
+    }
+
     int target = -1;
     int most_ranged_damage = 0;
-    for (int i = 0; i < 5; i++) {
-        if (armies_[0][i] == -1) {
-            continue;
-        }
-        if (unit_states_[0][i].ammo) {
-            if (kUnits[armies_[0][i]].ranged_damage_max * unit_states_[0][i].count >= most_ranged_damage) {
-                target = i;
+
+    for (int team = team_a; team < team_a + 1; team++) {
+        for (int i = 0; i < 5; i++) {
+            if (armies_[team][i] == -1) {
+                continue;
+            }
+            if (unit_states_[team][i].ammo) {
+                if (kUnits[armies_[team][i]].ranged_damage_max * unit_states_[team][i].count >= most_ranged_damage) {
+                    target = i;
+                    if (team_) {
+                        *team_ = team;
+                    }
+                }
             }
         }
     }
+
     return target;
 }
 
 glm::ivec2 Battle::board_get_adjacent_tile(int player_unit) const
 {
+    int team_a = -1;
+
+    if (battle_get_unit().out_of_control) {
+        team_a = 0;
+    }
+    else {
+        team_a = !active_.x;
+    }
+
     glm::ivec2 tile {-1, -1};
 
-    for (int i = 0; i < 3; i++) {
-        for (int j = 0; j < 3; j++) {
-            int x = unit_states_[0][player_unit].x - 1 + i;
-            int y = unit_states_[0][player_unit].y - 1 + j;
-            if (x < 0 || x > 5 || y < 0 || y > 4) {
-                continue;
+    for (int team = team_a; team < team_a + 1; team++) {
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                int x = unit_states_[team][player_unit].x - 1 + i;
+                int y = unit_states_[team][player_unit].y - 1 + j;
+                if (x < 0 || x > 5 || y < 0 || y > 4) {
+                    continue;
+                }
+                if (terrain[x + y * 6] != 0) {
+                    continue;
+                }
+                auto [index, enemy] = board_get_unit_at(x, y);
+                if (index != -1) {
+                    continue;
+                }
+                tile.x = x;
+                tile.y = y;
+                break;
             }
-            if (terrain[x + y * 6] != 0) {
-                continue;
-            }
-            auto [index, enemy] = board_get_unit_at(x, y);
-            if (index != -1) {
-                continue;
-            }
-            tile.x = x;
-            tile.y = y;
-            break;
         }
     }
 
     return tile;
 }
 
-int Battle::battle_get_lowest_hp_unit() const
+int Battle::battle_get_lowest_hp_unit(int *team_) const
 {
+    int team_a = -1;
+
+    if (battle_get_unit().out_of_control) {
+        team_a = 0;
+    }
+    else {
+        team_a = !active_.x;
+    }
+
     int target = -1;
     int min_hp = std::numeric_limits<int>::max();
 
-    for (int i = 0; i < 5; i++) {
-        if (armies_[0][i] == -1) {
-            continue;
-        }
+    for (int team = team_a; team < team_a + 1; team++) {
+        for (int i = 0; i < 5; i++) {
+            if (armies_[team][i] == -1) {
+                continue;
+            }
 
-        if (unit_states_[0][i].hp <= min_hp) {
-            min_hp = unit_states_[0][i].hp;
-            target = i;
+            if (unit_states_[team][i].hp <= min_hp) {
+                min_hp = unit_states_[team][i].hp;
+                target = i;
+                if (team_) {
+                    *team_ = team;
+                }
+            }
         }
     }
 

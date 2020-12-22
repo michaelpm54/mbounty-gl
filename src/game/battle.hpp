@@ -95,6 +95,7 @@ private:
     bool board_tile_blocked(int x, int y) const;
     bool board_blocked() const;
     bool board_blocked(int team, int unit) const;
+    glm::ivec2 board_get_adjacent_tile(int player_unit) const;
 
     void ui_move_cursor_dir(int dir);
     void ui_show_hit_marker(int x, int y);
@@ -122,18 +123,20 @@ private:
     int battle_damage(int from_team, int from_unit, int to_team, int to_unit, bool is_ranged, bool is_external, int external_damage, bool retaliation);
     bool battle_check_end();
     void battle_victory();
+    void battle_defeat();
     std::string battle_get_name() const;
     int battle_get_next_unit() const;
     void battle_switch_team();
     void battle_set_move_state();
     UnitState &battle_get_unit();
+    const UnitState &battle_get_unit() const;
     void battle_delay_then(std::function<void()> callback);
     void battle_on_move(bool do_ui = true);
     void battle_do_action(Action action);
     void battle_use_spell(int spell);
-    int battle_get_ranged_unit() const;
-    int battle_get_lowest_hp_unit() const;
-    glm::ivec2 board_get_adjacent_tile(int player_unit) const;
+    int battle_get_ranged_unit(int *team = nullptr) const;
+    int battle_get_lowest_hp_unit(int *team = nullptr) const;
+    int Battle::battle_enemy_team() const;
 
     void afn_try_move(Action action);
     void afn_move(Action action);
@@ -202,12 +205,13 @@ private:
     bool draw_hit_marker {false};
     const bty::Texture *current_friendly;
     const bty::Texture *current_enemy;
+    const bty::Texture *current_ooc;
     Cursor cursor_mode {Cursor::Move};
     bool in_delay {false};
     bool cursor_constrained {false};
-
     std::array<bty::Rect, 8> cost_squares;
     std::array<bty::Rect, 30> terrain_squares;
+    bool is_end {false};
 };
 
 #endif    // BTY_GAME_BATTLE_HPP_
