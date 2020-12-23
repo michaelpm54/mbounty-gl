@@ -199,7 +199,7 @@ void Town::gather_information()
         },
     });
 
-    if (villain_id != -1) {
+    if (villain_id != 0x7F && villain_id != -1) {
         gen.villains_found[villain_id] = true;
     }
 }
