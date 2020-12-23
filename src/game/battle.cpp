@@ -1355,6 +1355,10 @@ void Battle::ui_set_cursor_position(int x, int y)
 
 bool Battle::battle_check_end()
 {
+    if (is_end) {
+        return true;
+    }
+
     int num_alive[2] = {0, 0};
     for (int i = 0; i < 2; i++) {
         for (int j = 0; j < 5; j++) {
