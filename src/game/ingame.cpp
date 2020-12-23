@@ -111,7 +111,7 @@ void Ingame::setup(int hero, int diff)
         v.visited_tiles[i].clear();
         v.visited_tiles[i].resize(4096);
         std::fill(v.visited_tiles[i].begin(), v.visited_tiles[i].end(), 0xFF);
-        gen.sail_maps_found[i] = true;
+        gen.sail_maps_found[i] = false;
         gen.continent_maps_found[i] = false;
         v.tiles[i] = map.get_data(i);
         for (auto j = 0u; j < gen.mobs[i].size(); j++) {
@@ -122,6 +122,8 @@ void Ingame::setup(int hero, int diff)
             }
         }
     }
+
+    gen.sail_maps_found[0] = true;
 
     for (int i = 0; i < 5; i++) {
         v.army[i] = -1;
