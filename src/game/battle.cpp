@@ -1495,6 +1495,11 @@ void Battle::battle_victory()
             },
         });
     }
+
+    for (int i = 0; i < 5; i++) {
+        v.army[i] = armies_[0][i];
+        v.counts[i] = unit_states_[0][i].count;
+    }
 }
 
 void Battle::battle_defeat()
