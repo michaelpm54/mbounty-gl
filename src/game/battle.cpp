@@ -197,11 +197,6 @@ void Battle::key(int key, int action)
         case GLFW_KEY_V:
             battle_victory();
             break;
-        case GLFW_KEY_N:
-            battle_get_unit().moves = 0;
-            battle_on_move(false);
-            ui_on_move(true);
-            break;
         default:
             break;
     }
@@ -405,28 +400,13 @@ void Battle::show(std::array<int, 5> &enemy_army, std::array<int, 5> &enemy_coun
     }
 
     active_ = {0, 0};
-    ui_on_move();
+    ui_update_state();
 }
 
-void Battle::ui_on_move(bool force_immediate)
+void Battle::ui_update_state()
 {
-    if (active_.x == 0) {
-        ui_update_status();
-        ui_update_cursor();
-    }
-    else if (active_.x == 1) {
-        ui_set_cursor_mode(Cursor::None);
-
-        if (force_immediate) {
-            ui_update_status();
-        }
-        else {
-            battle_delay_then([this]() {
-                ui_update_status();
-            });
-        }
-    }
-
+    ui_update_status();
+    ui_update_cursor();
     ui_update_current_unit();
 }
 
@@ -434,7 +414,10 @@ void Battle::ui_update_cursor()
 {
     auto &unit = battle_get_unit();
 
-    if (unit.flying) {
+    if (battle_not_user()) {
+        ui_set_cursor_mode(Cursor::None);
+    }
+    else if (unit.flying) {
         ui_set_cursor_mode(Cursor::Fly);
     }
     else {
@@ -444,10 +427,17 @@ void Battle::ui_update_cursor()
 
 void Battle::ui_update_status()
 {
+    if (battle_not_user()) {
+        return;
+    }
+
     auto &unit = battle_get_unit();
 
     if (unit.flying) {
         ui_set_status(fmt::format("{} fly", battle_get_name()));
+    }
+    else if (battle_can_shoot()) {
+        ui_set_status(fmt::format("{} Attack, Shoot or Move {}", battle_get_name(), unit.moves));
     }
     else {
         ui_set_status(fmt::format("{} Attack or Move {}", battle_get_name(), unit.moves));
@@ -881,11 +871,11 @@ void Battle::battle_do_action(Action action)
             afn_move(action);
             break;
         case AidMeleeAttack:
-            action.retaliate = true;
             afn_attack(action);
             break;
         case AidShootAttack:
             action.retaliate = false;
+            action.shoot = true;
             afn_attack(action);
             break;
         case AidRetaliate:
@@ -962,21 +952,28 @@ void Battle::afn_try_move(Action action)
             }
         }
         else {
-            battle_do_action({AidMove, action.from, action.to});
+            battle_do_action({.id = AidMove, .from = action.from, .to = action.to, .next_unit = action.next_unit});
         }
     }
 }
 
 void Battle::afn_attack(Action action)
 {
-    bool shoot = cursor_mode == Cursor::Shoot;
+    bool shoot = cursor_mode == Cursor::Shoot || action.shoot;
     bool magic = cursor_mode == Cursor::Magic;
+
+    auto &unit = battle_get_unit();
+
+    if (!shoot && !unit.retaliated) {
+        action.retaliate = true;
+        unit_states_[action.to.x][action.to.y].retaliated = true;
+    }
 
     ui_set_cursor_mode(Cursor::None);
 
     int kills = battle_attack(action.from.x, action.from.y, action.to.x, action.to.y, shoot, magic, false);
 
-    ui_set_status(fmt::format("{} attack {}, {} die", battle_get_name(), kUnits[armies_[action.to.x][action.to.y]].name_plural, kills));
+    ui_set_status(fmt::format("{} {} {}, {} die", battle_get_name(), shoot ? "shoot" : "attack", kUnits[armies_[action.to.x][action.to.y]].name_plural, kills));
     battle_get_unit().moves = 0;
 
     battle_delay_then([this, action, shoot, magic]() {
@@ -1021,7 +1018,10 @@ void Battle::battle_switch_team()
         index++;
     }
 
-    assert(index != 5);
+    if (index == 5) {
+        battle_check_end();
+        return;
+    }
 
     active_.y = index;
     battle_reset_moves();
@@ -1032,8 +1032,7 @@ void Battle::battle_switch_team()
         });
     }
     else {
-        ui_on_move();
-        ui_update_status();
+        ui_update_state();
     }
 }
 
@@ -1052,9 +1051,10 @@ int Battle::battle_get_next_unit() const
     return -1;
 }
 
-void Battle::battle_on_move(bool do_ui)
+void Battle::battle_on_move()
 {
     int next_unit = battle_get_next_unit();
+
     if (next_unit == -1) {
         battle_switch_team();
         cursor_distance_x_ = 0;
@@ -1066,8 +1066,8 @@ void Battle::battle_on_move(bool do_ui)
         cursor_distance_y_ = 0;
     }
 
-    if (do_ui) {
-        ui_on_move();
+    if (!battle_not_user()) {
+        ui_update_state();
     }
 }
 
@@ -1079,7 +1079,7 @@ void Battle::afn_move(Action action)
     }
     else {
         unit_states_[action.from.x][action.from.y].moves--;
-        if (unit_states_[action.from.x][action.from.y].moves == 0) {
+        if (action.next_unit && unit_states_[action.from.x][action.from.y].moves == 0) {
             battle_on_move();
         }
     }
@@ -1088,7 +1088,8 @@ void Battle::afn_move(Action action)
     cursor_distance_y_ = 0;
 
     board_move_unit_to(action.from.x, action.from.y, action.to.x, action.to.y);
-    ui_on_move();
+
+    ui_update_state();
 }
 
 void Battle::ui_confirm_menu(int opt)
@@ -1304,7 +1305,7 @@ void Battle::spell_teleport()
     current_.set_position(16.0f + battle_get_unit().x * 48.0f, 24.0f + battle_get_unit().y * 40.0f);
     ui_set_status(fmt::format("{} are teleported", kUnits[armies_[teleport_team_][teleport_target_]].name_plural));
     battle_delay_then([this]() {
-        ui_on_move();
+        ui_update_state();
     });
 }
 
@@ -1316,7 +1317,7 @@ void Battle::spell_clone()
     ui_set_status(fmt::format("{} {} are cloned", clone_amount, kUnits[armies_[0][unit]].name_plural));
     ui_update_counts();
     battle_delay_then([this]() {
-        ui_on_move();
+        ui_update_state();
     });
 }
 
@@ -1326,7 +1327,7 @@ void Battle::spell_freeze()
     unit_states_[1][unit].frozen = true;
     ui_set_status(fmt::format("{} are frozen", kUnits[armies_[1][unit]].name_plural));
     battle_delay_then([this]() {
-        ui_on_move();
+        ui_update_state();
     });
 }
 
@@ -1341,7 +1342,7 @@ void Battle::spell_resurrect()
     ui_set_status(fmt::format("{} {} are resurrected", num_resurrected, kUnits[armies_[0][unit]].name_plural));
     ui_update_counts();
     battle_delay_then([this]() {
-        battle_on_move();
+        ui_update_state();
     });
 }
 
@@ -1706,7 +1707,7 @@ void Battle::afn_try_shoot(Action action)
     }
     else {
         if (enemy) {
-            battle_do_action({AidShootAttack, action.from, {!active_.x, unit}});
+            battle_do_action({.id = AidShootAttack, .from = action.from, .to = {!active_.x, unit}, .shoot = true});
         }
         else if (unit == active_.y) {
             battle_do_action({AidWait, action.from});
@@ -1751,6 +1752,8 @@ void Battle::ai_make_action()
 {
     auto &unit = battle_get_unit();
 
+    ui_update_current_unit();
+
     if (unit.flying) {
         bool did_move {false};
 
@@ -1794,11 +1797,11 @@ void Battle::ai_make_action()
 
             /* Find an unoccupied adjacent tile. */
             glm::ivec2 tile = board_get_adjacent_tile(target);
-
-            /* If we couldn't find an adjacent tile, try the next unit. */
             if (tile.x != -1 && tile.y != -1) {
-                battle_do_action({AidTryMove, active_, {tile.x, tile.y}});
+                ui_set_status(fmt::format("{} fly", battle_get_name()));
+                battle_do_action({.id = AidTryMove, .from = active_, .to = {tile.x, tile.y}});
                 did_move = !unit.flying;
+                battle_delay_then(nullptr);
             }
         }
 
@@ -1822,7 +1825,7 @@ void Battle::ai_make_action()
             spdlog::warn("Couldn't find a shoot target!");
         }
         else {
-            battle_do_action({AidShootAttack, active_, {0, target}});
+            battle_do_action({AidShootAttack, active_, {team, target}});
         }
     }
     /* Melee range */
@@ -1943,7 +1946,13 @@ void Battle::ai_make_action()
             }
 
             if (next_x != -1 && next_y != -1) {
-                battle_do_action({AidTryMove, active_, {next_x, next_y}});
+                ui_set_status(fmt::format("{} Move", battle_get_name()));
+                battle_do_action({.id = AidTryMove, .from = active_, .to = {next_x, next_y}, .next_unit = false});
+                battle_delay_then([this, unit]() {
+                    if (unit.moves == 0) {
+                        battle_on_move();
+                    }
+                });
             }
         }
     }
@@ -2051,4 +2060,14 @@ int Battle::battle_get_lowest_hp_unit(int *team_) const
     }
 
     return target;
+}
+
+bool Battle::battle_not_user() const
+{
+    return active_.x == 1 || (active_.x == 0 && unit_states_[0][active_.y].out_of_control);
+}
+
+bool Battle::battle_can_shoot() const
+{
+    return battle_get_unit().ammo > 0 && !board_any_enemy_around();
 }

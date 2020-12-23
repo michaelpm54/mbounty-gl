@@ -46,7 +46,9 @@ struct Action {
     glm::ivec2 from;
     glm::ivec2 to;
     std::string fmtstr;
-    bool retaliate {false};
+    bool retaliate {true};
+    bool next_unit {true};
+    bool shoot {false};
 };
 
 class Battle : public bty::Scene {
@@ -108,7 +110,7 @@ private:
     void ui_confirm_give_up(int opt);
     void ui_set_status(const std::string &msg, bool wait_for_enter = false);
     void ui_set_cursor_mode(Cursor cursor);
-    void ui_on_move(bool force_immediate = false);
+    void ui_update_state();
     void ui_update_cursor();
     void ui_update_status();
     void ui_update_current_unit();
@@ -131,12 +133,14 @@ private:
     UnitState &battle_get_unit();
     const UnitState &battle_get_unit() const;
     void battle_delay_then(std::function<void()> callback);
-    void battle_on_move(bool do_ui = true);
+    void battle_on_move();
     void battle_do_action(Action action);
     void battle_use_spell(int spell);
     int battle_get_ranged_unit(int *team = nullptr) const;
     int battle_get_lowest_hp_unit(int *team = nullptr) const;
-    int Battle::battle_enemy_team() const;
+    int battle_enemy_team() const;
+    bool battle_not_user() const;
+    bool battle_can_shoot() const;
 
     void afn_try_move(Action action);
     void afn_move(Action action);
