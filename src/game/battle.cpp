@@ -617,37 +617,9 @@ void Battle::ui_hide_hit_marker()
     draw_hit_marker = false;
 }
 
-int Battle::battle_attack(int from_team, int from_unit, int to_team, int to_unit, bool shoot, bool magic, bool retaliation)
+int Battle::battle_attack(int from_team, int from_unit, int to_team, int to_unit, bool shoot, bool magic, bool retaliation, int magic_damage)
 {
     ui_show_hit_marker(unit_states_[to_team][to_unit].x, unit_states_[to_team][to_unit].y);
-
-    int magic_damage = 0;
-
-    if (!magic) {
-        battle_get_unit().moves = 0;
-    }
-    else {
-        int spell_power = v.spell_power;
-
-        if (using_spell_ != -1) {
-            switch (using_spell_) {
-                case 2:
-                    magic_damage = 25 * spell_power;
-                    break;
-                case 3:
-                    magic_damage = 10 * spell_power;
-                    break;
-                case 6:
-                    if (kUnits[armies_[to_team][to_unit]].abilities & AbilityUndead) {
-                        magic_damage = 50 * spell_power;
-                    }
-                    break;
-                default:
-                    break;
-            }
-        }
-    }
-
     return battle_damage(from_team, from_unit, to_team, to_unit, shoot, magic, magic_damage, retaliation);
 }
 
@@ -871,15 +843,12 @@ void Battle::battle_do_action(Action action)
             afn_move(action);
             break;
         case AidMeleeAttack:
-            afn_attack(action);
+            afn_melee_attack(action);
             break;
         case AidShootAttack:
-            action.retaliate = false;
-            action.shoot = true;
-            afn_attack(action);
+            afn_shoot_attack(action);
             break;
         case AidRetaliate:
-            action.retaliate = false;
             afn_retaliate(action);
             break;
         case AidWait:
@@ -890,6 +859,27 @@ void Battle::battle_do_action(Action action)
             break;
         case AidTryShoot:
             afn_try_shoot(action);
+            break;
+        case AidSpellClone:
+            afn_spell_clone(action);
+            break;
+        case AidSpellTeleport:
+            afn_spell_teleport(action);
+            break;
+        case AidSpellFreeze:
+            afn_spell_freeze(action);
+            break;
+        case AidSpellResurrect:
+            afn_spell_resurrect(action);
+            break;
+        case AidSpellFireball:
+            afn_spell_fireball(action);
+            break;
+        case AidSpellLightning:
+            afn_spell_lightning(action);
+            break;
+        case AidSpellTurnUndead:
+            afn_spell_turn_undead(action);
             break;
         default:
             break;
@@ -957,28 +947,27 @@ void Battle::afn_try_move(Action action)
     }
 }
 
-void Battle::afn_attack(Action action)
+void Battle::afn_melee_attack(Action action)
 {
-    bool shoot = cursor_mode == Cursor::Shoot || action.shoot;
-    bool magic = cursor_mode == Cursor::Magic;
-
     auto &unit = battle_get_unit();
 
-    if (!shoot && !unit.retaliated) {
-        action.retaliate = true;
+    bool retaliate = false;
+
+    if (!unit.retaliated) {
+        retaliate = true;
         unit_states_[action.to.x][action.to.y].retaliated = true;
     }
 
     ui_set_cursor_mode(Cursor::None);
 
-    int kills = battle_attack(action.from.x, action.from.y, action.to.x, action.to.y, shoot, magic, false);
+    int kills = battle_attack(action.from.x, action.from.y, action.to.x, action.to.y, false, false, false, 0);
 
-    ui_set_status(fmt::format("{} {} {}, {} die", battle_get_name(), shoot ? "shoot" : "attack", kUnits[armies_[action.to.x][action.to.y]].name_plural, kills));
+    ui_set_status(fmt::format("{} attack {}, {} die", battle_get_name(), kUnits[armies_[action.to.x][action.to.y]].name_plural, kills));
     battle_get_unit().moves = 0;
 
-    battle_delay_then([this, action, shoot, magic]() {
+    battle_delay_then([this, action, retaliate]() {
         counts_[action.to.x][action.to.y].set_string(std::to_string(unit_states_[action.to.x][action.to.y].count));
-        if (action.retaliate) {
+        if (retaliate) {
             unit_states_[action.to.x][action.to.y].retaliated = true;
             battle_do_action({AidRetaliate, action.to, action.from});
         }
@@ -986,6 +975,24 @@ void Battle::afn_attack(Action action)
             board_clear_dead_units();
             battle_on_move();
         }
+    });
+}
+
+void Battle::afn_shoot_attack(Action action)
+{
+    auto &unit = battle_get_unit();
+
+    ui_set_cursor_mode(Cursor::None);
+
+    int kills = battle_attack(action.from.x, action.from.y, action.to.x, action.to.y, true, false, false, 0);
+
+    ui_set_status(fmt::format("{} shoot {}, {} die", battle_get_name(), kUnits[armies_[action.to.x][action.to.y]].name_plural, kills));
+    battle_get_unit().moves = 0;
+
+    battle_delay_then([this, action]() {
+        counts_[action.to.x][action.to.y].set_string(std::to_string(unit_states_[action.to.x][action.to.y].count));
+        board_clear_dead_units();
+        battle_on_move();
     });
 }
 
@@ -998,7 +1005,7 @@ void Battle::battle_delay_then(std::function<void()> callback)
 
 void Battle::afn_retaliate(Action action)
 {
-    int kills = battle_attack(action.from.x, action.from.y, action.to.x, action.to.y, false, false, true);
+    int kills = battle_attack(action.from.x, action.from.y, action.to.x, action.to.y, false, false, true, 0);
     ui_set_status(fmt::format("{} retaliate, killing {}", kUnits[armies_[action.from.x][action.from.y]].name_plural, kills));
 
     battle_delay_then([this, action]() {
@@ -1195,7 +1202,7 @@ void Battle::ui_confirm_spell()
                         ui_set_status("Clone has no effect on Dragons");
                     }
                     else {
-                        spell_clone();
+                        battle_do_action({AidSpellClone, {-1, -1}, {cx_, cy_}});
                     }
                 }
             }
@@ -1206,7 +1213,7 @@ void Battle::ui_confirm_spell()
                     ui_set_status("  You must teleport to an empty area!");
                 }
                 else {
-                    spell_teleport();
+                    battle_do_action({AidSpellTeleport, {teleport_team_, teleport_target_}, {cx_, cy_}});
                 }
             }
             else if (target == -1) {
@@ -1234,7 +1241,7 @@ void Battle::ui_confirm_spell()
                 ui_set_status("Fireball has no effect on Dragons");
             }
             else {
-                battle_do_action({AidMagicAttack, active_, {enemy ? !active_.x : active_.x, target}});
+                battle_do_action({AidSpellFireball, active_, {cx_, cy_}});
             }
             break;
         case 3:    // lightning
@@ -1248,7 +1255,7 @@ void Battle::ui_confirm_spell()
                 ui_set_status("Lightning has no effect on Dragons");
             }
             else {
-                battle_do_action({AidMagicAttack, active_, {enemy ? !active_.x : active_.x, target}});
+                battle_do_action({AidSpellLightning, active_, {cx_, cy_}});
             }
             break;
         case 4:    // freeze
@@ -1262,7 +1269,7 @@ void Battle::ui_confirm_spell()
                 ui_set_status("Fireball has no effect on Dragons");
             }
             else {
-                spell_freeze();
+                battle_do_action({AidSpellFreeze, {-1, -1}, {cx_, cy_}});
             }
             break;
         case 5:    // resurrect
@@ -1276,7 +1283,7 @@ void Battle::ui_confirm_spell()
                 ui_set_status("Resurrect has no effect on Dragons");
             }
             else {
-                spell_resurrect();
+                battle_do_action({AidSpellResurrect, {-1, -1}, {cx_, cy_}});
             }
             break;
         case 6:    // turn undead
@@ -1290,7 +1297,7 @@ void Battle::ui_confirm_spell()
                 ui_set_status("   You must select an opposing army!");
             }
             else {
-                battle_do_action({AidMagicAttack, active_, {enemy ? !active_.x : active_.x, target}});
+                battle_do_action({AidSpellTurnUndead, active_, {cx_, cy_}});
             }
             break;
         default:
@@ -1298,10 +1305,10 @@ void Battle::ui_confirm_spell()
     }
 }
 
-void Battle::spell_teleport()
+void Battle::afn_spell_teleport(Action action)
 {
     selecting_teleport_location_ = false;
-    board_move_unit_to(teleport_team_, teleport_target_, cx_, cy_);
+    board_move_unit_to(action.from.x, action.from.y, action.to.x, action.to.y);
     current_.set_position(16.0f + battle_get_unit().x * 48.0f, 24.0f + battle_get_unit().y * 40.0f);
     ui_set_status(fmt::format("{} are teleported", kUnits[armies_[teleport_team_][teleport_target_]].name_plural));
     battle_delay_then([this]() {
@@ -1309,10 +1316,10 @@ void Battle::spell_teleport()
     });
 }
 
-void Battle::spell_clone()
+void Battle::afn_spell_clone(Action action)
 {
     int clone_amount = 10 * v.spell_power;
-    auto [unit, enemy] = board_get_unit_at(cx_, cy_);
+    auto [unit, enemy] = board_get_unit_at(action.to.x, action.to.y);
     unit_states_[0][unit].count += clone_amount;
     ui_set_status(fmt::format("{} {} are cloned", clone_amount, kUnits[armies_[0][unit]].name_plural));
     ui_update_counts();
@@ -1321,19 +1328,20 @@ void Battle::spell_clone()
     });
 }
 
-void Battle::spell_freeze()
+void Battle::afn_spell_freeze(Action action)
 {
-    auto [unit, enemy] = board_get_unit_at(cx_, cy_);
-    unit_states_[1][unit].frozen = true;
-    ui_set_status(fmt::format("{} are frozen", kUnits[armies_[1][unit]].name_plural));
+    auto [unit, enemy] = board_get_unit_at(action.to.x, action.to.y);
+    int team = enemy ? !active_.x : active_.x;
+    unit_states_[team][unit].frozen = true;
+    ui_set_status(fmt::format("{} are frozen", kUnits[armies_[team][unit]].name_plural));
     battle_delay_then([this]() {
         ui_update_state();
     });
 }
 
-void Battle::spell_resurrect()
+void Battle::afn_spell_resurrect(Action action)
 {
-    auto [unit, enemy] = board_get_unit_at(cx_, cy_);
+    auto [unit, enemy] = board_get_unit_at(action.to.x, action.to.y);
     int num_resurrected = 20 * v.spell_power;
     auto &us = unit_states_[0][unit];
     num_resurrected = std::min(num_resurrected, us.start_count - us.count);
@@ -1344,6 +1352,112 @@ void Battle::spell_resurrect()
     battle_delay_then([this]() {
         ui_update_state();
     });
+}
+
+void Battle::afn_spell_fireball(Action action)
+{
+    auto &unit = battle_get_unit();
+
+    ui_set_cursor_mode(Cursor::None);
+
+    int target_team = 0;
+    int target_unit = 0;
+
+    for (int i = 0; i < 2; i++) {
+        for (int j = 0; j < 5; j++) {
+            if (armies_[i][j] != -1 && unit_states_[i][j].x == action.to.x && unit_states_[i][j].y == action.to.y) {
+                target_team = i;
+                target_unit = j;
+                break;
+            }
+        }
+    }
+
+    int kills = battle_attack(action.from.x, action.from.y, target_team, target_unit, false, true, false, 25 * v.spell_power);
+
+    ui_set_status(fmt::format("Fireball kills {} {}", kills, kUnits[armies_[target_team][target_unit]].name_plural));
+    battle_get_unit().moves = 0;
+
+    battle_delay_then([=, this]() {
+        counts_[target_team][target_unit].set_string(std::to_string(unit_states_[target_team][target_unit].count));
+        board_clear_dead_units();
+        ui_update_state();
+    });
+}
+
+void Battle::afn_spell_lightning(Action action)
+{
+    auto &unit = battle_get_unit();
+
+    ui_set_cursor_mode(Cursor::None);
+
+    int target_team = 0;
+    int target_unit = 0;
+
+    for (int i = 0; i < 2; i++) {
+        for (int j = 0; j < 5; j++) {
+            if (armies_[i][j] != -1 && unit_states_[i][j].x == action.to.x && unit_states_[i][j].y == action.to.y) {
+                target_team = i;
+                target_unit = j;
+                break;
+            }
+        }
+    }
+
+    int kills = battle_attack(action.from.x, action.from.y, target_team, target_unit, false, true, false, 10 * v.spell_power);
+
+    ui_set_status(fmt::format("Lightning kills {} {}", kills, kUnits[armies_[target_team][target_unit]].name_plural));
+    battle_get_unit().moves = 0;
+
+    battle_delay_then([=, this]() {
+        counts_[target_team][target_unit].set_string(std::to_string(unit_states_[target_team][target_unit].count));
+        board_clear_dead_units();
+        ui_update_state();
+    });
+}
+
+void Battle::afn_spell_turn_undead(Action action)
+{
+    auto &unit = battle_get_unit();
+
+    ui_set_cursor_mode(Cursor::None);
+
+    int target_team = -1;
+    int target_unit = -1;
+
+    for (int i = 0; i < 2; i++) {
+        for (int j = 0; j < 5; j++) {
+            if (armies_[i][j] != -1 && unit_states_[i][j].x == action.to.x && unit_states_[i][j].y == action.to.y) {
+                spdlog::debug("Target %d %d\n", i, j);
+                target_team = i;
+                target_unit = j;
+                break;
+            }
+        }
+    }
+
+    if (target_team == -1 || target_unit == -1) {
+        spdlog::debug("Failed to find target at {} {}\n", action.to.x, action.to.y);
+        return;
+    }
+
+    int magic_damage = 0;
+    if (!(kUnits[armies_[target_team][target_unit]].abilities & AbilityUndead)) {
+        ui_set_status(fmt::format("{} are not undead!", kUnits[armies_[target_team][target_unit]].name_plural));
+        battle_delay_then([=, this]() {
+            ui_update_state();
+        });
+    }
+    else {
+        int kills = battle_attack(action.from.x, action.from.y, target_team, target_unit, false, true, false, 50 * v.spell_power);
+        ui_set_status(fmt::format("Turn undead kills {} {}", kills, kUnits[armies_[target_team][target_unit]].name_plural));
+        battle_get_unit().moves = 0;
+        battle_delay_then([=, this]() {
+            counts_[target_team][target_unit].set_string(std::to_string(unit_states_[target_team][target_unit].count));
+            board_clear_dead_units();
+            ui_update_state();
+        });
+    }
 }
 
 void Battle::ui_set_cursor_position(int x, int y)
@@ -1716,7 +1830,7 @@ void Battle::afn_try_shoot(Action action)
     }
     else {
         if (enemy) {
-            battle_do_action({.id = AidShootAttack, .from = action.from, .to = {!active_.x, unit}, .shoot = true});
+            battle_do_action({.id = AidShootAttack, .from = action.from, .to = {!active_.x, unit}});
         }
         else if (unit == active_.y) {
             battle_do_action({AidWait, action.from});

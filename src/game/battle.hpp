@@ -31,7 +31,6 @@ class Hud;
 enum ActionId {
     AidMeleeAttack,
     AidShootAttack,
-    AidMagicAttack,
     AidTryMove,
     AidMove,
     AidFly,
@@ -39,6 +38,13 @@ enum ActionId {
     AidPass,
     AidRetaliate,
     AidTryShoot,
+    AidSpellClone,
+    AidSpellTeleport,
+    AidSpellFreeze,
+    AidSpellResurrect,
+    AidSpellFireball,
+    AidSpellLightning,
+    AidSpellTurnUndead,
 };
 
 struct Action {
@@ -46,9 +52,7 @@ struct Action {
     glm::ivec2 from;
     glm::ivec2 to;
     std::string fmtstr;
-    bool retaliate {true};
     bool next_unit {true};
-    bool shoot {false};
 };
 
 class Battle : public bty::Scene {
@@ -121,7 +125,7 @@ private:
     void pause_give_up();
 
     void battle_reset_moves();
-    int battle_attack(int from_team, int from_unit, int to_team, int to_unit, bool shoot, bool magic, bool retaliation);
+    int battle_attack(int from_team, int from_unit, int to_team, int to_unit, bool shoot, bool magic, bool retaliation, int magic_damage);
     int battle_damage(int from_team, int from_unit, int to_team, int to_unit, bool is_ranged, bool is_external, int external_damage, bool retaliation);
     bool battle_check_end();
     void battle_victory();
@@ -144,16 +148,21 @@ private:
 
     void afn_try_move(Action action);
     void afn_move(Action action);
-    void afn_attack(Action action);
+    void afn_melee_attack(Action action);
+    void afn_shoot_attack(Action action);
+    void afn_magic_attack(Action action);
     void afn_retaliate(Action action);
     void afn_wait(Action action);
     void afn_pass(Action action);
     void afn_try_shoot(Action action);
 
-    void spell_teleport();
-    void spell_clone();
-    void spell_freeze();
-    void spell_resurrect();
+    void afn_spell_clone(Action action);
+    void afn_spell_teleport(Action action);
+    void afn_spell_freeze(Action action);
+    void afn_spell_resurrect(Action action);
+    void afn_spell_fireball(Action action);
+    void afn_spell_lightning(Action action);
+    void afn_spell_turn_undead(Action action);
 
     void ai_make_action();
 
