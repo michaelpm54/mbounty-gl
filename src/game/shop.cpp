@@ -174,11 +174,11 @@ void Shop::confirm()
         info_->count -= current;
 
         /* Add the amount to the existing one. */
-        bool already_have = false;
+        int already_have = 0;
         for (int i = 0; i < 5; i++) {
             if (v.army[i] == info_->unit) {
                 v.counts[i] += current;
-                already_have = true;
+                already_have = v.counts[i];
                 break;
             }
         }
@@ -189,6 +189,7 @@ void Shop::confirm()
                 if (v.army[i] == -1) {
                     v.army[i] = info_->unit;
                     v.counts[i] = current;
+                    already_have = v.counts[i];
                     break;
                 }
             }
