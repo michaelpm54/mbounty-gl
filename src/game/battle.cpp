@@ -2137,7 +2137,7 @@ int Battle::battle_get_ranged_unit(int *team_) const
 
     for (int team = team_a; team < team_a + 1; team++) {
         for (int i = 0; i < 5; i++) {
-            if (armies_[team][i] == -1) {
+            if (armies_[team][i] == -1 || (team == active_.x && i == active_.y)) {
                 continue;
             }
             if (unit_states_[team][i].ammo) {
