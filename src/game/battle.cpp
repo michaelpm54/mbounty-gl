@@ -103,6 +103,10 @@ Battle::Battle(bty::SceneStack &ss, bty::DialogStack &ds, bty::Assets &assets, V
         unit_textures_[i] = assets.get_texture(fmt::format("units/{}.png", i), {2, 2});
     }
 
+    obstacle_textures[0] = assets.get_texture("battle/obstacle-0.png");
+    obstacle_textures[1] = assets.get_texture("battle/obstacle-1.png");
+    obstacle_textures[2] = assets.get_texture("battle/obstacle-2.png", {10, 1});
+
     for (int i = 0; i < 2; i++) {
         for (int j = 0; j < 5; j++) {
             counts_[i][j].set_font(font);
@@ -118,8 +122,8 @@ void Battle::draw(bty::Gfx &gfx, glm::mat4 &)
 {
     gfx.draw_sprite(bg_, camera_);
 
-    for (int i = 0; i < 30; i++) {
-        gfx.draw_rect(terrain_squares[i], camera_);
+    for (int i = 0; i < 6; i++) {
+        gfx.draw_sprite(terrain_sprites[i], camera_);
     }
 
     if (game_options.debug) {
@@ -236,6 +240,10 @@ void Battle::update(float dt)
     cursor_.update(dt);
     current_.update(dt);
 
+    for (auto &sprite : terrain_sprites) {
+        sprite.update(dt);
+    }
+
     if (active_.x == 1 || active_.x == 0 && battle_get_unit().out_of_control) {
         if (in_delay) {
             return;
@@ -296,7 +304,7 @@ void Battle::show(std::array<int, 5> &enemy_army, std::array<int, 5> &enemy_coun
 
     if (!siege) {
         std::vector<glm::ivec2> obstacles;
-        int num_obstacles = bty::random(2, 5);
+        int num_obstacles = bty::random(0, 6);
         std::unordered_map<int, int> tiles_on_x;
         for (int i = 0; i < num_obstacles; i++) {
         regen:
@@ -314,15 +322,24 @@ void Battle::show(std::array<int, 5> &enemy_army, std::array<int, 5> &enemy_coun
         }
 
         for (const auto &tile : obstacles) {
-            terrain[tile.x + tile.y * 6] = 1;
+            terrain[tile.x + tile.y * 6] = bty::random(1, 3);
         }
 
+        int obstacle_idx = 0;
         for (int x = 0; x < 6; x++) {
             for (int y = 0; y < 5; y++) {
-                int idx = x + y * 6;
-                terrain_squares[idx].set_color(terrain[idx] == 0 ? glm::vec4 {0.0f, 0.0f, 0.0f, 0.0f} : glm::vec4 {0.5f, 0.5f, 0.5f, 0.9f});
-                terrain_squares[idx].set_size({48.0f, 40.0f});
-                terrain_squares[idx].set_position({16.0f + 48.0f * x, 24.0f + 40.0f * y});
+                int id = terrain[x + y * 6];
+                if (id == 0) {
+                    continue;
+                }
+                terrain_sprites[obstacle_idx].set_texture(obstacle_textures[id - 1]);
+                if (id == 3) {
+                    terrain_sprites[obstacle_idx].set_position({16.0f + 48.0f * x, 24.0f + 40.0f * y});
+                }
+                else {
+                    terrain_sprites[obstacle_idx].set_position({16.0f + 48.0f * x, 24.0f + 40.0f * y});
+                }
+                obstacle_idx++;
             }
         }
     }

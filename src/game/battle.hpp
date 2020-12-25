@@ -183,6 +183,7 @@ private:
     std::array<std::array<bty::Text, 5>, 2> counts_;
     std::array<std::array<bty::Sprite, 5>, 2> sprites_;
     std::array<const bty::Texture *, 25> unit_textures_;
+    std::array<const bty::Texture *, 3> obstacle_textures;
     int cx_ {0};
     int cy_ {0};
     glm::ivec2 active_ {0, 0};
@@ -223,7 +224,7 @@ private:
     bool in_delay {false};
     bool cursor_constrained {false};
     std::array<bty::Rect, 8> cost_squares;
-    std::array<bty::Rect, 30> terrain_squares;
+    std::array<bty::Sprite, 6> terrain_sprites;
     bool is_end {false};
 };
 
