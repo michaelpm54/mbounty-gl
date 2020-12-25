@@ -294,12 +294,36 @@ void Battle::show(std::array<int, 5> &enemy_army, std::array<int, 5> &enemy_coun
         /* clang-format on */
     }
 
-    for (int x = 0; x < 6; x++) {
-        for (int y = 0; y < 5; y++) {
-            int idx = x + y * 6;
-            terrain_squares[idx].set_color(terrain[idx] == 0 ? glm::vec4 {0.0f, 0.0f, 0.0f, 0.0f} : glm::vec4 {0.5f, 0.5f, 0.5f, 0.9f});
-            terrain_squares[idx].set_size({48.0f, 40.0f});
-            terrain_squares[idx].set_position({16.0f + 48.0f * x, 24.0f + 40.0f * y});
+    if (!siege) {
+        std::vector<glm::ivec2> obstacles;
+        int num_obstacles = bty::random(2, 5);
+        std::unordered_map<int, int> tiles_on_x;
+        for (int i = 0; i < num_obstacles; i++) {
+        regen:
+            glm::ivec2 tile {bty::random(1, 4), bty::random(0, 4)};
+            if (tiles_on_x[tile.x] == 4) {
+                goto regen;
+            }
+            tiles_on_x[tile.x]++;
+            for (int j = 0; j < obstacles.size(); j++) {
+                if (tile == obstacles[j]) {
+                    goto regen;
+                }
+            }
+            obstacles.push_back(tile);
+        }
+
+        for (const auto &tile : obstacles) {
+            terrain[tile.x + tile.y * 6] = 1;
+        }
+
+        for (int x = 0; x < 6; x++) {
+            for (int y = 0; y < 5; y++) {
+                int idx = x + y * 6;
+                terrain_squares[idx].set_color(terrain[idx] == 0 ? glm::vec4 {0.0f, 0.0f, 0.0f, 0.0f} : glm::vec4 {0.5f, 0.5f, 0.5f, 0.9f});
+                terrain_squares[idx].set_size({48.0f, 40.0f});
+                terrain_squares[idx].set_position({16.0f + 48.0f * x, 24.0f + 40.0f * y});
+            }
         }
     }
 
@@ -804,7 +828,7 @@ void Battle::ui_update_counts()
 {
     for (int i = 0; i < 2; i++) {
         for (int j = 0; j < 5; j++) {
-            if (armies_[i][j] == -1) {
+            if (armies_[i][j] == -1 || unit_states_[i][j].count == 0) {
                 continue;
             }
 
@@ -1428,7 +1452,6 @@ void Battle::afn_spell_turn_undead(Action action)
     for (int i = 0; i < 2; i++) {
         for (int j = 0; j < 5; j++) {
             if (armies_[i][j] != -1 && unit_states_[i][j].x == action.to.x && unit_states_[i][j].y == action.to.y) {
-                spdlog::debug("Target %d %d\n", i, j);
                 target_team = i;
                 target_unit = j;
                 break;
