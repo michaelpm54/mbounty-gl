@@ -1535,7 +1535,7 @@ void Ingame::move_hero(int move_flags, float dt)
     /* Not colliding; if the tile is different to the previous one, update it and
 		forget about the last event tile meaning we can once again collide with it. */
     else if (center_tile.tx != last_tile.tx || center_tile.ty != last_tile.ty) {
-        if (center_tile.id >= Tile_SandELT && center_tile.id <= Tile_Sand) {
+        if (hero.get_mount() == Mount::Walk && center_tile.id >= Tile_SandELT && center_tile.id <= Tile_Sand) {
             hero.set_speed_multiplier(0.6f);
         }
         else {
