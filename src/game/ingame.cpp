@@ -632,7 +632,7 @@ void Ingame::update_camera()
 
 void Ingame::update_visited_tiles()
 {
-    const auto tile = hero.get_tile();
+    const glm::ivec2 tile {v.x, v.y};
     auto *visited = v.visited_tiles[v.continent].data();
     auto *tiles = map.get_data(v.continent);
 
@@ -641,8 +641,8 @@ void Ingame::update_visited_tiles()
 
     for (int i = 0; i <= range; i++) {
         for (int j = 0; j <= range; j++) {
-            int x = tile.tx - offset + i;
-            int y = tile.ty - offset + j;
+            int x = tile.x - offset + i;
+            int y = tile.y - offset + j;
 
             if (x < 0 || x > 63 || y < 0 || y > 63) {
                 continue;
@@ -1547,6 +1547,8 @@ void Ingame::move_hero(int move_flags, float dt)
 
     v.x = center_tile.tx;
     v.y = center_tile.ty;
+
+    update_visited_tiles();
 
     if (!teleport) {
         hero.set_position(aabb.min.x - kEntityOffsetX, aabb.min.y - kEntityOffsetY);
