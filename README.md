@@ -5,7 +5,6 @@
 - Music
 - Sounds
 - Replace assets with free ones
-- Cleaner variable/state handling. I don't like the Variables/GenVariables thing.
 - Maybe cleaner "scene" handling. I don't like how you have to pass everything you want to use
 	into the class, but it's okay for now.
 - Remove all the debug keys:
@@ -21,16 +20,21 @@
 ### In-game
 
 - What happens when you ask for an audience with the king when already max rank? I think maybe there is no option.
-- Better collision?
 - Add artifact effects
 - Stop mobs from bunching up
 - Alternative way of animating the tiles? Loading 10 full tilesets seems excessive.
 - Implement "can_move" for mob and hero in terms of virtual functions instead of a function pointer.
+- Collision makes hero dismount boat on non-walkable tiles, e.g. mountains
+- Can't mount boat when it's on a diagonal tile
+- Add save states
 
 ### Battle
 
 - Add archmage/druids shoot magic in battle
 - Archers seem too tanky. Probably a bug there.
+- Injury doesn't seem to persist until the correct moment. I'm not sure when it should be cleared.
 - Add HALF etc effect messages in battle
-- Add AI
 - Add out of control
+- Units retaliate when they shouldn't
+- Terrain is sometimes generated even in siege
+- Unit counts are slightly misplaced
