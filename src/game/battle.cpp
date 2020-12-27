@@ -1578,6 +1578,9 @@ void Battle::battle_victory()
                         .confirm = [this](int) {
                             ss.pop(siege);
                         },
+                        .back = [this]() {
+                            ss.pop(siege);
+                        },
                     },
                 });
 
@@ -1597,6 +1600,9 @@ void Battle::battle_victory()
                         .confirm = [this](int) {
                             ss.pop(siege);
                         },
+                        .back = [this]() {
+                            ss.pop(siege);
+                        },
                     },
                 });
 
@@ -1611,7 +1617,30 @@ void Battle::battle_victory()
                         potential_castles.push_back(i);
                     }
                 }
-                int new_castle = potential_castles[rand() % potential_castles.size()];
+
+                /* No available castles, steal one from the player. Sorry! */
+                if (potential_castles.size() == 0) {
+                    for (int i = 0; i < 26; i++) {
+                        if (kCastleInfo[i].continent != v.continent) {
+                            continue;
+                        }
+                        /* At least prioritise empty ones, ideally not *this* one. */
+                        if (gen.castle_occupants[i] == -1 && i != castle_id) {
+                            potential_castles.push_back(i);
+                        }
+                    }
+                }
+
+                int new_castle = -1;
+
+                /* Use the current castle. */
+                if (potential_castles.size() == 0) {
+                    new_castle = castle_id;
+                }
+                else {
+                    new_castle = potential_castles[rand() % potential_castles.size()];
+                }
+
                 gen.castle_occupants[new_castle] = villain;
 
                 /* And their army. */
@@ -1631,6 +1660,9 @@ void Battle::battle_victory()
                     .confirm = [this](int) {
                         ss.pop(siege);
                     },
+                    .back = [this]() {
+                        ss.pop(siege);
+                    },
                 },
             });
         }
@@ -1648,6 +1680,9 @@ void Battle::battle_victory()
             },
             .callbacks = {
                 .confirm = [this](int) {
+                    ss.pop(siege);
+                },
+                .back = [this]() {
                     ss.pop(siege);
                 },
             },
