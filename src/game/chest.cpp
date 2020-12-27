@@ -107,6 +107,10 @@ void chest_commission(Variables &v, bty::DialogStack &ds)
     }
     v.commission += commission;
 
+    auto pop_ds = [&](bty::Dialog &) {
+        ds.pop();
+    };
+
     ds.show_dialog({
         .x = 1,
         .y = 18,
@@ -120,12 +124,22 @@ void chest_commission(Variables &v, bty::DialogStack &ds)
             {3, 6, "your find by increasing"},
             {3, 7, fmt::format("your weekly income by {}.", commission)},
         },
+        .callbacks = {
+            .up = pop_ds,
+            .down = pop_ds,
+            .left = pop_ds,
+            .right = pop_ds,
+        },
     });
 }
 
 void chest_spell_power(Variables &v, bty::DialogStack &ds)
 {
     v.spell_power++;
+
+    auto pop_ds = [&](bty::Dialog &) {
+        ds.pop();
+    };
 
     ds.show_dialog({
         .x = 1,
@@ -140,6 +154,12 @@ void chest_spell_power(Variables &v, bty::DialogStack &ds)
             {2, 5, "releasing a powerful genie,"},
             {4, 6, "who raises your Spell"},
             {3, 7, "Power by 1 and vanishes."},
+        },
+        .callbacks = {
+            .up = pop_ds,
+            .down = pop_ds,
+            .left = pop_ds,
+            .right = pop_ds,
         },
     });
 }
@@ -156,6 +176,10 @@ void chest_spell_capacity(Variables &v, GenVariables &gen, bty::DialogStack &ds)
     int capacity = gen.artifacts_found[ArtiRingOfHeroism] ? kSpellCapacityBase[v.continent] * 2 : kSpellCapacityBase[v.continent];
     v.max_spells += capacity;
 
+    auto pop_ds = [&](bty::Dialog &) {
+        ds.pop();
+    };
+
     ds.show_dialog({
         .x = 1,
         .y = 18,
@@ -170,6 +194,12 @@ void chest_spell_capacity(Variables &v, GenVariables &gen, bty::DialogStack &ds)
             {1, 6, "Your maximum spell capacity"},
             {6, 7, fmt::format("is increased by {}.", capacity)},
         },
+        .callbacks = {
+            .up = pop_ds,
+            .down = pop_ds,
+            .left = pop_ds,
+            .right = pop_ds,
+        },
     });
 }
 
@@ -178,6 +208,10 @@ void chest_spell(Variables &v, bty::DialogStack &ds)
     int amount = (rand() % (v.continent + 1)) + 1;
     int spell = rand() % 14;
     v.spells[spell] += amount;
+
+    auto pop_ds = [&](bty::Dialog &) {
+        ds.pop();
+    };
 
     ds.show_dialog({
         .x = 1,
@@ -191,6 +225,12 @@ void chest_spell(Variables &v, bty::DialogStack &ds)
             {3, 4, "region. In exchange for"},
             {3, 5, "its release, you receive:"},
             {6, 7, fmt::format("{} {} spell{}.", amount, kSpellNames[spell], amount == 1 ? "" : "s")},
+        },
+        .callbacks = {
+            .up = pop_ds,
+            .down = pop_ds,
+            .left = pop_ds,
+            .right = pop_ds,
         },
     });
 }
