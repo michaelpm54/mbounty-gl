@@ -2112,6 +2112,7 @@ void Ingame::battle_pop(int ret)
     hud.set_gold(v.gold);
     hud.set_contract(v.contract);
     hud.set_siege(v.siege);
+    hud.set_puzzle(gen.villains_captured.data(), gen.artifacts_found.data());
     switch (ret) {
         case 0:    // victory encounter
             gen.mobs[v.continent][battle_mob].dead = true;
