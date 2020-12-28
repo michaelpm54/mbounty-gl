@@ -8,33 +8,6 @@
 #include "game/dir-flags.hpp"
 #include "gfx/gfx.hpp"
 
-bool is_event_tile(int tile_id)
-{
-    static constexpr int kEventTiles[] = {
-        Tile_Sign,
-        Tile_GenSign,
-        Tile_Town,
-        Tile_GenTown,
-        Tile_Chest,
-        Tile_AfctRing,
-        Tile_AfctAmulet,
-        Tile_AfctAnchor,
-        Tile_AfctCrown,
-        Tile_AfctScroll,
-        Tile_AfctShield,
-        Tile_AfctSword,
-        Tile_AfctBook,
-    };
-
-    for (int i = 0; i < 13; i++) {
-        if (kEventTiles[i] == tile_id) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
 Entity::Entity(const bty::Texture *texture, const glm::vec2 &position)
     : bty::Sprite(texture, position)
 {

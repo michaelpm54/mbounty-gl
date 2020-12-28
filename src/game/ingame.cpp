@@ -1505,7 +1505,7 @@ void Ingame::move_hero(int move_flags, float dt)
             center_tile = map.get_tile(aabb.min.x + 4, aabb.min.y + 4, v.continent);
         }
         /* Dismount. */
-        else if (hero.get_mount() == Mount::Boat) {
+        else if (collided_tile.id == Tile_Grass || bty::is_event_tile(collided_tile.id) && hero.get_mount() == Mount::Boat) {
             hero.set_mount(Mount::Walk);
             /* Move into it. */
             aabb.min.x += dx;

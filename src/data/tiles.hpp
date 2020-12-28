@@ -110,4 +110,13 @@ enum TileId {
     Tile_GenFriendlyMonster = 146,
 };
 
+namespace bty {
+
+inline constexpr bool is_event_tile(int id)
+{
+    return id == Tile_AfctAmulet || id == Tile_AfctAnchor || id == Tile_AfctBook || id == Tile_AfctCrown || id == Tile_AfctRing || id == Tile_AfctScroll || id == Tile_AfctShield || id == Tile_AfctSword || id == Tile_Chest || id == Tile_ShopCave || id == Tile_ShopDungeon || id == Tile_ShopTree || id == Tile_ShopWagon || id == Tile_Sign || id == Tile_GenSign || id == Tile_Town;
+}
+
+}    // namespace bty
+
 #endif    // BTY_DATA_TILES_HPP_

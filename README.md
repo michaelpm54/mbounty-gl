@@ -24,7 +24,6 @@
 - Stop mobs from bunching up
 - Alternative way of animating the tiles? Loading 10 full tilesets seems excessive.
 - Implement "can_move" for mob and hero in terms of virtual functions instead of a function pointer.
-- Collision makes hero dismount boat on non-walkable tiles, e.g. mountains
 - Can't mount boat when it's on a diagonal tile
 - Add save states
 
