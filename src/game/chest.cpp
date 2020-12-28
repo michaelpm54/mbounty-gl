@@ -6,6 +6,7 @@
 #include "data/spells.hpp"
 #include "engine/dialog-stack.hpp"
 #include "game/gen-variables.hpp"
+#include "game/hud.hpp"
 #include "game/variables.hpp"
 
 static constexpr int kChestChanceGold[] = {
@@ -36,7 +37,7 @@ static constexpr int kChestChanceSpellCapacity[] = {
     91,
 };
 
-void chest_gold(Variables &v, GenVariables &gen, bty::DialogStack &ds)
+void chest_gold(Variables &v, GenVariables &gen, bty::DialogStack &ds, Hud &hud)
 {
     static constexpr int kGoldBase[] = {
         5,
@@ -71,9 +72,10 @@ void chest_gold(Variables &v, GenVariables &gen, bty::DialogStack &ds)
             {3, 5, fmt::format("Distribute the gold to the\n peasants, increasing your\n leadership by {}.", leadership)},
         },
         .callbacks = {
-            .confirm = [&v, gold, leadership](int opt) {
+            .confirm = [&v, gold, leadership, &hud](int opt) {
                 if (opt == 0) {
                     v.gold += gold;
+                    hud.set_gold(v.gold);
                 }
                 else {
                     v.leadership += leadership;
@@ -235,12 +237,12 @@ void chest_spell(Variables &v, bty::DialogStack &ds)
     });
 }
 
-void chest_roll(Variables &v, GenVariables &gen, bty::DialogStack &ds)
+void chest_roll(Variables &v, GenVariables &gen, bty::DialogStack &ds, Hud &hud)
 {
     int roll = rand() % 100;
 
     if (roll < kChestChanceGold[v.continent]) {
-        chest_gold(v, gen, ds);
+        chest_gold(v, gen, ds, hud);
     }
     else if (roll < kChestChanceCommission[v.continent]) {
         chest_commission(v, ds);

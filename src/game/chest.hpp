@@ -5,11 +5,12 @@
 
 namespace bty {
 class DialogStack;
-}
+}    // namespace bty
 
+class Hud;
 struct Variables;
 struct GenVariables;
 
-void chest_roll(Variables &v, GenVariables &gen, bty::DialogStack &ds);
+void chest_roll(Variables &v, GenVariables &gen, bty::DialogStack &ds, Hud &hud);
 
 #endif    // BTY_GAME_CHEST_HPP_

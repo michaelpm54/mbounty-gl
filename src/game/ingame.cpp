@@ -1914,7 +1914,7 @@ void Ingame::collide_chest(const Tile &tile)
         });
     }
     else {
-        chest_roll(v, gen, ds);
+        chest_roll(v, gen, ds, hud);
     }
 }
 
