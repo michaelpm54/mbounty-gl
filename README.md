@@ -35,4 +35,3 @@
 - Add HALF etc effect messages in battle
 - Add out of control
 - Terrain is sometimes generated even in siege
-- Unit counts are slightly misplaced

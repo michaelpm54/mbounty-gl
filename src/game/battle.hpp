@@ -118,6 +118,7 @@ private:
     void ui_update_cursor();
     void ui_update_status();
     void ui_update_current_unit();
+    void ui_update_count(int team, int unit);
 
     void pause_show();
     void pause_view_army();
@@ -226,6 +227,7 @@ private:
     std::array<bty::Rect, 8> cost_squares;
     std::array<bty::Sprite, 6> terrain_sprites;
     bool is_end {false};
+    bty::Font board_font;
 };
 
 #endif    // BTY_GAME_BATTLE_HPP_

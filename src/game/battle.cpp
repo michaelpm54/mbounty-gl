@@ -107,9 +107,11 @@ Battle::Battle(bty::SceneStack &ss, bty::DialogStack &ds, bty::Assets &assets, V
     obstacle_textures[1] = assets.get_texture("battle/obstacle-1.png");
     obstacle_textures[2] = assets.get_texture("battle/obstacle-2.png", {10, 1});
 
+    board_font.load_from_texture(assets.get_texture("fonts/board-font.png"), {8, 8});
+
     for (int i = 0; i < 2; i++) {
         for (int j = 0; j < 5; j++) {
-            counts_[i][j].set_font(font);
+            counts_[i][j].set_font(board_font);
         }
     }
 
@@ -429,8 +431,7 @@ void Battle::show(std::array<int, 5> &enemy_army, std::array<int, 5> &enemy_coun
             }
 
             /* Set counts */
-            counts_[i][j].set_position(sprites_[i][j].get_position() + glm::vec2(24.0f, 26.0f));
-            counts_[i][j].set_string(std::to_string(unit_states_[i][j].count));
+            ui_update_count(i, j);
         }
     }
 
@@ -519,9 +520,9 @@ void Battle::board_move_unit_to(int team, int unit, int x, int y)
     float x_ = 16.0f + x * 48.0f;
     float y_ = 24.0f + y * 40.0f;
     sprites_[team][unit].set_position(x_, y_);
-    counts_[team][unit].set_position(x_ + 24.0f, y_ + 26.0f);
     unit_states_[team][unit].x = x;
     unit_states_[team][unit].y = y;
+    ui_update_count(team, unit);
     cursor_distance_x_ = 0;
     cursor_distance_y_ = 0;
 }
@@ -849,7 +850,7 @@ void Battle::ui_update_counts()
                 continue;
             }
 
-            counts_[i][j].set_string(std::to_string(unit_states_[i][j].count));
+            ui_update_count(i, j);
         }
     }
 }
@@ -1007,7 +1008,8 @@ void Battle::afn_melee_attack(Action action)
     battle_get_unit().moves = 0;
 
     battle_delay_then([this, action, retaliate]() {
-        counts_[action.to.x][action.to.y].set_string(std::to_string(unit_states_[action.to.x][action.to.y].count));
+        ui_update_count(action.to.x, action.to.y);
+
         if (retaliate) {
             battle_do_action({AidRetaliate, action.to, action.from});
         }
@@ -1030,7 +1032,7 @@ void Battle::afn_shoot_attack(Action action)
     battle_get_unit().moves = 0;
 
     battle_delay_then([this, action]() {
-        counts_[action.to.x][action.to.y].set_string(std::to_string(unit_states_[action.to.x][action.to.y].count));
+        ui_update_count(action.to.x, action.to.y);
         board_clear_dead_units();
         battle_on_move();
     });
@@ -1049,7 +1051,7 @@ void Battle::afn_retaliate(Action action)
     ui_set_status(fmt::format("{} retaliate, killing {}", kUnits[armies_[action.from.x][action.from.y]].name_plural, kills));
 
     battle_delay_then([this, action]() {
-        counts_[action.to.x][action.to.y].set_string(std::to_string(unit_states_[action.to.x][action.to.y].count));
+        ui_update_count(action.to.x, action.to.y);
         board_clear_dead_units();
         battle_on_move();
     });
@@ -1419,7 +1421,7 @@ void Battle::afn_spell_fireball(Action action)
     battle_get_unit().moves = 0;
 
     battle_delay_then([=, this]() {
-        counts_[target_team][target_unit].set_string(std::to_string(unit_states_[target_team][target_unit].count));
+        ui_update_count(target_team, target_unit);
         board_clear_dead_units();
         ui_update_state();
     });
@@ -1450,7 +1452,7 @@ void Battle::afn_spell_lightning(Action action)
     battle_get_unit().moves = 0;
 
     battle_delay_then([=, this]() {
-        counts_[target_team][target_unit].set_string(std::to_string(unit_states_[target_team][target_unit].count));
+        ui_update_count(target_team, target_unit);
         board_clear_dead_units();
         ui_update_state();
     });
@@ -1492,7 +1494,7 @@ void Battle::afn_spell_turn_undead(Action action)
         ui_set_status(fmt::format("Turn undead kills {} {}", kills, kUnits[armies_[target_team][target_unit]].name_plural));
         battle_get_unit().moves = 0;
         battle_delay_then([=, this]() {
-            counts_[target_team][target_unit].set_string(std::to_string(unit_states_[target_team][target_unit].count));
+            ui_update_count(target_team, target_unit);
             board_clear_dead_units();
             ui_update_state();
         });
@@ -2267,4 +2269,17 @@ bool Battle::battle_not_user() const
 bool Battle::battle_can_shoot() const
 {
     return battle_get_unit().ammo > 0 && !board_any_enemy_around();
+}
+
+void Battle::ui_update_count(int team, int unit)
+{
+    auto count = std::to_string(unit_states_[team][unit].count);
+    /* X 16 = 8 for border, 8 for board offset */
+    float unit_x = 16.0f + unit_states_[team][unit].x * 48.0f - 8;
+    /* Y 16 = 16 for border */
+    float unit_y = 16.0f + unit_states_[team][unit].y * 40.0f;
+    float count_x = unit_x + 48.0f - count.size() * 8.0f;
+    float count_y = unit_y + 40.0f - 8.0f;
+    counts_[team][unit].set_string(count);
+    counts_[team][unit].set_position(count_x, count_y);
 }
