@@ -34,6 +34,5 @@
 - Injury doesn't seem to persist until the correct moment. I'm not sure when it should be cleared.
 - Add HALF etc effect messages in battle
 - Add out of control
-- Units retaliate when they shouldn't
 - Terrain is sometimes generated even in siege
 - Unit counts are slightly misplaced

@@ -994,7 +994,7 @@ void Battle::afn_melee_attack(Action action)
 
     bool retaliate = false;
 
-    if (!unit.retaliated) {
+    if (!unit_states_[action.to.x][action.to.y].retaliated) {
         retaliate = true;
         unit_states_[action.to.x][action.to.y].retaliated = true;
     }
@@ -1009,7 +1009,6 @@ void Battle::afn_melee_attack(Action action)
     battle_delay_then([this, action, retaliate]() {
         counts_[action.to.x][action.to.y].set_string(std::to_string(unit_states_[action.to.x][action.to.y].count));
         if (retaliate) {
-            unit_states_[action.to.x][action.to.y].retaliated = true;
             battle_do_action({AidRetaliate, action.to, action.from});
         }
         else {
