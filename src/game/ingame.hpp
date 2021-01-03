@@ -18,6 +18,7 @@ struct GameOptions;
 #include "game/kings-castle.hpp"
 #include "game/map.hpp"
 #include "game/mob.hpp"
+#include "game/save.hpp"
 #include "game/shop-info.hpp"
 #include "game/shop.hpp"
 #include "game/town.hpp"
@@ -130,6 +131,9 @@ private:
 
     std::vector<Mob *> get_mobs_in_range(int x, int y, int range);
 
+    void save_state(const std::string &filename);
+    void load_state(const std::string &filename);
+
 private:
     Variables v;
     GenVariables gen;
@@ -188,6 +192,8 @@ private:
     bty::Text tile_text;
     Tile last_tile {-1, -1, -1};
     Tile last_event_tile {-1, -1, -1};
+
+    SaveManager save_manager;
 };
 
 #endif    // BTY_GAME_INGAME_HPP_

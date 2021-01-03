@@ -7,12 +7,13 @@
 #include "game/entity.hpp"
 
 struct Mob {
-    bool dead {false};
+    bool dead {true};
     Entity entity;
     glm::ivec2 tile;
     std::array<int, 5> army;
     std::array<int, 5> counts;
-    int id;
+    int id {-1};
+    int sprite_id {-1};
 };
 
 #endif    // BTY_GAME_MOB_HPP_

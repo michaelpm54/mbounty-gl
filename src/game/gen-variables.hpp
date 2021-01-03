@@ -10,7 +10,7 @@
 
 struct GenVariables {
     std::array<std::array<Mob, 40>, 4> mobs;
-    std::array<std::vector<unsigned int>, 4> friendly_mobs;
+    std::array<std::vector<int>, 4> friendly_mobs;
     std::array<bool, 17> villains_found;
     std::array<bool, 17> villains_captured;
     std::array<bool, 4> sail_maps_found;

@@ -41,6 +41,7 @@ set(MBOUNTYGL_SRC
 	src/game/chest.cpp
 	src/game/army-gen.cpp
 	src/game/battle.cpp
+	src/game/save.cpp
 	src/gfx/font.cpp
 	src/gfx/gfx.cpp
 	src/gfx/rect.cpp

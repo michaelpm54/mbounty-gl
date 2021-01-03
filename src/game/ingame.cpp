@@ -2,6 +2,8 @@
 
 #include <spdlog/spdlog.h>
 
+#include <filesystem>
+#include <fstream>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/transform.hpp>
 #include <random>
@@ -53,6 +55,7 @@ Ingame::Ingame(GLFWwindow *window, bty::SceneStack &ss, bty::DialogStack &ds, bt
     , s_controls(ss, assets, game_options)
     , s_battle(ss, ds, assets, v, gen, view_army, view_char, s_controls, game_options, hud)
     , cr({0.2f, 0.4f, 0.7f, 0.9f}, {8, 8}, {0, 0})
+    , save_manager(ds, std::bind(&Ingame::save_state, this, std::placeholders::_1), std::bind(&Ingame::load_state, this, std::placeholders::_1))
 {
     for (int i = 0; i < UnitId::UnitCount; i++) {
         unit_textures[i] = assets.get_texture(fmt::format("units/{}.png", i), {2, 2});
@@ -105,7 +108,6 @@ void Ingame::setup(int hero, int diff)
     for (int i = 0; i < 14; i++) {
         v.spells[i] = 5;
     }
-    v.num_spells = 0;
 
     for (int i = 0; i < 4; i++) {
         v.visited_tiles[i].clear();
@@ -115,7 +117,7 @@ void Ingame::setup(int hero, int diff)
         gen.continent_maps_found[i] = false;
         v.tiles[i] = map.get_data(i);
         for (auto j = 0u; j < gen.mobs[i].size(); j++) {
-            gen.mobs[i][j].id = static_cast<int>(i * gen.mobs[i].size() + j);
+            gen.mobs[i][j].id = i * 40 + j;
             for (int k = 0; k < 5; k++) {
                 gen.mobs[i][j].army[k] = -1;
                 gen.mobs[i][j].counts[k] = 0;
@@ -255,6 +257,11 @@ void Ingame::key(int key, int action)
 
 void Ingame::update(float dt)
 {
+    if (save_manager.waiting()) {
+        save_manager.update();
+        return;
+    }
+
     if (!ds.empty() || ss.get() != this || hud.get_error()) {
         return;
     }
@@ -432,7 +439,9 @@ void Ingame::gen_tiles()
                         }
                     }
 
-                    mob.entity.set_texture(unit_textures[mob.army[highest]]);
+                    mob.sprite_id = mob.army[highest];
+
+                    mob.entity.set_texture(unit_textures[mob.sprite_id]);
                     mob.entity.move_to_tile({x, y, Tile_Grass});
 
                     tiles[x + y * 64] = Tile_Grass;
@@ -586,6 +595,7 @@ void Ingame::gen_tiles()
             mob.counts[0] = count;
             mob.entity.set_texture(unit_textures[id]);
             mob.entity.move_to_tile({tile.x, tile.y, Tile_Grass});
+            mob.sprite_id = id;
 
             tiles[tile.x + tile.y * 64] = Tile_Grass;
 
@@ -1259,6 +1269,7 @@ void Ingame::pause()
             {3, 9, "Search the area"},
             {3, 10, "Dismiss army"},
             {3, 11, "Game controls"},
+            {3, 12, "Load game"},
             {3, 13, "Save game"},
         },
         .callbacks = {
@@ -1312,6 +1323,12 @@ void Ingame::pause()
                     case 9:
                         s_controls.set_battle(false);
                         ss.push(&s_controls, nullptr);
+                        break;
+                    case 10:
+                        save_manager.show_saves_dialog(true);
+                        break;
+                    case 11:
+                        save_manager.show_saves_dialog(false);
                         break;
                     default:
                         break;
@@ -2115,7 +2132,7 @@ void Ingame::battle_pop(int ret)
     hud.set_puzzle(gen.villains_captured.data(), gen.artifacts_found.data());
     switch (ret) {
         case 0:    // victory encounter
-            gen.mobs[v.continent][battle_mob].dead = true;
+            gen.mobs[v.continent][battle_mob % 40].dead = true;
             break;
         case 1:    // victory siege
             s_garrison.view(garrison_castle_id);
@@ -2336,6 +2353,9 @@ std::vector<Mob *> Ingame::get_mobs_in_range(int x, int y, int range)
     std::vector<Mob *> moblist;
 
     for (auto &mob : gen.mobs[v.continent]) {
+        if (mob.dead) {
+            continue;
+        }
         if (std::abs(x - mob.tile.x) <= range && std::abs(y - mob.tile.y) <= range) {
             moblist.push_back(&mob);
         }
@@ -2373,4 +2393,274 @@ void Ingame::automove(float dt)
     }
 
     update_camera();
+}
+
+void Ingame::save_state(const std::string &filename)
+{
+    const auto path = fmt::format("saves/{}", filename);
+
+    spdlog::info("Saving to {}", path);
+
+    std::ofstream f(path, std::ios::out | std::ios::binary | std::ios::trunc);
+
+    if (!f.good()) {
+        spdlog::warn("Failed to open file '{}' for saving", path);
+        return;
+    }
+
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 40; j++) {
+            f.write((char *)gen.mobs[i][j].army.data(), 5 * 4);
+            f.write((char *)gen.mobs[i][j].counts.data(), 5 * 4);
+            int dead = gen.mobs[i][j].dead;
+            f.write((char *)&dead, 4);
+            f.write((char *)&gen.mobs[i][j].id, 4);
+            f.write((char *)&gen.mobs[i][j].sprite_id, 4);
+            f.write((char *)&gen.mobs[i][j].tile, sizeof(Tile));
+            auto pos = gen.mobs[i][j].entity.get_position();
+            f.write((char *)&pos, 8);
+        }
+    }
+
+    f.write((char *)&v.hero, 4);
+    f.write((char *)&v.rank, 4);
+    f.write((char *)&v.days, 4);
+    f.write((char *)&v.gold, 4);
+    f.write((char *)&v.diff, 4);
+    f.write((char *)&v.magic, 4);
+    f.write((char *)&v.siege, 4);
+    f.write((char *)&v.contract, 4);
+    f.write((char *)&v.x, 4);
+    f.write((char *)&v.y, 4);
+    f.write((char *)&v.continent, 4);
+    f.write((char *)&v.leadership, 4);
+    f.write((char *)&v.commission, 4);
+    f.write((char *)v.army.data(), 4 * 5);
+    f.write((char *)v.counts.data(), 4 * 5);
+    f.write((char *)v.morales.data(), 4 * 5);
+    f.write((char *)&v.followers_killed, 4);
+    f.write((char *)&v.score, 4);
+    f.write((char *)&v.weeks_passed, 4);
+    f.write((char *)&v.timestop, 4);
+    f.write((char *)&v.permanent_leadership, 4);
+    f.write((char *)&v.known_spells, 4);
+    f.write((char *)&v.days_passed_this_week, 4);
+    f.write((char *)&v.spell_power, 4);
+    f.write((char *)v.visited_castles.data(), 1 * 26);
+    f.write((char *)v.visited_towns.data(), 1 * 26);
+    f.write((char *)&v.auto_move, 1);
+    f.write((char *)&v.auto_move_dir, 8);
+    f.write((char *)&v.boat_x, 4);
+    f.write((char *)&v.boat_y, 4);
+    f.write((char *)&v.boat_c, 4);
+    f.write((char *)&v.boat_rented, 1);
+    f.write((char *)&sceptre_x, 4);
+    f.write((char *)&sceptre_y, 4);
+    f.write((char *)&sceptre_continent, 4);
+    f.write((char *)&last_water_x, 4);
+    f.write((char *)&last_water_y, 4);
+    f.write((char *)&last_tile, sizeof(Tile));
+    f.write((char *)&last_event_tile, sizeof(Tile));
+    f.write((char *)gen.artifacts_found.data(), 1 * 8);
+    f.write((char *)gen.continent_maps_found.data(), 1 * 4);
+    f.write((char *)gen.sail_maps_found.data(), 1 * 4);
+    f.write((char *)gen.villains_found.data(), 1 * 17);
+    f.write((char *)gen.villains_captured.data(), 1 * 17);
+    for (int i = 0; i < 26; i++) {
+        f.write((char *)gen.castle_armies[i].data(), 4 * 5);
+        f.write((char *)gen.castle_counts[i].data(), 4 * 5);
+        f.write((char *)&gen.castle_occupants[i], 4);
+        f.write((char *)gen.garrison_armies[i].data(), 4 * 5);
+        f.write((char *)gen.garrison_counts[i].data(), 4 * 5);
+        f.write((char *)&gen.town_spells[i], 4);
+        f.write((char *)&gen.town_units[i], 4);
+    }
+
+    f.write((char *)gen.sail_map_tiles.data(), 24);
+    f.write((char *)gen.continent_map_tiles.data(), 32);
+    f.write((char *)gen.continent_map_tiles.data(), 64);
+    for (int i = 0; i < 4; i++) {
+        auto num_shops = gen.shops[i].size();
+        f.write((char *)&num_shops, 4);
+        f.write((char *)gen.shops[i].data(), sizeof(ShopInfo) * num_shops);
+    }
+
+    for (int i = 0; i < 4; i++) {
+        auto num_friendly_mobs = gen.friendly_mobs[i].size();
+        f.write((char *)&num_friendly_mobs, 4);
+        f.write((char *)gen.friendly_mobs[i].data(), 4 * num_friendly_mobs);
+    }
+
+    for (int i = 0; i < 4; i++) {
+        f.write((char *)v.visited_tiles.data(), 4096);
+    }
+
+    for (int i = 0; i < 4; i++) {
+        f.write((char *)map.get_data(i), 4096);
+    }
+
+    auto hero_pos = hero.get_position();
+    auto mount = hero.get_mount();
+    bool flip = hero.get_flip();
+    f.write((char *)&hero_pos, 8);
+    f.write((char *)&mount, 4);
+    f.write((char *)&flip, 1);
+
+    auto boat_pos = boat.get_position();
+    f.write((char *)&boat_pos, 8);
+
+    auto boat_flip = boat.get_flip();
+    f.write((char *)&boat_flip, 1);
+}
+
+void Ingame::load_state(const std::string &filename)
+{
+    const auto path = fmt::format("saves/{}", filename);
+
+    spdlog::info("Loading from {}", path);
+
+    std::ifstream f(path, std::ios::in | std::ios::binary);
+
+    if (!f.good()) {
+        spdlog::warn("Failed to open file '{}' for loading", path);
+        return;
+    }
+
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 40; j++) {
+            gen.mobs[i][j].entity.set_texture(nullptr);
+            f.read((char *)gen.mobs[i][j].army.data(), 5 * 4);
+            f.read((char *)gen.mobs[i][j].counts.data(), 5 * 4);
+            f.read((char *)&gen.mobs[i][j].dead, 4);
+            f.read((char *)&gen.mobs[i][j].id, 4);
+            f.read((char *)&gen.mobs[i][j].sprite_id, 4);
+            f.read((char *)&gen.mobs[i][j].tile, sizeof(Tile));
+            glm::vec2 pos;
+            f.read((char *)&pos, 8);
+            gen.mobs[i][j].entity.set_position(pos);
+            if (gen.mobs[i][j].sprite_id != -1 && !gen.mobs[i][j].dead) {
+                gen.mobs[i][j].entity.set_texture(unit_textures[gen.mobs[i][j].sprite_id]);
+            }
+        }
+    }
+
+    f.read((char *)&v.hero, 4);
+    f.read((char *)&v.rank, 4);
+    f.read((char *)&v.days, 4);
+    f.read((char *)&v.gold, 4);
+    f.read((char *)&v.diff, 4);
+    f.read((char *)&v.magic, 4);
+    f.read((char *)&v.siege, 4);
+    f.read((char *)&v.contract, 4);
+    f.read((char *)&v.x, 4);
+    f.read((char *)&v.y, 4);
+    f.read((char *)&v.continent, 4);
+    f.read((char *)&v.leadership, 4);
+    f.read((char *)&v.commission, 4);
+    f.read((char *)v.army.data(), 4 * 5);
+    f.read((char *)v.counts.data(), 4 * 5);
+    f.read((char *)v.morales.data(), 4 * 5);
+    f.read((char *)&v.followers_killed, 4);
+    f.read((char *)&v.score, 4);
+    f.read((char *)&v.weeks_passed, 4);
+    f.read((char *)&v.timestop, 4);
+    f.read((char *)&v.permanent_leadership, 4);
+    f.read((char *)&v.known_spells, 4);
+    f.read((char *)&v.days_passed_this_week, 4);
+    f.read((char *)&v.spell_power, 4);
+    f.read((char *)v.visited_castles.data(), 1 * 26);
+    f.read((char *)v.visited_towns.data(), 1 * 26);
+    f.read((char *)&v.auto_move, 1);
+    f.read((char *)&v.auto_move_dir, 8);
+    f.read((char *)&v.boat_x, 4);
+    f.read((char *)&v.boat_y, 4);
+    f.read((char *)&v.boat_c, 4);
+    f.read((char *)&v.boat_rented, 1);
+    f.read((char *)&sceptre_x, 4);
+    f.read((char *)&sceptre_y, 4);
+    f.read((char *)&sceptre_continent, 4);
+    f.read((char *)&last_water_x, 4);
+    f.read((char *)&last_water_y, 4);
+    f.read((char *)&last_tile, sizeof(Tile));
+    f.read((char *)&last_event_tile, sizeof(Tile));
+    f.read((char *)gen.artifacts_found.data(), 1 * 8);
+    f.read((char *)gen.continent_maps_found.data(), 1 * 4);
+    f.read((char *)gen.sail_maps_found.data(), 1 * 4);
+    f.read((char *)gen.villains_found.data(), 1 * 17);
+    f.read((char *)gen.villains_captured.data(), 1 * 17);
+    for (int i = 0; i < 26; i++) {
+        f.read((char *)gen.castle_armies[i].data(), 4 * 5);
+        f.read((char *)gen.castle_counts[i].data(), 4 * 5);
+        f.read((char *)&gen.castle_occupants[i], 4);
+        f.read((char *)gen.garrison_armies[i].data(), 4 * 5);
+        f.read((char *)gen.garrison_counts[i].data(), 4 * 5);
+        f.read((char *)&gen.town_spells[i], 4);
+        f.read((char *)&gen.town_units[i], 4);
+    }
+
+    f.read((char *)gen.sail_map_tiles.data(), 24);
+    f.read((char *)gen.continent_map_tiles.data(), 32);
+    f.read((char *)gen.continent_map_tiles.data(), 64);
+    for (int i = 0; i < 4; i++) {
+        int num_shops = 0;
+        f.read((char *)&num_shops, 4);
+        gen.shops[i].resize(num_shops);
+        f.read((char *)gen.shops[i].data(), sizeof(ShopInfo) * num_shops);
+    }
+
+    for (int i = 0; i < 4; i++) {
+        int num_friendly_mobs = 0;
+        f.read((char *)&num_friendly_mobs, 4);
+        gen.friendly_mobs[i].resize(num_friendly_mobs);
+        f.read((char *)gen.friendly_mobs[i].data(), 4 * num_friendly_mobs);
+    }
+
+    for (int i = 0; i < 4; i++) {
+        f.read((char *)v.visited_tiles[i].data(), 4096);
+    }
+
+    for (int i = 0; i < 4; i++) {
+        f.read((char *)map.get_data(i), 4096);
+    }
+    map.create_geometry();
+
+    hud.set_hero(v.hero, v.rank);
+    hud.set_days(v.days);
+    hud.set_gold(v.gold);
+    hud.set_color(bty::get_box_color(v.diff));
+    hud.set_magic(v.magic);
+    hud.set_siege(v.siege);
+    hud.set_contract(v.contract);
+    hud.set_puzzle(gen.villains_captured.data(), gen.artifacts_found.data());
+
+    if (v.timestop != 0) {
+        hud.set_timestop(v.timestop);
+    }
+
+    ds.set_default_color(bty::get_box_color(v.diff));
+
+    glm::vec2 hero_pos;
+    f.read((char *)&hero_pos, 8);
+    hero.set_position(hero_pos);
+    update_camera();
+
+    Mount mount;
+    f.read((char *)&mount, 4);
+    hero.set_mount(mount);
+
+    bool flip;
+    f.read((char *)&flip, 1);
+    hero.set_flip(flip);
+
+    day_timer.reset();
+    timestop_timer.reset();
+    automove_timer.reset();
+
+    glm::vec2 boat_pos;
+    f.read((char *)&boat_pos, 8);
+    boat.set_position(boat_pos);
+
+    bool boat_flip;
+    f.read((char *)&boat_flip, 1);
+    boat.set_flip(boat_flip);
 }
