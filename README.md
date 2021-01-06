@@ -1,3 +1,8 @@
+# Build
+
+`vcpkg install spdlog glfw3 glew glm`  
+`vcpkg integrate install`
+
 # TODO
 
 ### General

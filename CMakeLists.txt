@@ -57,24 +57,19 @@ add_executable(${PROJECT_NAME}
     ${MBOUNTYGL_SRC}
 )
 
+find_package(glfw3 CONFIG REQUIRED)
+find_package(GLEW CONFIG REQUIRED)
+find_package(GLM CONFIG REQUIRED)
+find_package(OpenGL REQUIRED)
+find_package(spdlog CONFIG REQUIRED)
+
 target_compile_definitions(${PROJECT_NAME} PRIVATE
 	_CRT_SECURE_NO_WARNINGS
-	SPDLOG_FMT_EXTERNAL
 )
 
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
-
-include(cmake/conan.cmake)
-conan_cmake_run(
-	CONANFILE conanfile.txt
-	BASIC_SETUP
-	CMAKE_TARGETS
-	BUILD missing
+target_link_libraries(${PROJECT_NAME} PRIVATE
+	glfw GLEW::GLEW ${OPENGL_LIBRARIES} spdlog::spdlog
 )
-include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
-conan_basic_setup()
-
-target_link_libraries(${PROJECT_NAME} PRIVATE CONAN_PKG::glfw CONAN_PKG::fmt CONAN_PKG::glew)
 
 target_include_directories(${PROJECT_NAME} PRIVATE
 	${CMAKE_SOURCE_DIR}/src

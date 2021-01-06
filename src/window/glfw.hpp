@@ -4,6 +4,7 @@
 /* clang-format off */
 #include "gfx/gl.hpp"
 #ifdef _WIN32
+#define NOMINMAX
 #include <windows.h>
 #endif
 #include <GLFW/glfw3.h>
