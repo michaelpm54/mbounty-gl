@@ -2492,7 +2492,7 @@ void Ingame::save_state(const std::string &filename)
     }
 
     for (int i = 0; i < 4; i++) {
-        f.write((char *)v.visited_tiles.data(), 4096);
+        f.write((char *)v.visited_tiles[i].data(), 4096);
     }
 
     for (int i = 0; i < 4; i++) {
