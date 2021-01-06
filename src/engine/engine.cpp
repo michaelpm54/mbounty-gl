@@ -77,6 +77,7 @@ void Engine::key(int key, int action)
 {
     if (key == GLFW_KEY_F1 && action == GLFW_PRESS) {
         game_options.debug = !game_options.debug;
+        return;
     }
 
     switch (key) {
