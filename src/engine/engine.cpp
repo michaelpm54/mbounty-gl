@@ -87,8 +87,8 @@ void Engine::key(int key, int action)
             if (hud.get_error()) {
                 if (action == GLFW_PRESS && key == GLFW_KEY_ENTER) {
                     hud.clear_error();
-                    return;
                 }
+                return;
             }
 
             if (!dialog_stack.key(key, action)) {
