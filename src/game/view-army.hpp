@@ -10,7 +10,6 @@
 #include "gfx/text.hpp"
 
 namespace bty {
-class Assets;
 class Font;
 class Gfx;
 struct Texture;
@@ -19,7 +18,7 @@ class SceneStack;
 
 class ViewArmy : public bty::Scene {
 public:
-    ViewArmy(bty::SceneStack &ss, bty::Assets &assets);
+    ViewArmy(bty::SceneStack &ss);
     void draw(bty::Gfx &gfx, glm::mat4 &camera) override;
     void update(float dt) override;
     void key(int key, int action) override;

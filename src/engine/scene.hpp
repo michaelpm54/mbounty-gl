@@ -5,7 +5,6 @@
 
 namespace bty {
 
-class Assets;
 class Gfx;
 
 class Scene {

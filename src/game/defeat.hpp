@@ -7,7 +7,6 @@
 #include "gfx/sprite.hpp"
 
 namespace bty {
-class Assets;
 class Gfx;
 class SceneStack;
 class DialogStack;
@@ -17,7 +16,7 @@ class Hud;
 
 class Defeat : public bty::Scene {
 public:
-    Defeat(bty::SceneStack &ss, bty::DialogStack &ds, bty::Assets &assets, Hud &hud);
+    Defeat(bty::SceneStack &ss, bty::DialogStack &ds, Hud &hud);
 
     void draw(bty::Gfx &gfx, glm::mat4 &camera) override;
     void key(int key, int action) override;

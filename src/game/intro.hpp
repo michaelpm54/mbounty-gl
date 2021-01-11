@@ -9,9 +9,7 @@
 #include "gfx/sprite.hpp"
 #include "gfx/text.hpp"
 
-
 namespace bty {
-class Assets;
 class Gfx;
 class SceneStack;
 class DialogStack;
@@ -19,7 +17,7 @@ class DialogStack;
 
 class Intro : public bty::Scene {
 public:
-    Intro(bty::SceneStack &ss, bty::DialogStack &ds, bty::Assets &assets, Ingame &ingame);
+    Intro(bty::SceneStack &ss, bty::DialogStack &ds, Ingame &ingame);
     void draw(bty::Gfx &gfx, glm::mat4 &camera) override;
     void key(int key, int action) override;
     void update(float dt) override;

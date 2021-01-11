@@ -16,7 +16,7 @@ public:
     virtual ~Text();
     Text(Text &&other);
 
-    void create(int x, int y, const std::string &string, const Font &font);
+    void create(int x, int y, const std::string &string);
     void set_string(const std::string &string);
     const std::string get_string() const;
     GLuint get_vao() const;
@@ -28,11 +28,11 @@ private:
     void update_vbo();
 
 private:
-    const Font *font_ {nullptr};
     GLuint vbo_ {GL_NONE};
     GLuint vao_ {GL_NONE};
     GLuint num_vertices_ {0};
     std::string string_ {""};
+    const Font *_font {nullptr};
 };
 
 }    // namespace bty

@@ -12,7 +12,6 @@ class Gfx;
 struct Texture;
 class SceneStack;
 class DialogStack;
-class Assets;
 }    // namespace bty
 
 class Hud;
@@ -21,7 +20,7 @@ struct GenVariables;
 
 class Garrison : public bty::Scene {
 public:
-    Garrison(bty::SceneStack &ss, bty::DialogStack &ds, bty::Assets &assets, Hud &hud, Variables &v, GenVariables &gen);
+    Garrison(bty::SceneStack &ss, bty::DialogStack &ds, Hud &hud, Variables &v, GenVariables &gen);
     void draw(bty::Gfx &gfx, glm::mat4 &camera) override;
     void key(int key, int action) override;
     void update(float dt) override;

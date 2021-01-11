@@ -4,11 +4,11 @@
 #include "game/game-options.hpp"
 #include "window/glfw.hpp"
 
-GameControls::GameControls(bty::SceneStack &ss, bty::Assets &assets, GameOptions &game_options)
+GameControls::GameControls(bty::SceneStack &ss, GameOptions &game_options)
     : ss(ss)
     , game_options(game_options)
 {
-    dialog.create(6, 10, 20, 9, bty::BoxColor::Intro, assets);
+    dialog.create(6, 10, 20, 9, bty::BoxColor::Intro);
     dialog.add_line(4, 1, "Game Control");
     dialog.add_line(4, 2, "____________");
     t_music = dialog.add_option(4, 4, "");

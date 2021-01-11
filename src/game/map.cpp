@@ -4,7 +4,7 @@
 
 #include <glm/gtc/type_ptr.hpp>
 
-#include "engine/assets.hpp"
+#include "engine/texture-cache.hpp"
 #include "gfx/shader.hpp"
 #include "gfx/texture.hpp"
 
@@ -20,10 +20,10 @@ Map::~Map()
     glDeleteProgram(program_);
 }
 
-void Map::load(bty::Assets &assets)
+void Map::load()
 {
     for (int i = 0; i < 10; i++) {
-        tilesets_[i] = assets.get_texture(fmt::format("tilesets/tileset{}.png", i));
+        tilesets_[i] = Textures::instance().get(fmt::format("tilesets/tileset{}.png", i));
     }
 
     num_vertices_ = 4096 * 6;
@@ -38,8 +38,10 @@ void Map::load(bty::Assets &assets)
     glCreateBuffers(4, vbos_);
     glCreateVertexArrays(4, vaos_);
 
+    auto &textures {Textures::instance()};
+
     for (int i = 0; i < 4; i++) {
-        const std::string &file_path = fmt::format("{}/{}", assets.get_base_path(), kContinentNames[i]);
+        const std::string &file_path = fmt::format("{}/{}", textures.get_base_path(), kContinentNames[i]);
 
         tiles_[i].resize(4096);
         read_only_tiles_[i].resize(4096);
@@ -63,7 +65,7 @@ void Map::load(bty::Assets &assets)
         glBindVertexArray(GL_NONE);
     }
 
-    const auto &base_path = assets.get_base_path();
+    const auto &base_path = textures.get_base_path();
 
     program_ = bty::load_shader(fmt::format("{}/shaders/map.glsl.vert", base_path), fmt::format("{}/shaders/map.glsl.frag", base_path));
     if (program_ == GL_NONE) {
@@ -108,8 +110,8 @@ Tile Map::get_tile(int tx, int ty, int continent) const
 
 Tile Map::get_tile(float x, float y, int continent) const
 {
-    int tx = x / 48.0f;
-    int ty = y / 40.0f;
+    int tx = static_cast<int>(floor(x)) / 48;
+    int ty = static_cast<int>(floor(y)) / 40;
 
     return get_tile(tx, ty, continent);
 }

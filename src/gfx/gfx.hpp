@@ -31,11 +31,10 @@ enum Locations {
 class Rect;
 class Sprite;
 class Text;
-class Assets;
 
 class Gfx {
 public:
-    Gfx(Assets &assets);
+    Gfx();
     ~Gfx();
     void clear();
     void draw_sprite(Sprite &sprite, glm::mat4 &camera);
@@ -44,17 +43,17 @@ public:
 
 private:
     void set_initial_gl_state();
-    void load_shaders(Assets &assets);
+    void load_shaders();
     void get_uniform_locations();
     void create_quad_vao();
 
 private:
-    GLuint sprite_shader_{GL_NONE};
-    GLuint sprite_single_texture_shader_{GL_NONE};
-    GLuint rect_shader_{GL_NONE};
-    GLuint text_shader_{GL_NONE};
-    GLuint quad_vao_{GL_NONE};
-    GLuint quad_vbo_{GL_NONE};
+    GLuint sprite_shader_ {GL_NONE};
+    GLuint sprite_single_texture_shader_ {GL_NONE};
+    GLuint rect_shader_ {GL_NONE};
+    GLuint text_shader_ {GL_NONE};
+    GLuint quad_vao_ {GL_NONE};
+    GLuint quad_vbo_ {GL_NONE};
     GLint locations_[Locations::Count];
 };
 

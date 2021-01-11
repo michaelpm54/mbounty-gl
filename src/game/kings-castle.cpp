@@ -3,9 +3,9 @@
 #include <spdlog/spdlog.h>
 
 #include "data/hero.hpp"
-#include "engine/assets.hpp"
 #include "engine/dialog-stack.hpp"
 #include "engine/scene-stack.hpp"
+#include "engine/texture-cache.hpp"
 #include "game/gen-variables.hpp"
 #include "game/hud.hpp"
 #include "game/variables.hpp"
@@ -20,20 +20,20 @@ static constexpr int kKingsCastleUnits[5] = {
     Knights,
 };
 
-KingsCastle::KingsCastle(bty::SceneStack &ss, bty::DialogStack &ds, bty::Assets &assets, Hud &hud, Variables &v, GenVariables &gen)
+KingsCastle::KingsCastle(bty::SceneStack &ss, bty::DialogStack &ds, Hud &hud, Variables &v, GenVariables &gen)
     : ss(ss)
     , ds(ds)
     , hud(hud)
     , v(v)
     , gen(gen)
 {
-    dialog_.create(1, 18, 30, 9, bty::BoxColor::Intro, assets);
+    dialog_.create(1, 18, 30, 9, bty::BoxColor::Intro);
     dialog_.add_line(1, 1, "Castle of King Maximus");
     dialog_.add_line(22, 2, "");    // Gold
     dialog_.add_option(3, 4, "Recruit soldiers");
     dialog_.add_option(3, 5, "Audience with the King");
 
-    recruit_.create(1, 18, 30, 9, bty::BoxColor::Intro, assets);
+    recruit_.create(1, 18, 30, 9, bty::BoxColor::Intro);
     recruit_.add_line(1, 1, "Recruit Soldiers");
     recruit_.add_line(22, 1, "");
 
@@ -47,11 +47,11 @@ KingsCastle::KingsCastle(bty::SceneStack &ss, bty::DialogStack &ds, bty::Assets 
     recruit_.set_line_visible(5, false);
 
     unit_.set_position(64, 104);
-    bg_.set_texture(assets.get_texture("bg/castle.png"));
+    bg_.set_texture(Textures::instance().get("bg/castle.png"));
     bg_.set_position(8, 24);
 
     for (int i = 0; i < 5; i++) {
-        unit_textures_[i] = assets.get_texture(fmt::format("units/{}.png", kKingsCastleUnits[i]), {2, 2});
+        unit_textures_[i] = Textures::instance().get(fmt::format("units/{}.png", kKingsCastleUnits[i]), {2, 2});
     }
 }
 

@@ -8,7 +8,6 @@
 #include "gfx/text.hpp"
 
 namespace bty {
-class Assets;
 class Font;
 class Gfx;
 struct Texture;
@@ -19,7 +18,7 @@ struct Variables;
 
 class ViewContinent : public bty::Scene {
 public:
-    ViewContinent(bty::SceneStack &ss, bty::Assets &assets);
+    ViewContinent(bty::SceneStack &ss);
     ~ViewContinent();
     void draw(bty::Gfx &gfx, glm::mat4 &camera) override;
     void update(float dt) override;

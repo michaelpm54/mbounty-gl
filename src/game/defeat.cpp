@@ -6,12 +6,12 @@
 #include "game/hud.hpp"
 #include "gfx/gfx.hpp"
 
-Defeat::Defeat(bty::SceneStack &ss, bty::DialogStack &ds, bty::Assets &assets, Hud &hud)
+Defeat::Defeat(bty::SceneStack &ss, bty::DialogStack &ds, Hud &hud)
     : ss(ss)
     , ds(ds)
     , hud(hud)
 {
-    lose_pic.set_texture(assets.get_texture("bg/king-dead.png"));
+    lose_pic.set_texture(Textures::instance().get("bg/king-dead.png"));
     lose_pic.set_position(168, 24);
 }
 

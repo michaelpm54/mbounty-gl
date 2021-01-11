@@ -3,7 +3,7 @@
 #include <spdlog/spdlog.h>
 
 #include "data/tiles.hpp"
-#include "engine/assets.hpp"
+#include "engine/texture-cache.hpp"
 #include "game/map.hpp"
 
 Hero::Hero(int &boat_x, int &boat_y, int &boat_c)
@@ -13,13 +13,14 @@ Hero::Hero(int &boat_x, int &boat_y, int &boat_c)
 {
 }
 
-void Hero::load(bty::Assets &assets)
+void Hero::load()
 {
-    tex_walk_moving_ = assets.get_texture("hero/walk-moving.png", {4, 1});
-    tex_walk_stationary_ = assets.get_texture("hero/walk-stationary.png", {4, 1});
-    tex_boat_moving_ = assets.get_texture("hero/boat-moving.png", {4, 1});
-    tex_boat_stationary_ = assets.get_texture("hero/boat-stationary.png", {2, 1});
-    tex_flying = assets.get_texture("hero/flying.png", {4, 1});
+    auto &textures {Textures::instance()};
+    tex_walk_moving_ = textures.get("hero/walk-moving.png", {4, 1});
+    tex_walk_stationary_ = textures.get("hero/walk-stationary.png", {4, 1});
+    tex_boat_moving_ = textures.get("hero/boat-moving.png", {4, 1});
+    tex_boat_stationary_ = textures.get("hero/boat-stationary.png", {2, 1});
+    tex_flying = textures.get("hero/flying.png", {4, 1});
     set_texture(tex_walk_stationary_);
 }
 

@@ -13,7 +13,6 @@
 #include "gfx/text.hpp"
 
 namespace bty {
-class Assets;
 class Gfx;
 class DialogStack;
 class SceneStack;
@@ -57,7 +56,7 @@ struct Action {
 
 class Battle : public bty::Scene {
 public:
-    Battle(bty::SceneStack &ss, bty::DialogStack &ds, bty::Assets &assets, Variables &v, GenVariables &gen, ViewArmy &view_army, ViewCharacter &view_character, GameControls &game_controls, GameOptions &game_options, Hud &hud);
+    Battle(bty::SceneStack &ss, bty::DialogStack &ds, Variables &v, GenVariables &gen, ViewArmy &view_army, ViewCharacter &view_character, GameControls &game_controls, GameOptions &game_options, Hud &hud);
 
     void draw(bty::Gfx &gfx, glm::mat4 &camera) override;
     void key(int key, int action) override;

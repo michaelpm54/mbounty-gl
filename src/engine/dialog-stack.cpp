@@ -7,11 +7,6 @@
 
 namespace bty {
 
-DialogStack::DialogStack(Assets &assets)
-    : assets_(assets)
-{
-}
-
 bool DialogStack::empty() const
 {
     return stack_.empty();
@@ -22,7 +17,7 @@ Dialog *DialogStack::show_dialog(const DialogDef &dialog_, BoxColor color)
     BoxColor color_ = color == BoxColor::None ? default_color_ : color;
 
     auto dialog = std::make_shared<Dialog>();
-    dialog->create(dialog_.x, dialog_.y, dialog_.w, dialog_.h, color_, assets_);
+    dialog->create(dialog_.x, dialog_.y, dialog_.w, dialog_.h, color_);
 
     std::vector<Option *> options;
 

@@ -6,21 +6,23 @@
 
 #include "data/bounty.hpp"
 #include "data/puzzle.hpp"
-#include "engine/assets.hpp"
 #include "engine/scene-stack.hpp"
+#include "engine/texture-cache.hpp"
 #include "game/gen-variables.hpp"
 #include "gfx/gfx.hpp"
 #include "gfx/texture.hpp"
 #include "window/glfw.hpp"
 
-ViewPuzzle::ViewPuzzle(bty::SceneStack &ss, bty::Assets &assets)
+ViewPuzzle::ViewPuzzle(bty::SceneStack &ss)
     : ss(ss)
 {
+    auto &textures = Textures::instance();
+
     for (int i = 0; i < 17; i++) {
-        textures_[kPuzzleVillainPositions[i]] = assets.get_texture(fmt::format("villains/{}.png", i), {4, 1});
+        textures_[kPuzzleVillainPositions[i]] = textures.get(fmt::format("villains/{}.png", i), {4, 1});
     }
     for (int i = 0; i < 8; i++) {
-        textures_[kPuzzleArtifactPositions[i]] = assets.get_texture(fmt::format("artifacts/44x32/{}.png", i));
+        textures_[kPuzzleArtifactPositions[i]] = textures.get(fmt::format("artifacts/44x32/{}.png", i));
     }
     int n = 0;
     for (int y = 0; y < 5; y++) {
@@ -36,7 +38,7 @@ ViewPuzzle::ViewPuzzle(bty::SceneStack &ss, bty::Assets &assets)
     float height = 5 * 32;
 
     for (int i = 0; i < 8; i++) {
-        border_[i].set_texture(assets.get_texture(fmt::format("border-puzzle/{}.png", i)));
+        border_[i].set_texture(textures.get(fmt::format("border-puzzle/{}.png", i)));
     }
 
     // top bottom

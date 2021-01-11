@@ -20,7 +20,7 @@ class Hud;
 
 class Shop : public bty::Scene {
 public:
-    Shop(bty::SceneStack &ss, bty::Assets &assets, Variables &v, Hud &hud);
+    Shop(bty::SceneStack &ss, Variables &v, Hud &hud);
 
     void draw(bty::Gfx &gfx, glm::mat4 &camera) override;
     void update(float dt) override;

@@ -17,8 +17,8 @@
 #include "data/tiles.hpp"
 #include "data/towns.hpp"
 #include "data/villains.hpp"
-#include "engine/assets.hpp"
 #include "engine/scene-stack.hpp"
+#include "engine/texture-cache.hpp"
 #include "game/army-gen.hpp"
 #include "game/chest.hpp"
 #include "game/game-options.hpp"
@@ -30,47 +30,49 @@
 #include "gfx/gfx.hpp"
 #include "window/glfw.hpp"
 
-Ingame::Ingame(GLFWwindow *window, bty::SceneStack &ss, bty::DialogStack &ds, bty::Assets &assets, Hud &hud, GameOptions &game_options)
+Ingame::Ingame(GLFWwindow *window, bty::SceneStack &ss, bty::DialogStack &ds, Hud &hud, GameOptions &game_options)
     : window(window)
     , game_options(game_options)
     , ss(ss)
     , ds(ds)
     , hud(hud)
     , hero(v.boat_x, v.boat_y, v.boat_c)
-    , view_army(ss, assets)
-    , view_char(ss, assets)
-    , view_continent(ss, assets)
-    , view_contract(ss, assets, v, gen, hud.get_contract())
-    , view_puzzle(ss, assets)
+    , view_army(ss)
+    , view_char(ss)
+    , view_continent(ss)
+    , view_contract(ss, v, gen, hud.get_contract())
+    , view_puzzle(ss)
     , day_timer(16.0f, std::bind(&Ingame::day_tick, this))
     , timestop_timer(0.25f, std::bind(&Ingame::timestop_tick, this))
     , automove_timer(0.0f, std::bind(&Ingame::automove_tick, this))
-    , kings_castle(ss, ds, assets, hud, v, gen)
-    , shop(ss, assets, v, hud)
-    , town(ss, ds, assets, v, gen, hud, view_contract, boat)
-    , s_wizard(ss, assets, v, hud)
-    , s_defeat(ss, ds, assets, hud)
-    , s_garrison(ss, ds, assets, hud, v, gen)
-    , s_victory(ss, ds, assets, v, hud)
-    , s_controls(ss, assets, game_options)
-    , s_battle(ss, ds, assets, v, gen, view_army, view_char, s_controls, game_options, hud)
+    , kings_castle(ss, ds, hud, v, gen)
+    , shop(ss, v, hud)
+    , town(ss, ds, v, gen, hud, view_contract, boat)
+    , s_wizard(ss, v, hud)
+    , s_defeat(ss, ds, hud)
+    , s_garrison(ss, ds, hud, v, gen)
+    , s_victory(ss, ds, v, hud)
+    , s_controls(ss, game_options)
+    , s_battle(ss, ds, v, gen, view_army, view_char, s_controls, game_options, hud)
     , cr({0.2f, 0.4f, 0.7f, 0.9f}, {8, 8}, {0, 0})
     , save_manager(ds, std::bind(&Ingame::save_state, this, std::placeholders::_1), std::bind(&Ingame::load_state, this, std::placeholders::_1))
 {
+    auto &textures {Textures::instance()};
+
     for (int i = 0; i < UnitId::UnitCount; i++) {
-        unit_textures[i] = assets.get_texture(fmt::format("units/{}.png", i), {2, 2});
+        unit_textures[i] = textures.get(fmt::format("units/{}.png", i), {2, 2});
     }
 
-    map.load(assets);
-    hero.load(assets);
+    map.load();
+    hero.load();
 
     ui_cam = glm::ortho(0.0f, 320.0f, 224.0f, 0.0f, -1.0f, 1.0f);
     map_cam = ui_cam;
 
     boat.set_position(11 * 48.0f + 8.0f, 58 * 40.0f + 8.0f);
-    boat.set_texture(assets.get_texture("hero/boat-stationary.png", {2, 1}));
+    boat.set_texture(textures.get("hero/boat-stationary.png", {2, 1}));
 
-    tile_text.create(4, 7, "X -1\nY -1\nT -1", assets.get_font());
+    tile_text.create(4, 7, "X -1\nY -1\nT -1");
 }
 
 void Ingame::setup(int hero, int diff)

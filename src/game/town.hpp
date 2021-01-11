@@ -22,7 +22,7 @@ struct Tile;
 
 class Town : public bty::Scene {
 public:
-    Town(bty::SceneStack &ss, bty::DialogStack &ds, bty::Assets &assets, Variables &v, GenVariables &gen, Hud &hud, ViewContract &view_contract, bty::Sprite &boat);
+    Town(bty::SceneStack &ss, bty::DialogStack &ds, Variables &v, GenVariables &gen, Hud &hud, ViewContract &view_contract, bty::Sprite &boat);
     void draw(bty::Gfx &gfx, glm::mat4 &camera) override;
     void update(float dt) override;
     void key(int key, int action) override;

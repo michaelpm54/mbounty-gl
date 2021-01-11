@@ -52,9 +52,9 @@ int main(int argc, char *argv[])
     glDebugMessageCallback(glDebugOutput, nullptr);
     glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
 
+    Textures::instance().init(base_path);
     {
-        bty::Assets assets(base_path);
-        bty::Engine engine(*window, assets);
+        bty::Engine engine(*window);
         engine.run();
     }
 

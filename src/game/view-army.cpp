@@ -5,36 +5,38 @@
 #include <algorithm>
 
 #include "data/bounty.hpp"
-#include "engine/assets.hpp"
 #include "engine/scene-stack.hpp"
+#include "engine/texture-cache.hpp"
 #include "gfx/gfx.hpp"
 #include "gfx/texture.hpp"
 #include "window/glfw.hpp"
 
-ViewArmy::ViewArmy(bty::SceneStack &ss, bty::Assets &assets)
+ViewArmy::ViewArmy(bty::SceneStack &ss)
     : ss(ss)
 {
+    auto &textures {Textures::instance()};
+
     for (int i = 0; i < 25; i++) {
-        unit_textures_[i] = assets.get_texture(fmt::format("units/{}.png", i), {2, 2});
+        unit_textures_[i] = textures.get(fmt::format("units/{}.png", i), {2, 2});
     }
 
-    frame_.set_texture(assets.get_texture("frame/army.png"));
+    frame_.set_texture(textures.get("frame/army.png"));
     frame_.set_position(0, 16);
 
-    const auto &font = assets.get_font();
+    const auto &font = textures.get_font();
 
     for (int i = 0; i < 5; i++) {
         rects_[i].set_color(bty::BoxColor::Intro);
         rects_[i].set_size(253, 32);
-        rects_[i].set_position(59, 24 + i * 40);
-        units_[i].set_position(8, 24 + i * 40);
+        rects_[i].set_position(59, 24.0f + i * 40);
+        units_[i].set_position(8, 24.0f + i * 40);
 
         for (int j = 0; j < 7; j++) {
             info_[i][j].set_font(font);
         }
 
         float x = 64;
-        float y = 32 + i * 40;
+        float y = 32.0f + i * 40;
         info_[i][0].set_position(x, y);
         info_[i][1].set_position(x + 120, y);
         info_[i][2].set_position(x, y + 8);

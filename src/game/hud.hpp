@@ -11,7 +11,6 @@
 #include "gfx/text.hpp"
 
 namespace bty {
-class Assets;
 class Font;
 class Gfx;
 struct Texture;
@@ -19,8 +18,7 @@ struct Texture;
 
 class Hud {
 public:
-    Hud() = default;
-    Hud(bty::Assets &assets);
+    Hud();
 
     void draw(bty::Gfx &gfx, glm::mat4 &camera);
     void update(float dt);

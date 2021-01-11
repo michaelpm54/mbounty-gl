@@ -5,6 +5,7 @@
 #include "gfx/gfx.hpp"
 #include "gfx/text.hpp"
 #include "gfx/texture.hpp"
+#include "window/glfw.hpp"
 
 namespace bty {
 
@@ -75,17 +76,16 @@ void Dialog::set_position(int x, int y)
 void Dialog::create(
 	int x, int y,
 	int w, int h,
-	bty::BoxColor color,
-	bty::Assets &assets
+	bty::BoxColor color
 )
 /* clang-format on */
 {
-    TextBox::create(x, y, w, h, color, assets);
+    TextBox::create(x, y, w, h, color);
     TextBox::set_size(w, h);
 
     options_.clear();
     cell_positions.clear();
-    arrow_.set_texture(assets.get_texture("arrow.png", {2, 2}));
+    arrow_.set_texture(Textures::instance().get("arrow.png", {2, 2}));
     selection_ = -1;
 
     set_position(x, y);
@@ -94,7 +94,7 @@ void Dialog::create(
 Option *Dialog::add_option(int x, int y, const std::string &str)
 {
     Option opt;
-    opt.create(x_ + x, y_ + y, str, *font_);
+    opt.create(x_ + x, y_ + y, str);
 
     options_.push_back(std::move(opt));
     cell_positions.push_back({x, y});
@@ -220,6 +220,20 @@ void Option::set_enabled(bool val)
 void Option::set_visible(bool val)
 {
     visible_ = val;
+}
+
+void Dialog::bind(int code, std::function<void(int)> &callback)
+{
+    _bindings[code] = callback;
+}
+
+bool Dialog::key(int code)
+{
+    if (_bindings.contains(code)) {
+        _bindings[code](selection_);
+        return true;
+    }
+    return false;
 }
 
 }    // namespace bty

@@ -4,7 +4,7 @@
 #include <glm/vec4.hpp>
 
 #include "data/color.hpp"
-#include "engine/assets.hpp"
+#include "engine/texture-cache.hpp"
 #include "gfx/transformable.hpp"
 
 namespace bty {

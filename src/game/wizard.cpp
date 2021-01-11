@@ -2,23 +2,23 @@
 
 #include <spdlog/spdlog.h>
 
-#include "engine/assets.hpp"
 #include "engine/dialog-stack.hpp"
 #include "engine/scene-stack.hpp"
+#include "engine/texture-cache.hpp"
 #include "game/hud.hpp"
 #include "game/variables.hpp"
 #include "gfx/gfx.hpp"
 #include "window/glfw.hpp"
 
-Wizard::Wizard(bty::SceneStack &ss, bty::Assets &assets, Variables &v, Hud &hud)
+Wizard::Wizard(bty::SceneStack &ss, Variables &v, Hud &hud)
     : ss(ss)
     , v(v)
     , hud(hud)
 {
     unit_.set_position(64, 104);
-    unit_.set_texture(assets.get_texture("units/6.png", {2, 2}));
+    unit_.set_texture(Textures::instance().get("units/6.png", {2, 2}));
     bg_.set_position(8, 24);
-    bg_.set_texture(assets.get_texture("bg/cave.png"));
+    bg_.set_texture(Textures::instance().get("bg/cave.png"));
 }
 
 void Wizard::draw(bty::Gfx &gfx, glm::mat4 &camera)

@@ -7,7 +7,6 @@
 #include "gfx/text.hpp"
 
 namespace bty {
-class Assets;
 class Font;
 class Gfx;
 struct Texture;
@@ -20,7 +19,7 @@ class Hud;
 
 class Victory : public bty::Scene {
 public:
-    Victory(bty::SceneStack &ss, bty::DialogStack &ds, bty::Assets &assets, Variables &v, Hud &hud);
+    Victory(bty::SceneStack &ss, bty::DialogStack &ds, Variables &v, Hud &hud);
 
     void draw(bty::Gfx &gfx, glm::mat4 &camera) override;
     void update(float dt) override;

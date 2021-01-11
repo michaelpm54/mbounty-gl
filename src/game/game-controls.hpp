@@ -14,7 +14,7 @@ struct GameOptions;
 
 class GameControls : public bty::Scene {
 public:
-    GameControls(bty::SceneStack &ss, bty::Assets &assets, GameOptions &game_options);
+    GameControls(bty::SceneStack &ss, GameOptions &game_options);
     void key(int key, int action) override;
     void draw(bty::Gfx &gfx, glm::mat4 &camera) override;
     void update(float dt) override;

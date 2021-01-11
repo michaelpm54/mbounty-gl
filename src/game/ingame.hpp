@@ -35,7 +35,6 @@ struct GameOptions;
 #include "gfx/text.hpp"
 
 namespace bty {
-class Assets;
 class Gfx;
 class DialogStack;
 class SceneStack;
@@ -47,7 +46,7 @@ struct c2AABB;
 
 class Ingame : public bty::Scene {
 public:
-    Ingame(GLFWwindow *window, bty::SceneStack &ss, bty::DialogStack &ds, bty::Assets &assets, Hud &hud, GameOptions &game_options);
+    Ingame(GLFWwindow *window, bty::SceneStack &ss, bty::DialogStack &ds, Hud &hud, GameOptions &game_options);
 
     void update(float dt) override;
     void key(int key, int action) override;

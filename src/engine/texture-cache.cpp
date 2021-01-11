@@ -1,4 +1,4 @@
-#include "assets.hpp"
+#include "engine/texture-cache.hpp"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <spdlog/spdlog.h>
@@ -7,40 +7,40 @@
 
 namespace bty {
 
-Assets::Assets(const std::string &base_path)
-    : base_path_(base_path)
+void TextureCache::init(const std::string &base_path)
 {
+    base_path_ = base_path;
     border_.resize(8);
     for (int i = 0; i < 8; i++) {
-        border_[i] = get_texture(fmt::format("border-normal/box{}.png", i));
+        border_[i] = get(fmt::format("border-normal/box{}.png", i));
     }
-    font_.load_from_texture(get_texture("fonts/genesis_custom.png"), {8.0f, 8.0f});
+    font_.load_from_texture(get("fonts/genesis_custom.png"), {8.0f, 8.0f});
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 }
 
-Assets::~Assets()
+void TextureCache::deinit()
 {
-    for (auto &[path, texture] : textures_) {
+    for (auto &[path, texture] : _cache) {
         glDeleteTextures(1, &texture.handle);
     }
 }
 
-const std::vector<const Texture *> &Assets::get_border() const
+const std::vector<const Texture *> &TextureCache::get_border() const
 {
     return border_;
 }
 
-const Font &Assets::get_font() const
+const Font &TextureCache::get_font() const
 {
     return font_;
 }
 
-Texture *Assets::get_texture(const std::string &path, glm::ivec2 num_frames)
+Texture *TextureCache::get(const std::string &path, glm::ivec2 num_frames)
 {
     const auto texture_path = fmt::format("{}/textures/{}", base_path_, path);
 
-    if (textures_.contains(texture_path)) {
-        return &textures_[texture_path];
+    if (_cache.contains(texture_path)) {
+        return &_cache[texture_path];
     }
 
     if (num_frames.x > 1 || num_frames.y > 1) {
@@ -50,7 +50,7 @@ Texture *Assets::get_texture(const std::string &path, glm::ivec2 num_frames)
     return get_single_texture(texture_path);
 }
 
-Texture *Assets::get_texture_array(const std::string &path, glm::ivec2 num_frames)
+Texture *TextureCache::get_texture_array(const std::string &path, glm::ivec2 num_frames)
 {
     int c;
     int w;
@@ -107,12 +107,12 @@ Texture *Assets::get_texture_array(const std::string &path, glm::ivec2 num_frame
 
     stbi_image_free(data);
 
-    textures_[path] = {w, h, tex, num_frames.x, num_frames.y, frame_width, frame_height};
+    _cache[path] = {w, h, tex, num_frames.x, num_frames.y, frame_width, frame_height};
 
-    return &textures_[path];
+    return &_cache[path];
 }
 
-Texture *Assets::get_single_texture(const std::string &path)
+Texture *TextureCache::get_single_texture(const std::string &path)
 {
     int c;
     int w;
@@ -147,12 +147,12 @@ Texture *Assets::get_single_texture(const std::string &path)
 
     stbi_image_free(data);
 
-    textures_[path] = {w, h, tex, 1, 1, w, h};
+    _cache[path] = {w, h, tex, 1, 1, w, h};
 
-    return &textures_[path];
+    return &_cache[path];
 }
 
-const std::string &Assets::get_base_path() const
+const std::string &TextureCache::get_base_path() const
 {
     return base_path_;
 }

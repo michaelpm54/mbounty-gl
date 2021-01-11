@@ -44,8 +44,7 @@ public:
 	void create(
 		int x, int y,
 		int w, int h,
-		BoxColor color,
-		Assets &assets
+		BoxColor color
 	);
     /* clang-format on */
     void set_position(int x, int y);
@@ -59,6 +58,8 @@ public:
     int get_selection() const;
     void clear_options();
     std::deque<Option> &get_options();
+    bool key(int code);
+    void bind(int code, std::function<void(int)> &callback);
 
 private:
     void update_arrow();
@@ -69,6 +70,7 @@ private:
     Sprite arrow_;
     int selection_ {0};
     bool draw_arrow_ {true};
+    std::unordered_map<int, std::function<void(int)>> _bindings;
 };
 
 }    // namespace bty

@@ -14,11 +14,10 @@ namespace bty {
 
 class Scene;
 struct Window;
-class Assets;
 
 class Engine {
 public:
-    Engine(Window &window, Assets &assets);
+    Engine(Window &window);
     void run();
     void key(int key, int action);
     void quit();
@@ -29,7 +28,6 @@ private:
 private:
     InputHandler input_;
     Window *window_ {nullptr};
-    Assets &assets;
     std::unique_ptr<Gfx> gfx_;
     SceneStack scene_stack;
     DialogStack dialog_stack;

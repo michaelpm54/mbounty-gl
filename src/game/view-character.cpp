@@ -4,18 +4,20 @@
 
 #include "data/bounty.hpp"
 #include "data/hero.hpp"
-#include "engine/assets.hpp"
 #include "engine/scene-stack.hpp"
+#include "engine/texture-cache.hpp"
 #include "game/gen-variables.hpp"
 #include "game/variables.hpp"
 #include "gfx/gfx.hpp"
 #include "gfx/texture.hpp"
 #include "window/glfw.hpp"
 
-ViewCharacter::ViewCharacter(bty::SceneStack &ss, bty::Assets &assets)
+ViewCharacter::ViewCharacter(bty::SceneStack &ss)
     : ss(ss)
 {
-    frame_.set_texture(assets.get_texture("frame/character.png"));
+    auto &textures = Textures::instance();
+
+    frame_.set_texture(textures.get("frame/character.png"));
     frame_.set_position(0, 16);
 
     static const std::string kPortraitFilenames[4] = {
@@ -26,13 +28,13 @@ ViewCharacter::ViewCharacter(bty::SceneStack &ss, bty::Assets &assets)
     };
 
     for (int i = 0; i < 8; i++) {
-        artifacts_[i] = assets.get_texture(fmt::format("artifacts/36x32/{}.png", i));
-        artifact_sprites_[i].set_position(14 + (i % 4) * 48, 136 + (i / 4) * 40);
+        artifacts_[i] = textures.get(fmt::format("artifacts/36x32/{}.png", i));
+        artifact_sprites_[i].set_position(14.0f + (i % 4) * 48, 136.0f + (i / 4) * 40);
         artifact_sprites_[i].set_texture(artifacts_[i]);
     }
 
     for (int i = 0; i < 4; i++) {
-        portraits_[i] = assets.get_texture(fmt::format("char-page/{}.png", kPortraitFilenames[i]));
+        portraits_[i] = textures.get(fmt::format("char-page/{}.png", kPortraitFilenames[i]));
     }
 
     portrait_.set_position(8, 24);
@@ -40,10 +42,10 @@ ViewCharacter::ViewCharacter(bty::SceneStack &ss, bty::Assets &assets)
     rect_.set_size(208, 104);
     rect_.set_position(104, 24);
 
-    const auto &font = assets.get_font();
+    const auto &font = textures.get_font();
     for (int i = 0; i < 11; i++) {
         info_[i].set_font(font);
-        info_[i].set_position(112, 40 + i * 8);
+        info_[i].set_position(112, 40.0f + i * 8);
     }
 
     info_[0].set_position(112, 32);
@@ -55,7 +57,7 @@ ViewCharacter::ViewCharacter(bty::SceneStack &ss, bty::Assets &assets)
             x -= 112;
             y += 40;
         }
-        map_sprites_[i].set_texture(assets.get_texture(fmt::format("maps/{}.png", i)));
+        map_sprites_[i].set_texture(textures.get(fmt::format("maps/{}.png", i)));
         map_sprites_[i].set_position(x + i * 56, y);
     }
 }

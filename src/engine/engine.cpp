@@ -13,26 +13,23 @@
 
 namespace bty {
 
-Engine::Engine(Window &window, Assets &assets)
+Engine::Engine(Window &window)
     : input_({.engine = this})
     , window_(&window)
-    , assets(assets)
-    , gfx_(std::make_unique<Gfx>(assets))
-    , dialog_stack(assets)
-    , hud(assets)
+    , gfx_(std::make_unique<Gfx>())
     , view(glm::ortho(0.0f, 320.0f, 224.0f, 0.0f, -1.0f, 1.0f))
 {
     window_init_callbacks(window_, &input_);
-    fps_label.create(1, 3, "FPS: ", assets.get_font());
-    fps.create(5, 3, "", assets.get_font());
+    fps_label.create(1, 3, "FPS: ");
+    fps.create(5, 3, "");
 }
 
 void Engine::run()
 {
     using namespace std::chrono;
 
-    Ingame ingame(window_->handle, scene_stack, dialog_stack, assets, hud, game_options);
-    Intro intro(scene_stack, dialog_stack, assets, ingame);
+    Ingame ingame(window_->handle, scene_stack, dialog_stack, hud, game_options);
+    Intro intro(scene_stack, dialog_stack, ingame);
 
     scene_stack.push(&intro, nullptr);
 

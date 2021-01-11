@@ -4,8 +4,8 @@
 
 #include "data/shop.hpp"
 #include "data/tiles.hpp"
-#include "engine/assets.hpp"
 #include "engine/scene-stack.hpp"
+#include "engine/texture-cache.hpp"
 #include "game/hud.hpp"
 #include "game/map.hpp"
 #include "game/shop-info.hpp"
@@ -27,12 +27,12 @@ static constexpr const char *const kShopNames[] = {
     "Plains",
 };
 
-Shop::Shop(bty::SceneStack &ss, bty::Assets &assets, Variables &v, Hud &hud)
+Shop::Shop(bty::SceneStack &ss, Variables &v, Hud &hud)
     : ss(ss)
     , v(v)
     , hud(hud)
 {
-    box_.create(1, 18, 30, 9, bty::BoxColor::Intro, assets);
+    box_.create(1, 18, 30, 9, bty::BoxColor::Intro);
     box_.add_line(1, 1, "");     // Shop name
     box_.add_line(1, 2, "");     // underline
     box_.add_line(1, 4, "");     // available
@@ -45,7 +45,7 @@ Shop::Shop(bty::SceneStack &ss, bty::Assets &assets, Variables &v, Hud &hud)
     unit_.set_position(64, 104);
     bg_.set_position(8, 24);
     for (int i = 0; i < 25; i++) {
-        unit_textures_[i] = assets.get_texture(fmt::format("units/{}.png", i), {2, 2});
+        unit_textures_[i] = Textures::instance().get(fmt::format("units/{}.png", i), {2, 2});
     }
 
     static constexpr const char *const kShopImages[] = {
@@ -56,7 +56,7 @@ Shop::Shop(bty::SceneStack &ss, bty::Assets &assets, Variables &v, Hud &hud)
     };
 
     for (int i = 0; i < 4; i++) {
-        dwelling_textures_[i] = assets.get_texture(kShopImages[i]);
+        dwelling_textures_[i] = Textures::instance().get(kShopImages[i]);
     }
 }
 

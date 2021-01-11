@@ -6,9 +6,9 @@
 #include "data/spells.hpp"
 #include "data/towns.hpp"
 #include "data/villains.hpp"
-#include "engine/assets.hpp"
 #include "engine/dialog-stack.hpp"
 #include "engine/scene-stack.hpp"
+#include "engine/texture-cache.hpp"
 #include "game/gen-variables.hpp"
 #include "game/hud.hpp"
 #include "game/map.hpp"
@@ -17,7 +17,7 @@
 #include "gfx/gfx.hpp"
 #include "window/glfw.hpp"
 
-Town::Town(bty::SceneStack &ss, bty::DialogStack &ds, bty::Assets &assets, Variables &v, GenVariables &gen, Hud &hud, ViewContract &view_contract, bty::Sprite &boat)
+Town::Town(bty::SceneStack &ss, bty::DialogStack &ds, Variables &v, GenVariables &gen, Hud &hud, ViewContract &view_contract, bty::Sprite &boat)
     : ss(ss)
     , ds(ds)
     , v(v)
@@ -27,13 +27,13 @@ Town::Town(bty::SceneStack &ss, bty::DialogStack &ds, bty::Assets &assets, Varia
     , boat(boat)
 {
     unit_.set_position(64, 104);
-    bg_.set_texture(assets.get_texture("bg/town.png"));
+    bg_.set_texture(Textures::instance().get("bg/town.png"));
     bg_.set_position(8, 24);
     for (int i = 0; i < 25; i++) {
-        unit_textures_[i] = assets.get_texture(fmt::format("units/{}.png", i), {2, 2});
+        unit_textures_[i] = Textures::instance().get(fmt::format("units/{}.png", i), {2, 2});
     }
 
-    dialog.create(1, 18, 30, 9, bty::BoxColor::Intro, assets);
+    dialog.create(1, 18, 30, 9, bty::BoxColor::Intro);
     t_town_name = dialog.add_line(1, 1, "");
     t_gp = dialog.add_line(22, 2, "");
     t_get_contract = dialog.add_option(3, 3, "Get contract");

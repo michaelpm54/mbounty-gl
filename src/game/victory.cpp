@@ -32,20 +32,22 @@ static constexpr const char *const kVictoryString = {
     "Final Score: {:>5}",
 };
 
-Victory::Victory(bty::SceneStack &ss, bty::DialogStack &ds, bty::Assets &assets, Variables &v, Hud &hud)
+Victory::Victory(bty::SceneStack &ss, bty::DialogStack &ds, Variables &v, Hud &hud)
     : ss(ss)
     , ds(ds)
     , v(v)
     , hud(hud)
 {
+    auto &textures {Textures::instance()};
+
     bg.set_position(8, 24);
-    bg.set_texture(assets.get_texture("battle/encounter.png"));
+    bg.set_texture(textures.get("battle/encounter.png"));
 
     king.set_position(8, 24);
-    king.set_texture(assets.get_texture("bg/king-massive-smile.png"));
+    king.set_texture(textures.get("bg/king-massive-smile.png"));
 
     hero.set_position(20.0f + 4 * 48.0f, 24.0f + 6 * 40.0f);
-    hero.set_texture(assets.get_texture("hero/walk-moving.png", {4, 1}));
+    hero.set_texture(textures.get("hero/walk-moving.png", {4, 1}));
     hero.set_flip(true);
 
     for (int i = 0; i < 5; i++) {
@@ -58,7 +60,7 @@ Victory::Victory(bty::SceneStack &ss, bty::DialogStack &ds, bty::Assets &assets,
                 unit_sprites[index].set_flip(true);
             }
             unit_sprites[index].set_position(x, y);
-            unit_sprites[index].set_texture(assets.get_texture(fmt::format("units/{}.png", index), {2, 2}));
+            unit_sprites[index].set_texture(textures.get(fmt::format("units/{}.png", index), {2, 2}));
         }
     }
 }

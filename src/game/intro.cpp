@@ -6,21 +6,21 @@
 
 #include "data/bounty.hpp"
 #include "data/hero.hpp"
-#include "engine/assets.hpp"
 #include "engine/dialog-stack.hpp"
 #include "engine/scene-stack.hpp"
+#include "engine/texture-cache.hpp"
 #include "gfx/gfx.hpp"
 #include "window/glfw.hpp"
 
-Intro::Intro(bty::SceneStack &ss, bty::DialogStack &ds, bty::Assets &assets, Ingame &ingame)
+Intro::Intro(bty::SceneStack &ss, bty::DialogStack &ds, Ingame &ingame)
     : ss(ss)
     , ds(ds)
     , ingame(ingame)
 {
-    bg_.set_texture(assets.get_texture("bg/intro.png"));
-    name_box_.create(7, 1, 27, 3, bty::BoxColor::Intro, assets);
+    bg_.set_texture(Textures::instance().get("bg/intro.png"));
+    name_box_.create(7, 1, 27, 3, bty::BoxColor::Intro);
     name_box_.add_line(2, 1, kHeroNames[0][0]);
-    help_box_.create(1, 24, 38, 3, bty::BoxColor::Intro, assets);
+    help_box_.create(1, 24, 38, 3, bty::BoxColor::Intro);
     help_box_.add_line(2, 1, "Select a character and press Enter");
 }
 

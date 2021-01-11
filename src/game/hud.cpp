@@ -6,49 +6,50 @@
 #include "data/color.hpp"
 #include "data/hero.hpp"
 #include "data/puzzle.hpp"
-#include "engine/assets.hpp"
+#include "engine/texture-cache.hpp"
 #include "gfx/font.hpp"
 #include "gfx/gfx.hpp"
 
-Hud::Hud(bty::Assets &assets)
+Hud::Hud()
 {
-    blank_frame_ = assets.get_texture("frame/game-empty.png");
-    hud_frame_ = assets.get_texture("frame/game-hud.png");
+    auto &textures {Textures::instance()};
+
+    blank_frame_ = textures.get("frame/game-empty.png");
+    hud_frame_ = textures.get("frame/game-hud.png");
 
     frame_.set_texture(hud_frame_);
 
     top_bar_.set_size(304, 9);
     top_bar_.set_position({8, 7});
 
-    const auto &font = assets.get_font();
-    name_.create(1, 1, "", font);
-    days_.create(26, 1, "", font);
-    error_text.create(1, 1, "", font);
-    timestop_string_.create(26, 1, "", font);
+    name_.create(1, 1, "");
+    days_.create(26, 1, "");
+    error_text.create(1, 1, "");
+    timestop_string_.create(26, 1, "");
 
     contract_textures_.resize(18);
     for (int i = 0, max = static_cast<int>(contract_textures_.size() - 1); i < max; i++) {
-        contract_textures_[i] = assets.get_texture(fmt::format("villains/{}.png", i), {4, 1});
+        contract_textures_[i] = textures.get(fmt::format("villains/{}.png", i), {4, 1});
     }
-    contract_textures_.back() = assets.get_texture("villains/empty.png");
+    contract_textures_.back() = textures.get("villains/empty.png");
     contract_.set_texture(contract_textures_[0]);
     contract_.set_position({262, 24});
 
-    siege_no = assets.get_texture("hud/siege-no.png");
-    siege_yes = assets.get_texture("hud/siege-yes.png", {4, 1});
+    siege_no = textures.get("hud/siege-no.png");
+    siege_yes = textures.get("hud/siege-yes.png", {4, 1});
     siege_.set_position({262, 64});
 
-    magic_no = assets.get_texture("hud/magic-no.png");
-    magic_yes = assets.get_texture("hud/magic-yes.png", {4, 1});
+    magic_no = textures.get("hud/magic-no.png");
+    magic_yes = textures.get("hud/magic-yes.png", {4, 1});
     magic_.set_position({262, 104});
 
-    puzzle_.set_texture(assets.get_texture("hud/puzzle-bg.png"));
+    puzzle_.set_texture(textures.get("hud/puzzle-bg.png"));
     puzzle_.set_position({262, 144});
 
-    money_.set_texture(assets.get_texture("hud/gold-bg.png"));
+    money_.set_texture(textures.get("hud/gold-bg.png"));
     money_.set_position({262, 184});
 
-    const auto *piece_texture = assets.get_texture("hud/puzzle-piece.png");
+    const auto *piece_texture = textures.get("hud/puzzle-piece.png");
 
     int p = 0;
 
@@ -62,21 +63,21 @@ Hud::Hud(bty::Assets &assets)
         }
     }
 
-    const auto *gold_tex = assets.get_texture("hud/gold-2-gold.png");
-    const auto *silver_tex = assets.get_texture("hud/gold-1-silver.png");
-    const auto *copper_tex = assets.get_texture("hud/gold-0-copper.png");
+    const auto *gold_tex = textures.get("hud/gold-2-gold.png");
+    const auto *silver_tex = textures.get("hud/gold-1-silver.png");
+    const auto *copper_tex = textures.get("hud/gold-0-copper.png");
 
     for (int i = 0; i < 10; i++) {
         gold_[i].set_texture(gold_tex);
-        gold_[i].set_position(264, 208 - i * 2);
+        gold_[i].set_position(264, 208.0f - i * 2);
     }
     for (int i = 0; i < 10; i++) {
         gold_[10 + i].set_texture(silver_tex);
-        gold_[10 + i].set_position(280, 208 - i * 2);
+        gold_[10 + i].set_position(280, 208.0f - i * 2);
     }
     for (int i = 0; i < 10; i++) {
         gold_[20 + i].set_texture(copper_tex);
-        gold_[20 + i].set_position(296, 208 - i * 2);
+        gold_[20 + i].set_position(296, 208.0f - i * 2);
     }
 }
 

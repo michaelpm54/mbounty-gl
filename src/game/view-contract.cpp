@@ -5,23 +5,23 @@
 #include "data/bounty.hpp"
 #include "data/castles.hpp"
 #include "data/villains.hpp"
-#include "engine/assets.hpp"
 #include "engine/scene-stack.hpp"
+#include "engine/texture-cache.hpp"
 #include "game/gen-variables.hpp"
 #include "game/variables.hpp"
 #include "gfx/gfx.hpp"
 #include "gfx/texture.hpp"
 #include "window/window-engine-interface.hpp"
 
-ViewContract::ViewContract(bty::SceneStack &ss, bty::Assets &assets, Variables &v, GenVariables &gen, bty::Sprite *contract_sprite)
+ViewContract::ViewContract(bty::SceneStack &ss, Variables &v, GenVariables &gen, bty::Sprite *contract_sprite)
     : ss(ss)
     , v(v)
     , gen(gen)
     , contract_sprite_(contract_sprite)
 {
-    box_.create(1, 3, 30, 24, bty::BoxColor::Intro, assets);
-    no_contract_text_.create(6, 14, "You have no contract.", assets.get_font());
-    info_.create(2, 9, "", assets.get_font());
+    box_.create(1, 3, 30, 24, bty::BoxColor::Intro);
+    no_contract_text_.create(6, 14, "You have no contract.");
+    info_.create(2, 9, "");
 }
 
 void ViewContract::draw(bty::Gfx &gfx, glm::mat4 &camera)

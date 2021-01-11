@@ -4,7 +4,6 @@
 #include "game/entity.hpp"
 
 namespace bty {
-class Assets;
 struct Texture;
 }    // namespace bty
 
@@ -17,7 +16,7 @@ enum class Mount {
 class Hero : public Entity {
 public:
     Hero(int &boat_x, int &boat_y, int &boat_c);
-    void load(bty::Assets &assets);
+    void load();
     bool can_move(int id, int x, int y, int c) override;
     void set_mount(Mount mount);
     Mount get_mount() const;

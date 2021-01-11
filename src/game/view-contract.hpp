@@ -8,7 +8,6 @@
 #include "gfx/text.hpp"
 
 namespace bty {
-class Assets;
 class Font;
 class Gfx;
 struct Texture;
@@ -20,12 +19,12 @@ struct Variables;
 
 class ViewContract : public bty::Scene {
 public:
-    ViewContract(bty::SceneStack &ss, bty::Assets &assets, Variables &v, GenVariables &gen, bty::Sprite *contract_sprite);
+    ViewContract(bty::SceneStack &ss, Variables &v, GenVariables &gen, bty::Sprite *contract_sprite);
 
     void draw(bty::Gfx &gfx, glm::mat4 &camera) override;
     void key(int key, int action) override;
     void update(float dt) override;
-    
+
     void view(int contract, const std::string &castle, bty::Sprite *contract_sprite);
     void update_info();
     void set_color(bty::BoxColor color);

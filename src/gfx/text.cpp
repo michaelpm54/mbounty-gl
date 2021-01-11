@@ -2,6 +2,7 @@
 
 #include <spdlog/spdlog.h>
 
+#include "engine/texture-cache.hpp"
 #include "gfx/font.hpp"
 #include "gfx/texture.hpp"
 
@@ -22,7 +23,7 @@ Text::Text(Text &&other)
 {
     string_ = other.string_;
     num_vertices_ = other.num_vertices_;
-    font_ = other.font_;
+    _font = other._font;
 
     /* Move constructor to prevent automatic destruction
         of the OpenGL resources. */
@@ -37,9 +38,9 @@ Text::Text()
     glCreateVertexArrays(1, &vao_);
 }
 
-void Text::create(int x, int y, const std::string &string, const Font &font)
+void Text::create(int x, int y, const std::string &string)
 {
-    font_ = &font;
+    _font = &Textures::instance().get_font();
     set_string(string);
     set_position({x * 8.0f, y * 8.0f});
 }
@@ -53,19 +54,9 @@ void Text::set_string(const std::string &string)
     bool same = string_ == string;
     string_ = string;
 
-    if (!font_) {
-        spdlog::warn("Text::set_string: no font");
-        return;
-    }
-
     if (!same) {
         update_vbo();
     }
-}
-
-const Font *Text::get_font() const
-{
-    return font_;
 }
 
 GLuint Text::get_vao() const
@@ -80,7 +71,12 @@ GLuint Text::get_num_vertices() const
 
 void Text::set_font(const Font &font)
 {
-    font_ = &font;
+    _font = &font;
+}
+
+const Font *Text::get_font() const
+{
+    return _font;
 }
 
 const std::string Text::get_string() const
@@ -90,7 +86,9 @@ const std::string Text::get_string() const
 
 void Text::update_vbo()
 {
-    num_vertices_ = 6 * string_.size();
+    assert(_font);
+
+    num_vertices_ = 6 * static_cast<GLuint>(string_.size());
 
     struct Vertex {
         glm::vec2 pos;
@@ -102,7 +100,7 @@ void Text::update_vbo()
     float x = 0;
     float y = 0;
 
-    for (int i = 0, s = string_.size(); i < s; i++) {
+    for (size_t i = 0u, s = string_.size(); i < s; i++) {
         switch (string_[i]) {
             case '\n':
                 x = 0;
@@ -116,7 +114,7 @@ void Text::update_vbo()
         }
 
         uint16_t char_code = (string_[i] - 32) & 0xFF;
-        const auto texture_coords = font_->get_texture_coordinates(char_code);
+        const auto texture_coords = _font->get_texture_coordinates(char_code);
 
         auto *vertex = &vertices.data()[i * 6];
 

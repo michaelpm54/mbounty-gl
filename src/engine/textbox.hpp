@@ -8,7 +8,7 @@
 
 #include "data/bounty.hpp"
 #include "data/color.hpp"
-#include "engine/assets.hpp"
+#include "engine/texture-cache.hpp"
 #include "gfx/rect.hpp"
 #include "gfx/sprite.hpp"
 #include "gfx/text.hpp"
@@ -25,8 +25,7 @@ public:
 	void create(
 		int x, int y,
 		int w, int h,
-		BoxColor color,
-		Assets &assets
+		BoxColor color
 	);
     /* clang-format on */
 
@@ -50,7 +49,6 @@ private:
 protected:
     std::vector<glm::ivec2> cell_positions;
     std::deque<Text> lines_;
-    const Font *font_;
     int x_;
     int y_;
 };

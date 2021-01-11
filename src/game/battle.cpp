@@ -9,9 +9,9 @@
 #include "data/hero.hpp"
 #include "data/spells.hpp"
 #include "data/villains.hpp"
-#include "engine/assets.hpp"
 #include "engine/dialog-stack.hpp"
 #include "engine/scene-stack.hpp"
+#include "engine/texture-cache.hpp"
 #include "game/army-gen.hpp"
 #include "game/game-controls.hpp"
 #include "game/game-options.hpp"
@@ -67,7 +67,7 @@ static constexpr char const *kEncounterVictoryMessage = {
 	)raw",
 };
 
-Battle::Battle(bty::SceneStack &ss, bty::DialogStack &ds, bty::Assets &assets, Variables &v, GenVariables &gen, ViewArmy &view_army_, ViewCharacter &view_character_, GameControls &game_controls, GameOptions &game_options, Hud &hud)
+Battle::Battle(bty::SceneStack &ss, bty::DialogStack &ds, Variables &v, GenVariables &gen, ViewArmy &view_army_, ViewCharacter &view_character_, GameControls &game_controls, GameOptions &game_options, Hud &hud)
     : ss(ss)
     , ds(ds)
     , v(v)
@@ -80,34 +80,35 @@ Battle::Battle(bty::SceneStack &ss, bty::DialogStack &ds, bty::Assets &assets, V
 {
     camera_ = glm::ortho(0.0f, 320.0f, 224.0f, 0.0f, -1.0f, 1.0f);
 
+    auto &textures {Textures::instance()};
     auto color = bty::BoxColor::Intro;
-    auto &font = assets.get_font();
+    auto &font = textures.get_font();
 
-    encounter_bg = assets.get_texture("battle/encounter.png");
-    siege_bg = assets.get_texture("battle/siege.png");
+    encounter_bg = textures.get("battle/encounter.png");
+    siege_bg = textures.get("battle/siege.png");
 
     bg_.set_position(8, 24);
-    current_friendly = assets.get_texture("battle/active-unit.png", {5, 2});
-    current_enemy = assets.get_texture("battle/enemy.png", {10, 1});
-    current_ooc = assets.get_texture("battle/out-of-control.png", {10, 1});
+    current_friendly = textures.get("battle/active-unit.png", {5, 2});
+    current_enemy = textures.get("battle/enemy.png", {10, 1});
+    current_ooc = textures.get("battle/out-of-control.png", {10, 1});
     current_.set_texture(current_friendly);
-    hit_marker_.set_texture(assets.get_texture("battle/damage-marker.png", {4, 1}));
+    hit_marker_.set_texture(textures.get("battle/damage-marker.png", {4, 1}));
     hit_marker_.set_animation_repeat(false);
 
-    move_ = assets.get_texture("battle/selection.png", {4, 1});
-    melee_ = assets.get_texture("battle/melee.png", {4, 1});
-    shoot_ = assets.get_texture("battle/shoot.png", {4, 1});
-    magic_ = assets.get_texture("battle/magic.png", {4, 1});
+    move_ = textures.get("battle/selection.png", {4, 1});
+    melee_ = textures.get("battle/melee.png", {4, 1});
+    shoot_ = textures.get("battle/shoot.png", {4, 1});
+    magic_ = textures.get("battle/magic.png", {4, 1});
 
     for (int i = 0; i < UnitId::UnitCount; i++) {
-        unit_textures_[i] = assets.get_texture(fmt::format("units/{}.png", i), {2, 2});
+        unit_textures_[i] = textures.get(fmt::format("units/{}.png", i), {2, 2});
     }
 
-    obstacle_textures[0] = assets.get_texture("battle/obstacle-0.png");
-    obstacle_textures[1] = assets.get_texture("battle/obstacle-1.png");
-    obstacle_textures[2] = assets.get_texture("battle/obstacle-2.png", {10, 1});
+    obstacle_textures[0] = textures.get("battle/obstacle-0.png");
+    obstacle_textures[1] = textures.get("battle/obstacle-1.png");
+    obstacle_textures[2] = textures.get("battle/obstacle-2.png", {10, 1});
 
-    board_font.load_from_texture(assets.get_texture("fonts/board-font.png"), {8, 8});
+    board_font.load_from_texture(textures.get("fonts/board-font.png"), {8, 8});
 
     for (int i = 0; i < 2; i++) {
         for (int j = 0; j < 5; j++) {

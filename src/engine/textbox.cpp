@@ -13,16 +13,14 @@ namespace bty {
 void TextBox::create(
 	int x, int y,
 	int w, int h,
-	bty::BoxColor color,
-	bty::Assets &assets
+	bty::BoxColor color
 )
 /* clang-format on */
 {
-    font_ = &assets.get_font();
     lines_.clear();
     cell_positions.clear();
 
-    auto &border = assets.get_border();
+    auto &border {Textures::instance().get_border()};
 
     for (int i = 0; i < 8; i++) {
         box_[i].set_texture(border[i]);
@@ -94,13 +92,8 @@ void TextBox::draw(Gfx &gfx, glm::mat4 &camera)
 
 Text *TextBox::add_line(int x, int y, std::string const &str)
 {
-    if (!font_) {
-        spdlog::warn("TextBox::add_line: no font");
-        return nullptr;
-    }
-
     Text text;
-    text.create(x_ + x, y_ + y, str, *font_);
+    text.create(x_ + x, y_ + y, str);
     lines_.push_back(std::move(text));
     cell_positions.push_back({x, y});
     lines_visible_.push_back(true);
@@ -116,7 +109,7 @@ void TextBox::set_line(int i, std::string const &str)
     else if (i >= static_cast<int>(lines_.size())) {
         spdlog::warn("TextBox::set_line: didn't exist so adding '{}'", str);
         Text text;
-        text.create(x_ + 2, y_ + i, str, *font_);
+        text.create(x_ + 2, y_ + i, str);
         lines_.push_back(std::move(text));
     }
     else {

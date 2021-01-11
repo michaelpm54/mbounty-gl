@@ -12,10 +12,10 @@
 
 namespace bty {
 
-Gfx::Gfx(Assets &assets)
+Gfx::Gfx()
 {
     set_initial_gl_state();
-    load_shaders(assets);
+    load_shaders();
     get_uniform_locations();
     create_quad_vao();
 }
@@ -130,9 +130,9 @@ void Gfx::get_uniform_locations()
     }
 }
 
-void Gfx::load_shaders(Assets &assets)
+void Gfx::load_shaders()
 {
-    const auto &base_path = assets.get_base_path();
+    const auto &base_path = Textures::instance().get_base_path();
 
     sprite_shader_ = load_shader(fmt::format("{}/shaders/sprite.glsl.vert", base_path), fmt::format("{}/shaders/sprite.glsl.frag", base_path));
     if (sprite_shader_ == GL_NONE) {

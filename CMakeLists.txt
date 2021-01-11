@@ -10,7 +10,7 @@ set(PROJECT_NAME bounty)
 
 set(MBOUNTYGL_SRC
 	src/main.cpp
-	src/engine/assets.cpp
+	src/engine/texture-cache.cpp
 	src/engine/engine.cpp
 	src/engine/dialog.cpp
 	src/engine/textbox.cpp

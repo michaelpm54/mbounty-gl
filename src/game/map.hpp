@@ -8,7 +8,6 @@
 #include "gfx/gl.hpp"
 
 namespace bty {
-class Assets;
 struct Texture;
 }    // namespace bty
 
@@ -21,7 +20,7 @@ struct Tile {
 class Map {
 public:
     ~Map();
-    void load(bty::Assets &assets);
+    void load();
     void draw(glm::mat4 &camera, int continent);
     void update(float dt);
     Tile get_tile(int tx, int ty, int continent) const;

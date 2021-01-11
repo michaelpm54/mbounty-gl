@@ -6,19 +6,19 @@
 
 #include "data/bounty.hpp"
 #include "data/tiles.hpp"
-#include "engine/assets.hpp"
 #include "engine/scene-stack.hpp"
+#include "engine/texture-cache.hpp"
 #include "game/map.hpp"
 #include "game/variables.hpp"
 #include "gfx/gfx.hpp"
 #include "gfx/texture.hpp"
 #include "window/glfw.hpp"
 
-ViewContinent::ViewContinent(bty::SceneStack &ss, bty::Assets &assets)
+ViewContinent::ViewContinent(bty::SceneStack &ss)
     : ss(ss)
     , map_texture_({64, 64, GL_NONE, 1, 1, 64, 64})
 {
-    box_.create(6, 4, 20, 22, bty::BoxColor::Intro, assets);
+    box_.create(6, 4, 20, 22, bty::BoxColor::Intro);
     continent_ = box_.add_line(5, 1, "");
     coordinates_ = box_.add_line(1, 20, "");
 
