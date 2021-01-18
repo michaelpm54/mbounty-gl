@@ -3,102 +3,299 @@
 #include <spdlog/spdlog.h>
 
 #include <chrono>
+#include <fstream>
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "game/ingame.hpp"
 #include "game/intro.hpp"
+#include "game/save.hpp"
+#include "game/use-magic.hpp"
 #include "gfx/gfx.hpp"
-#include "window/glfw.hpp"
 #include "window/window.hpp"
 
 namespace bty {
 
 Engine::Engine(Window &window)
-    : input_({.engine = this})
-    , window_(&window)
-    , gfx_(std::make_unique<Gfx>())
-    , view(glm::ortho(0.0f, 320.0f, 224.0f, 0.0f, -1.0f, 1.0f))
+    : _inputLayer({.engine = this})
+    , _window(&window)
+    , _view(glm::ortho(0.0f, 320.0f, 224.0f, 0.0f, -1.0f, 1.0f))
 {
-    window_init_callbacks(window_, &input_);
-    fps_label.create(1, 3, "FPS: ");
-    fps.create(5, 3, "");
+    window_init_callbacks(_window, &_inputLayer);
+    _btFPSLabel.create(1, 3, "FPS: ");
+    _btFPS.create(5, 3, "");
 }
 
 void Engine::run()
 {
     using namespace std::chrono;
 
-    Ingame ingame(window_->handle, scene_stack, dialog_stack, hud, game_options);
-    Intro intro(scene_stack, dialog_stack, ingame);
+    auto &sceneMan {SceneMan::instance()};
 
-    scene_stack.push(&intro, nullptr);
+    _ingame = new Ingame(*this);
+    _battle = new Battle(*this);
+    _garrison = new Garrison(*this);
+    _shop = new Shop(*this);
+    _town = new Town(*this);
+    _saveManager = new SaveManager(*this);
+    _saveManager->onLoad([this](const std::string &filename) {
+        loadState(filename);
+    });
+    _saveManager->onSave([this](const std::string &filename) {
+        saveState(filename);
+    });
 
-    static auto time_now = steady_clock::now();
-    static int frame_count = 0;
-    static int frame_rate = 0;
+    sceneMan.init({
+        {
+            "intro",
+            new Intro(*this),
+        },
+        {
+            "ingame",
+            _ingame,
+        },
+        {
+            "battle",
+            _battle,
+        },
+        {
+            "victory",
+            new Victory(*this),
+        },
+        {
+            "defeat",
+            new Defeat(*this),
+        },
+        {
+            "viewarmy",
+            new ViewArmy(*this),
+        },
+        {
+            "viewchar",
+            new ViewCharacter(*this),
+        },
+        {
+            "viewcontinent",
+            new ViewContinent(*this),
+        },
+        {
+            "viewcontract",
+            new ViewContract(*this, _gui.getHUD().getContractSprite()),
+        },
+        {
+            "viewpuzzle",
+            new ViewPuzzle(*this),
+        },
+        {
+            "controls",
+            new GameControls(*this),
+        },
+        {
+            "wizard",
+            new Wizard(*this),
+        },
+        {
+            "kingscastle",
+            new KingsCastle(*this),
+        },
+        {
+            "garrison",
+            _garrison,
+        },
+        {
+            "shop",
+            _shop,
+        },
+        {
+            "town",
+            _town,
+        },
+        {
+            "usemagic",
+            new UseMagic(*this),
+        },
+        {
+            "save",
+            _saveManager,
+        },
+    });
 
-    while (run_) {
-        auto prev_time = time_now;
-        time_now = steady_clock::now();
-        ++frame_count;
-        if (time_point_cast<seconds>(time_now) != time_point_cast<seconds>(prev_time)) {
-            frame_rate = frame_count;
-            frame_count = 0;
+    sceneMan.setScene("intro");
+
+    GFX::instance().setView(_view);
+
+    auto curTime = steady_clock::now();
+    int frameCount = 0;
+    int frameRate = 0;
+
+    while (_run) {
+        auto lastTime = curTime;
+        curTime = steady_clock::now();
+        ++frameCount;
+        if (time_point_cast<seconds>(curTime) != time_point_cast<seconds>(lastTime)) {
+            frameRate = frameCount;
+            frameCount = 0;
         }
 
-        float dt = duration<float>(time_now - prev_time).count();
+        float dt = duration<float>(curTime - lastTime).count();
 
-        window_events(window_);
-        hud.update(dt);
-        scene_stack.update(dt);
-        dialog_stack.update(dt);
+        window_events(_window);
 
-        if (game_options.debug) {
-            fps.set_string(std::to_string(frame_rate));
+        if (!_gui.update(dt)) {
+            sceneMan.update(dt);
         }
 
-        gfx_->clear();
-        scene_stack.draw(*gfx_, view);
-        dialog_stack.draw(*gfx_, view);
-
-        if (game_options.debug) {
-            gfx_->draw_text(fps_label, view);
-            gfx_->draw_text(fps, view);
+        if (_gameOptions.debug) {
+            _btFPS.setString(std::to_string(frameRate));
         }
 
-        window_swap(window_);
-    }
-}
+        GFX::instance().clear();
+        sceneMan.render();
+        _gui.render();
+        sceneMan.renderLate();
 
-void Engine::key(int key, int action)
-{
-    if (key == GLFW_KEY_F1 && action == GLFW_PRESS) {
-        game_options.debug = !game_options.debug;
-        return;
+        if (_gameOptions.debug) {
+            GFX::instance().drawText(_btFPSLabel);
+            GFX::instance().drawText(_btFPS);
+        }
+
+        window_swap(_window);
     }
 
-    switch (key) {
-        case GLFW_KEY_Q:
-            quit();
-            break;
-        default:
-            if (hud.get_error()) {
-                if (action == GLFW_PRESS && key == GLFW_KEY_ENTER) {
-                    hud.clear_error();
-                }
-                return;
-            }
-
-            if (!dialog_stack.key(key, action)) {
-                scene_stack.key(key, action);
-            }
-            break;
-    }
+    SceneMan::instance().deinit();
 }
 
 void Engine::quit()
 {
-    run_ = false;
+    _run = false;
+}
+
+GameOptions &Engine::getGameOptions()
+{
+    return _gameOptions;
+}
+
+void Engine::event(Event event)
+{
+    if (event.id == EventId::Quit) {
+        quit();
+        return;
+    }
+    else if (event.id == EventId::KeyDown) {
+        if (event.key == Key::F1) {
+            _gameOptions.debug = !_gameOptions.debug;
+            return;
+        }
+        else if (event.key == Key::Q) {
+            quit();
+            return;
+        }
+    }
+
+    if (!_gui.handleEvent(event)) {
+        SceneMan::instance().handleEvent(event);
+    }
+}
+
+GUI &Engine::getGUI()
+{
+    return _gui;
+}
+
+void Engine::startSiegeBattle(int castleId)
+{
+    SceneMan::instance().setScene("battle");
+    _battle->startSiegeBattle(castleId);
+}
+
+void Engine::startEncounterBattle(int mobId)
+{
+    SceneMan::instance().setScene("battle");
+    _battle->startEncounterBattle(mobId);
+}
+
+void Engine::winSiegeBattle(int castleId)
+{
+    SceneMan::instance().setScene("ingame");
+    _ingame->winSiegeBattle(castleId);
+}
+
+void Engine::winEncounterBattle(int mobId)
+{
+    SceneMan::instance().setScene("ingame");
+    _ingame->winEncounterBattle(mobId);
+}
+
+void Engine::acceptWizardOffer()
+{
+    SceneMan::instance().setScene("ingame");
+    _ingame->acceptWizardOffer();
+}
+
+void Engine::openGarrison(int castleId)
+{
+    _garrison->setCastle(castleId);
+    SceneMan::instance().setScene("garrison");
+}
+
+void Engine::openShop(ShopInfo &info)
+{
+    _shop->setShop(info);
+    SceneMan::instance().setScene("shop");
+}
+
+void Engine::openTown(TownGen *info)
+{
+    _town->setTown(info);
+    SceneMan::instance().setScene("town");
+}
+
+void Engine::setBoatPosition(float x, float y)
+{
+    _ingame->setBoatPosition(x, y);
+}
+
+void Engine::loseBattle()
+{
+    _ingame->disgrace();
+    SceneMan::instance().setScene("ingame");
+}
+
+void Engine::loadState(const std::string &filename)
+{
+    const auto path = fmt::format("saves/{}", filename);
+
+    spdlog::info("Loading from {}", path);
+
+    std::ifstream f(path, std::ios::in | std::ios::binary);
+
+    if (!f.good()) {
+        spdlog::warn("Failed to open file '{}' for loading", path);
+        return;
+    }
+
+    _ingame->loadState(f);
+}
+
+void Engine::saveState(const std::string &filename)
+{
+    const auto path = fmt::format("saves/{}", filename);
+
+    spdlog::info("Saving to {}", path);
+
+    std::ofstream f(path, std::ios::out | std::ios::binary | std::ios::trunc);
+
+    if (!f.good()) {
+        spdlog::warn("Failed to open file '{}' for saving", path);
+        return;
+    }
+
+    _ingame->saveState(f);
+}
+
+void Engine::openSaveManager(bool toLoad)
+{
+    _saveManager->setMode(toLoad);
+    SceneMan::instance().setScene("save");
 }
 
 }    // namespace bty

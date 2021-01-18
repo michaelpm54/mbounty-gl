@@ -9,14 +9,15 @@
 #include <vector>
 
 #include "data/color.hpp"
+#include "engine/events.hpp"
 #include "engine/textbox.hpp"
 #include "gfx/sprite.hpp"
 #include "gfx/text.hpp"
 #include "gfx/texture.hpp"
+#include "window/keys.hpp"
 
 namespace bty {
 
-class Gfx;
 class Text;
 struct Texture;
 
@@ -30,47 +31,52 @@ public:
     void hide();
     bool visible() const;
 
-    void set_enabled(bool);
-    void set_visible(bool);
+    void setEnabled(bool);
+    void setVisible(bool);
 
 private:
-    bool enabled_ {true};
-    bool visible_ {true};
+    bool _enabled {true};
+    bool _visible {true};
 };
 
 class Dialog : public TextBox {
 public:
     /* clang-format off */
-	void create(
-		int x, int y,
-		int w, int h,
-		BoxColor color
-	);
+    void create(
+	int x, int y,
+	int w, int h,
+	bool setCommonBindings = true
+    );
     /* clang-format on */
-    void set_position(int x, int y);
-    Option *add_option(int x, int y, const std::string &str);
-    void set_option(int index, std::string const &str);
+    void setCellPosition(int x, int y);
+    Option *addOption(int x, int y, std::string str = "");
     void next();
     void prev();
-    void set_selection(int index);
-    void draw(Gfx &gfx, glm::mat4 &camera);
+    void setSelection(int index);
     void update(float dt);
-    int get_selection() const;
-    void clear_options();
+    int getSelection() const;
+    void clearOptions();
     std::deque<Option> &get_options();
-    bool key(int code);
-    void bind(int code, std::function<void(int)> &callback);
+    bool handleEvent(Event event);
+    void render();
+    void bind(Key key, std::function<void(int)> callback);
+    void disableInput();
+    void enableInput();
+    bool inputEnabled() const;
+    void onKey(std::function<bool(Key)> callback);
 
 private:
-    void update_arrow();
+    void updateArrow();
 
 private:
-    std::vector<glm::ivec2> cell_positions;
-    std::deque<Option> options_;
-    Sprite arrow_;
-    int selection_ {0};
-    bool draw_arrow_ {true};
-    std::unordered_map<int, std::function<void(int)>> _bindings;
+    std::vector<glm::ivec2> _optCellPositions;
+    std::deque<Option> _options;
+    Sprite _spArrow;
+    int _selection {0};
+    bool _arrowVisible {true};
+    bool _inputEnabled {true};
+    std::unordered_map<Key, std::function<void(int)>> _keyBindings;
+    std::function<bool(Key)> _keyCallback {nullptr};
 };
 
 }    // namespace bty

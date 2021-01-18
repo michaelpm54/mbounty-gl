@@ -57,6 +57,7 @@ int main(int argc, char *argv[])
         bty::Engine engine(*window);
         engine.run();
     }
+    Textures::instance().deinit();
 
     window_free(window);
 

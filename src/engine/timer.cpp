@@ -4,40 +4,35 @@
 
 namespace bty {
 
-Timer::Timer(float duration, std::function<void()> callback)
-    : callback(std::move(callback))
-    , duration(duration)
+Timer::Timer(float durationSeconds, std::function<void()> callback)
+    : _callback(std::move(callback))
+    , _durationSeconds(durationSeconds)
 {
 }
 
-void Timer::set_timer(float duration)
+void Timer::setDuration(float durationSeconds)
 {
-    this->duration = duration;
+    _durationSeconds = durationSeconds;
 }
 
 void Timer::tick(float dt)
 {
-    timer += dt;
-    if (timer >= duration) {
-        timer = 0.0f;
-        if (callback) {
-            callback();
-        }
-        else {
-            spdlog::warn("Timer without a callback");
-        }
+    _elapsedTime += dt;
+    if (_elapsedTime >= _durationSeconds) {
+        _elapsedTime = 0.0f;
+        trigger();
     }
 }
 
 void Timer::reset()
 {
-    timer = 0.0f;
+    _elapsedTime = 0.0f;
 }
 
 void Timer::trigger()
 {
-    if (callback) {
-        callback();
+    if (_callback) {
+        _callback();
     }
     else {
         spdlog::warn("Timer without a callback");

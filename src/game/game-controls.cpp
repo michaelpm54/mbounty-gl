@@ -1,93 +1,107 @@
 #include "game/game-controls.hpp"
 
-#include "engine/scene-stack.hpp"
-#include "game/game-options.hpp"
-#include "window/glfw.hpp"
+#include <glm/gtc/matrix_transform.hpp>
 
-GameControls::GameControls(bty::SceneStack &ss, GameOptions &game_options)
-    : ss(ss)
-    , game_options(game_options)
+#include "engine/engine.hpp"
+#include "engine/scene-manager.hpp"
+#include "game/game-options.hpp"
+#include "game/state.hpp"
+
+GameControls::GameControls(bty::Engine &engine)
+    : _engine(engine)
 {
-    dialog.create(6, 10, 20, 9, bty::BoxColor::Intro);
-    dialog.add_line(4, 1, "Game Control");
-    dialog.add_line(4, 2, "____________");
-    t_music = dialog.add_option(4, 4, "");
-    t_sound = dialog.add_option(4, 5, "");
-    t_delay = dialog.add_option(4, 6, "");
-    update_options();
 }
 
-void GameControls::key(int key, int action)
+void GameControls::load()
 {
-    if (action != GLFW_PRESS) {
-        return;
-    }
+    _dlg.create(6, 10, 20, 9);
+    _dlg.addString(4, 1, "Game Control");
+    _dlg.addString(4, 2, "____________");
+    _optMusic = _dlg.addOption(4, 4);
+    _optSound = _dlg.addOption(4, 5);
+    _optDelay = _dlg.addOption(4, 6);
+    updateOptions();
+}
 
+bool GameControls::handleEvent(Event event)
+{
+    if (event.id == EventId::KeyDown) {
+        return handleKey(event.key);
+    }
+    return false;
+}
+
+bool GameControls::handleKey(Key key)
+{
+    auto &options {_engine.getGameOptions()};
     switch (key) {
-        case GLFW_KEY_UP:
-            dialog.prev();
+        case Key::Up:
+            _dlg.prev();
             break;
-        case GLFW_KEY_DOWN:
-            dialog.next();
+        case Key::Down:
+            _dlg.next();
             break;
-        case GLFW_KEY_LEFT:
-            if (dialog.get_selection() == 2) {
-                game_options.combat_delay = (game_options.combat_delay - 1 + 10) % 10;
+        case Key::Left:
+            if (_dlg.getSelection() == 2) {
+                options.combat_delay = (options.combat_delay - 1 + 10) % 10;
             }
             break;
-        case GLFW_KEY_RIGHT:
-            if (dialog.get_selection() == 2) {
-                game_options.combat_delay = (game_options.combat_delay + 1) % 10;
+        case Key::Right:
+            if (_dlg.getSelection() == 2) {
+                options.combat_delay = (options.combat_delay + 1) % 10;
             }
             break;
-        case GLFW_KEY_ENTER:
-            switch (dialog.get_selection()) {
+        case Key::Enter:
+            switch (_dlg.getSelection()) {
                 case 0:
-                    game_options.music = !game_options.music;
+                    options.music = !options.music;
                     break;
                 case 1:
-                    game_options.sound = !game_options.sound;
+                    options.sound = !options.sound;
                     break;
                 case 2:
-                    game_options.combat_delay = (game_options.combat_delay + 1) % 10;
+                    options.combat_delay = (options.combat_delay + 1) % 10;
                     break;
                 default:
                     break;
             }
             break;
-        case GLFW_KEY_BACKSPACE:
-            ss.pop(0);
+        case Key::Backspace:
+            SceneMan::instance().back();
             break;
         default:
-            break;
+            return false;
     }
 
-    update_options();
+    updateOptions();
+
+    return true;
 }
 
-void GameControls::update_options()
+void GameControls::updateOptions()
 {
-    t_music->set_string(fmt::format("Music {}", game_options.music ? "on" : "off"));
-    t_sound->set_string(fmt::format("Sound {}", game_options.sound ? "on" : "off"));
-    t_delay->set_string(fmt::format("Delay {}", game_options.combat_delay));
+    auto &options {_engine.getGameOptions()};
+    _optMusic->setString(fmt::format("Music {}", options.music ? "on" : "off"));
+    _optSound->setString(fmt::format("Sound {}", options.sound ? "on" : "off"));
+    _optDelay->setString(fmt::format("Delay {}", options.combat_delay));
 }
 
 void GameControls::update(float dt)
 {
-    dialog.update(dt);
+    SceneMan::instance().getLastScene()->update(dt);
+    _dlg.update(dt);
 }
 
-void GameControls::draw(bty::Gfx &gfx, glm::mat4 &camera)
+void GameControls::render()
 {
-    dialog.draw(gfx, camera);
+    SceneMan::instance().getLastScene()->render();
+    auto view {glm::ortho(0.0f, 320.0f, 224.0f, 0.0f, -1.0f, 1.0f)};
+    GFX::instance().setView(view);
+    _dlg.render();
 }
 
-void GameControls::set_color(bty::BoxColor color)
+void GameControls::enter()
 {
-    dialog.set_color(color);
-}
-
-void GameControls::set_battle(bool battle)
-{
-    dialog.set_position(battle ? 10 : 6, 10);
+    _dlg.setColor(bty::getBoxColor(State::difficulty));
+    _dlg.setCellPosition(SceneMan::instance().getLastSceneName() == "battle" ? 10 : 6, 10);
 }

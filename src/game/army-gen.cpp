@@ -198,7 +198,7 @@ static constexpr int kVillainArmyCounts[5][17] = {
     },
 };
 
-void gen_villain_army(int villain, std::array<int, 5> &army, std::array<int, 5> &counts)
+void genVillainArmy(int villain, std::array<int, 5> &army, std::array<int, 5> &counts)
 {
     for (int i = 0; i < 5; i++) {
         army[i] = kVillainArmies[i][villain];
@@ -366,7 +366,7 @@ static constexpr int kMaxMobCounts[4][UnitId::UnitCount] = {
     },
 };
 
-int gen_mob_count(int continent, int unit)
+int genMobCount(int continent, int unit)
 {
     int bVar1 = kMaxMobCounts[continent][unit];
     int cVar3 = bty::random(bVar1 / 8);
@@ -374,7 +374,7 @@ int gen_mob_count(int continent, int unit)
     return (uVar2 & 0xffffff00) | (bVar1 + uVar2 + cVar3);
 }
 
-int gen_mob_unit(int continent)
+int genMobUnit(int continent)
 {
     int id = rand() % 11;
     int chance = rand() % 100;
@@ -390,20 +390,20 @@ int gen_mob_unit(int continent)
     return ((tries * 4) & 0xffffff00) | kMobIdRange[((id >> 2) & 0xff) + tries * 4];
 }
 
-void gen_mob_army(int continent, std::array<int, 5> &army, std::array<int, 5> &counts)
+void genMobArmy(int continent, std::array<int, 5> &army, std::array<int, 5> &counts)
 {
     for (int i = 0; i < 5; i++) {
         army[i] = -1;
         counts[i] = 0;
     regen:
-        int id = gen_mob_unit(continent);
+        int id = genMobUnit(continent);
         for (int j = 0; j < 5; j++) {
             if (army[j] == id) {
                 goto regen;
             }
         }
         army[i] = id;
-        counts[i] = gen_mob_count(continent, army[i]);
+        counts[i] = genMobCount(continent, army[i]);
     }
 
     /* Cut 1-2 of them in half, or chop the last two off. */
@@ -442,19 +442,19 @@ void gen_mob_army(int continent, std::array<int, 5> &army, std::array<int, 5> &c
     }
 }
 
-void gen_castle_army(int continent, std::array<int, 5> &army, std::array<int, 5> &counts)
+void genCastleArmy(int continent, std::array<int, 5> &army, std::array<int, 5> &counts)
 {
     for (int i = 0; i < 5; i++) {
         army[i] = -1;
         counts[i] = 0;
     regen:
-        int id = gen_mob_unit(continent);
+        int id = genMobUnit(continent);
         for (int j = 0; j < 5; j++) {
             if (army[j] == id) {
                 goto regen;
             }
         }
         army[i] = id;
-        counts[i] = gen_mob_count(continent, army[i]);
+        counts[i] = genMobCount(continent, army[i]);
     }
 }

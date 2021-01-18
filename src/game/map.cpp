@@ -15,18 +15,18 @@ struct Vertex {
 
 Map::~Map()
 {
-    glDeleteVertexArrays(4, vaos_);
-    glDeleteBuffers(4, vbos_);
-    glDeleteProgram(program_);
+    glDeleteVertexArrays(4, _vaos);
+    glDeleteBuffers(4, _vbos);
+    glDeleteProgram(_shader);
 }
 
 void Map::load()
 {
     for (int i = 0; i < 10; i++) {
-        tilesets_[i] = Textures::instance().get(fmt::format("tilesets/tileset{}.png", i));
+        _texTilesets[i] = Textures::instance().get(fmt::format("tilesets/tileset{}.png", i));
     }
 
-    num_vertices_ = 4096 * 6;
+    _numVerts = 4096 * 6;
 
     static constexpr const char *const kContinentNames[4] = {
         "maps/continentia.bin",
@@ -35,29 +35,29 @@ void Map::load()
         "maps/saharia.bin",
     };
 
-    glCreateBuffers(4, vbos_);
-    glCreateVertexArrays(4, vaos_);
+    glCreateBuffers(4, _vbos);
+    glCreateVertexArrays(4, _vaos);
 
     auto &textures {Textures::instance()};
 
     for (int i = 0; i < 4; i++) {
-        const std::string &file_path = fmt::format("{}/{}", textures.get_base_path(), kContinentNames[i]);
+        const std::string &file_path = fmt::format("{}/{}", textures.getBasePath(), kContinentNames[i]);
 
-        tiles_[i].resize(4096);
-        read_only_tiles_[i].resize(4096);
-        FILE *map_stream = fopen(file_path.c_str(), "rb");
-        if (!map_stream) {
+        _tiles[i].resize(4096);
+        _readOnlyTiles[i].resize(4096);
+        FILE *mapStream = fopen(file_path.c_str(), "rb");
+        if (!mapStream) {
             spdlog::error("Failed to load map: {}", file_path);
-            num_vertices_ = 0;
+            _numVerts = 0;
             return;
         }
-        fread(tiles_[i].data(), 1, 4096, map_stream);
-        fclose(map_stream);
-        std::copy(tiles_[i].begin(), tiles_[i].end(), read_only_tiles_[i].begin());
+        fread(_tiles[i].data(), 1, 4096, mapStream);
+        fclose(mapStream);
+        std::copy(_tiles[i].begin(), _tiles[i].end(), _readOnlyTiles[i].begin());
 
-        glNamedBufferStorage(vbos_[i], 4096 * 6 * sizeof(GLfloat) * 4, nullptr, GL_DYNAMIC_STORAGE_BIT);
-        glBindVertexArray(vaos_[i]);
-        glBindBuffer(GL_ARRAY_BUFFER, vbos_[i]);
+        glNamedBufferStorage(_vbos[i], 4096 * 6 * sizeof(GLfloat) * 4, nullptr, GL_DYNAMIC_STORAGE_BIT);
+        glBindVertexArray(_vaos[i]);
+        glBindBuffer(GL_ARRAY_BUFFER, _vbos[i]);
         glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 4, nullptr);
         glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 4, (const void *)(2 * sizeof(GLfloat)));
         glEnableVertexAttribArray(0);
@@ -65,80 +65,80 @@ void Map::load()
         glBindVertexArray(GL_NONE);
     }
 
-    const auto &base_path = textures.get_base_path();
+    const auto &basePath = textures.getBasePath();
 
-    program_ = bty::load_shader(fmt::format("{}/shaders/map.glsl.vert", base_path), fmt::format("{}/shaders/map.glsl.frag", base_path));
-    if (program_ == GL_NONE) {
+    _shader = bty::loadShader(fmt::format("{}/shaders/map.glsl.vert", basePath), fmt::format("{}/shaders/map.glsl.frag", basePath));
+    if (_shader == GL_NONE) {
         spdlog::warn("Map: Failed to load shader");
     }
     else {
-        camera_loc_ = glGetUniformLocation(program_, "camera");
-        texture_loc_ = glGetUniformLocation(program_, "image");
+        _viewLoc = glGetUniformLocation(_shader, "camera");
+        _texLoc = glGetUniformLocation(_shader, "image");
     }
 }
 
-void Map::draw(glm::mat4 &camera, int continent)
+void Map::draw(const glm::mat4 &camera)
 {
-    glProgramUniformMatrix4fv(program_, camera_loc_, 1, GL_FALSE, glm::value_ptr(camera));
-    glProgramUniform1i(program_, texture_loc_, 0);
+    glProgramUniformMatrix4fv(_shader, _viewLoc, 1, GL_FALSE, glm::value_ptr(camera));
+    glProgramUniform1i(_shader, _texLoc, 0);
 
-    glUseProgram(program_);
-    glBindVertexArray(vaos_[continent]);
-    glBindTextureUnit(0, tilesets_[tileset_index_]->handle);
-    glDrawArrays(GL_TRIANGLES, 0, num_vertices_);
+    glUseProgram(_shader);
+    glBindVertexArray(_vaos[_continent]);
+    glBindTextureUnit(0, _texTilesets[_curTilesetIndex]->handle);
+    glDrawArrays(GL_TRIANGLES, 0, _numVerts);
     glBindVertexArray(GL_NONE);
     glUseProgram(GL_NONE);
 }
 
 void Map::update(float dt)
 {
-    tileset_anim_timer_ += dt;
-    if (tileset_anim_timer_ >= 0.18f) {
-        tileset_anim_timer_ = 0;
-        tileset_index_ = (tileset_index_ + 1) % 10;
+    _tilesetAnimTimer += dt;
+    if (_tilesetAnimTimer >= 0.18f) {
+        _tilesetAnimTimer = 0;
+        _curTilesetIndex = (_curTilesetIndex + 1) % 10;
     }
 }
 
-Tile Map::get_tile(int tx, int ty, int continent) const
+Tile Map::getTile(int tx, int ty, int continent) const
 {
     if (tx < 0 || tx > 63 || ty < 0 || ty > 63) {
         return {-1, -1, -1};
     }
 
-    return {tx, ty, tiles_[continent][ty * 64 + tx]};
+    return {tx, ty, _tiles[continent][ty * 64 + tx]};
 }
 
-Tile Map::get_tile(float x, float y, int continent) const
+Tile Map::getTile(float x, float y, int continent) const
 {
     int tx = static_cast<int>(floor(x)) / 48;
     int ty = static_cast<int>(floor(y)) / 40;
 
-    return get_tile(tx, ty, continent);
+    return getTile(tx, ty, continent);
 }
 
-Tile Map::get_tile(glm::vec2 pos, int continent) const
+Tile Map::getTile(glm::vec2 pos, int continent) const
 {
-    return get_tile(pos.x, pos.y, continent);
+    return getTile(pos.x, pos.y, continent);
 }
 
-Tile Map::get_tile(glm::ivec2 coord, int continent) const
+Tile Map::getTile(glm::ivec2 coord, int continent) const
 {
-    return get_tile(coord.x, coord.y, continent);
+    return getTile(coord.x, coord.y, continent);
 }
 
-unsigned char *Map::get_data(int continent)
+unsigned char *Map::getTiles(int continent)
 {
-    return tiles_[continent].data();
+    return _tiles[continent].data();
 }
 
-void Map::create_geometry()
+void Map::createGeometry()
 {
     for (int continent = 0; continent < 4; continent++) {
-        float tex_adv_x = 1.0f / (tilesets_[0]->width / 50.0f);
-        float tex_adv_y = 1.0f / (tilesets_[0]->height / 42.0f);
+        float texAdvX = 1.0f / (_texTilesets[0]->width / 50.0f);
+        float texAdvY = 1.0f / (_texTilesets[0]->height / 42.0f);
 
-        float px_offset_x = 1.0f / tilesets_[0]->width;
-        float px_offset_y = 1.0f / tilesets_[0]->height;
+        float pxOfsX = 1.0f / _texTilesets[0]->width;
+        float pxOfsY = 1.0f / _texTilesets[0]->height;
 
         std::vector<Vertex> vertices(4096 * 6);
 
@@ -151,14 +151,14 @@ void Map::create_geometry()
                 float r = (i + 1) * 48.0f;
                 float b = (j + 1) * 40.0f;
 
-                int tile_id = tiles_[continent][j * 64 + i];
-                int tile_x = tile_id % 16;
-                int tile_y = tile_id / 16;
+                int tileId = _tiles[continent][j * 64 + i];
+                int tileX = tileId % 16;
+                int tileY = tileId / 16;
 
-                float ua = tile_x * tex_adv_x + px_offset_x;
-                float ub = (tile_x + 1) * tex_adv_x - px_offset_x;
-                float va = tile_y * tex_adv_y + px_offset_y;
-                float vb = (tile_y + 1) * tex_adv_y - px_offset_y;
+                float ua = tileX * texAdvX + pxOfsX;
+                float ub = (tileX + 1) * texAdvX - pxOfsX;
+                float va = tileY * texAdvY + pxOfsY;
+                float vb = (tileY + 1) * texAdvY - pxOfsY;
 
                 *vtx++ = {{l, t}, {ua, va}};
                 *vtx++ = {{r, t}, {ub, va}};
@@ -169,30 +169,30 @@ void Map::create_geometry()
             }
         }
 
-        glNamedBufferSubData(vbos_[continent], 0, 4096 * 6 * sizeof(GLfloat) * 4, vertices.data());
+        glNamedBufferSubData(_vbos[continent], 0, 4096 * 6 * sizeof(GLfloat) * 4, vertices.data());
     }
 }
 
 void Map::reset()
 {
     for (int i = 0; i < 4; i++) {
-        std::copy(read_only_tiles_[i].begin(), read_only_tiles_[i].end(), tiles_[i].begin());
+        std::copy(_readOnlyTiles[i].begin(), _readOnlyTiles[i].end(), _tiles[i].begin());
     }
 }
 
-void Map::set_tile(const Tile &tile, int continent, int id)
+void Map::setTile(const Tile &tile, int continent, int id)
 {
     if (tile.tx < 0 || tile.tx > 63 || tile.ty < 0 || tile.ty > 63) {
         return;
     }
 
-    tiles_[continent][tile.tx + tile.ty * 64] = id;
+    _tiles[continent][tile.tx + tile.ty * 64] = id;
 
-    float tex_adv_x = 1.0f / (tilesets_[0]->width / 50.0f);
-    float tex_adv_y = 1.0f / (tilesets_[0]->height / 42.0f);
+    float texAdvX = 1.0f / (_texTilesets[0]->width / 50.0f);
+    float texAdvY = 1.0f / (_texTilesets[0]->height / 42.0f);
 
-    float px_offset_x = 1.0f / tilesets_[0]->width;
-    float px_offset_y = 1.0f / tilesets_[0]->height;
+    float pxOfsX = 1.0f / _texTilesets[0]->width;
+    float pxOfsY = 1.0f / _texTilesets[0]->height;
 
     Vertex vertices[6];
 
@@ -203,13 +203,13 @@ void Map::set_tile(const Tile &tile, int continent, int id)
     float r = (tile.tx + 1) * 48.0f;
     float b = (tile.ty + 1) * 40.0f;
 
-    int tile_x = id % 16;
-    int tile_y = id / 16;
+    int tileX = id % 16;
+    int tileY = id / 16;
 
-    float ua = tile_x * tex_adv_x + px_offset_x;
-    float ub = (tile_x + 1) * tex_adv_x - px_offset_x;
-    float va = tile_y * tex_adv_y + px_offset_y;
-    float vb = (tile_y + 1) * tex_adv_y - px_offset_y;
+    float ua = tileX * texAdvX + pxOfsX;
+    float ub = (tileX + 1) * texAdvX - pxOfsX;
+    float va = tileY * texAdvY + pxOfsY;
+    float vb = (tileY + 1) * texAdvY - pxOfsY;
 
     *vtx++ = {{l, t}, {ua, va}};
     *vtx++ = {{r, t}, {ub, va}};
@@ -221,5 +221,10 @@ void Map::set_tile(const Tile &tile, int continent, int id)
     auto size = 6 * sizeof(Vertex);
     auto offset = (tile.ty + tile.tx * 64) * size;
 
-    glNamedBufferSubData(vbos_[continent], offset, size, vertices);
+    glNamedBufferSubData(_vbos[continent], offset, size, vertices);
+}
+
+void Map::setContinent(int continent)
+{
+    _continent = continent;
 }

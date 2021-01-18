@@ -2,107 +2,116 @@
 
 #include <spdlog/spdlog.h>
 
-#include "engine/dialog-stack.hpp"
-#include "engine/scene-stack.hpp"
+#include "engine/engine.hpp"
+#include "engine/scene-manager.hpp"
 #include "engine/texture-cache.hpp"
 #include "game/hud.hpp"
-#include "game/variables.hpp"
+#include "game/state.hpp"
 #include "gfx/gfx.hpp"
-#include "window/glfw.hpp"
 
-Wizard::Wizard(bty::SceneStack &ss, Variables &v, Hud &hud)
-    : ss(ss)
-    , v(v)
-    , hud(hud)
-{
-    unit_.set_position(64, 104);
-    unit_.set_texture(Textures::instance().get("units/6.png", {2, 2}));
-    bg_.set_position(8, 24);
-    bg_.set_texture(Textures::instance().get("bg/cave.png"));
-}
-
-void Wizard::draw(bty::Gfx &gfx, glm::mat4 &camera)
-{
-    gfx.draw_sprite(bg_, camera);
-    gfx.draw_sprite(unit_, camera);
-}
-
-void Wizard::view(bty::DialogStack &ds)
-{
-    ds.show_dialog({
-        .x = 1,
-        .y = 18,
-        .w = 30,
-        .h = 9,
-        .strings = {
-            {1, 1, R"raw(   The venerable Archmage
+inline constexpr const char *const kWizardGreeting {
+    R"raw(   The venerable Archmage
 Aurange, will teach you the
 secrets of spell casting for
-   only 5000 gold pieces.)raw"},
-        },
-        .options = {
-            {13, 6, "Accept"},
-            {13, 7, "Decline"},
-        },
-        .callbacks = {
-            .confirm = [this, &ds](int opt) {
-                if (opt == 0) {
-                    if (v.gold >= 5000) {
-                        v.gold -= 5000;
-                        v.magic = true;
-                        hud.set_gold(v.gold);
-                        hud.set_magic(true);
-                        ss.pop(0);
-                    }
-                    else {
-                        ds.show_dialog({
-                            .x = 1,
-                            .y = 18,
-                            .w = 30,
-                            .h = 9,
-                            .strings = {
-                                {1, 1, R"raw(  The sign said 5000 gold!
+   only 5000 gold pieces.)raw",
+};
+
+inline constexpr const char *const kWizardScold {
+    R"raw(  The sign said 5000 gold!
  Why waste my valuable time
 when you know you don't have
 the required amount of gold?
 
-    Begone until you do!)raw"},
-                            },
-                            .callbacks = {
-                                .confirm = [this](int) {
-                                    ss.pop(1);
-                                },
-                            },
-                        });
-                    }
-                }
-                else {
-                    ss.pop(1);
-                }
-            },
-            .back = [this]() {
-                ss.pop(1);
-            },
-        },
+    Begone until you do!)raw",
+};
+
+Wizard::Wizard(bty::Engine &engine)
+    : _engine(engine)
+{
+}
+
+void Wizard::load()
+{
+    _spUnit.setPosition(64, 104);
+    _spUnit.setTexture(Textures::instance().get("units/6.png", {2, 2}));
+    _spBg.setPosition(8, 24);
+    _spBg.setTexture(Textures::instance().get("bg/cave.png"));
+    _dlgWizard.create(1, 18, 30, 9);
+    _dlgWizard.addString(1, 1, kWizardGreeting);
+    _dlgWizard.addOption(13, 6, "Accept");
+    _dlgWizard.addOption(13, 7, "Decline");
+    _dlgWizard.bind(Key::Enter, std::bind(&Wizard::handleDialogOption, this, std::placeholders::_1));
+    _dlgWizard.bind(Key::Backspace, [this](int) {
+        _engine.getGUI().popDialog();
+        SceneMan::instance().back();
     });
+    _dlgScold.create(1, 18, 30, 9);
+    _dlgScold.addString(1, 1, kWizardScold);
+    _dlgScold.bind(Key::Enter, [this](int) {
+        _engine.getGUI().popDialog();
+    });
+    _dlgScold.bind(Key::Backspace, [this](int) {
+        _engine.getGUI().popDialog();
+    });
+}
+
+void Wizard::handleDialogOption(int opt)
+{
+    if (opt == 0) {
+        if (State::gold >= 5000) {
+            State::gold -= 5000;
+            State::magic = true;
+            _engine.getGUI().getHUD().setGold(State::gold);
+            _engine.getGUI().getHUD().setMagic(true);
+            _engine.getGUI().popDialog();
+            _engine.acceptWizardOffer();
+        }
+        else {
+            _engine.getGUI().pushDialog(_dlgScold);
+        }
+    }
+    else {
+        _engine.getGUI().popDialog();
+        SceneMan::instance().back();
+    }
+}
+
+void Wizard::render()
+{
+    GFX::instance().drawSprite(_spBg);
+    GFX::instance().drawSprite(_spUnit);
+}
+
+void Wizard::enter()
+{
+    auto color {bty::getBoxColor(State::difficulty)};
+    _dlgWizard.setColor(color);
+    _dlgScold.setColor(color);
+    _engine.getGUI().pushDialog(_dlgWizard);
 }
 
 void Wizard::update(float dt)
 {
-    unit_.update(dt);
+    _spUnit.update(dt);
 }
 
-void Wizard::key(int key, int action)
+bool Wizard::handleEvent(Event event)
 {
-    if (action == GLFW_RELEASE) {
-        return;
+    if (event.id == EventId::KeyDown) {
+        return handleKey(event.key);
     }
+    return false;
+}
 
+bool Wizard::handleKey(Key key)
+{
     switch (key) {
-        case GLFW_KEY_BACKSPACE:
-            ss.pop(0);
+        case Key::Backspace:
+            _engine.getGUI().popDialog();
+            SceneMan::instance().back();
             break;
         default:
-            break;
+            return false;
     }
+    return true;
 }

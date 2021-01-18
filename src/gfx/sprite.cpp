@@ -8,123 +8,123 @@ namespace bty {
 
 Sprite::Sprite(const Texture *texture, const glm::vec2 &position)
 {
-    set_texture(texture);
-    set_position(position);
+    setTexture(texture);
+    setPosition(position);
 }
 
-void Sprite::set_texture(const Texture *texture)
+void Sprite::setTexture(const Texture *texture)
 {
     if (!texture) {
-        // spdlog::warn("Sprite::set_texture: nullptr");
+        spdlog::warn("Sprite::set_texture: nullptr");
     }
-    else if (texture == texture_) {
+    else if (texture == _texture) {
         return;
     }
 
-    texture_ = texture;
+    _texture = texture;
 
     if (texture) {
-        set_size(static_cast<float>(texture->frame_width), static_cast<float>(texture->frame_height));
-        if (texture->num_frames_x && texture->num_frames_y) {
-            load_animation();
+        setSize(static_cast<float>(texture->frameW), static_cast<float>(texture->frameH));
+        if (texture->framesX && texture->framesY) {
+            loadAnimation();
         }
     }
 }
 
-const Texture *Sprite::get_texture() const
+const Texture *Sprite::getTexture() const
 {
-    return texture_;
+    return _texture;
 }
 
-void Sprite::load_animation()
+void Sprite::loadAnimation()
 {
-    animation_.exists = true;
-    animation_.total_frames = texture_->num_frames_x * texture_->num_frames_y;
-    animation_.time_per_frame = 0.15f;
-    animation_.current_frame = rand() % animation_.total_frames;
+    _animation.exists = true;
+    _animation.totalFrames = _texture->framesX * _texture->framesY;
+    _animation.secondsPerFrame = 0.15f;
+    _animation.curFrame = rand() % _animation.totalFrames;
 }
 
 void Sprite::update(float dt)
 {
-    if (!animation_.exists || !animation_.play) {
+    if (!_animation.exists || !_animation.play) {
         return;
     }
 
-    animation_.current_time += dt;
-    if (animation_.current_time >= animation_.time_per_frame) {
-        animation_.current_frame++;
-        if (!animation_.repeat && animation_.current_frame == animation_.total_frames) {
-            animation_.play = false;
-            animation_.done = true;
+    _animation.curTime += dt;
+    if (_animation.curTime >= _animation.secondsPerFrame) {
+        _animation.curFrame++;
+        if (!_animation.repeat && _animation.curFrame == _animation.totalFrames) {
+            _animation.play = false;
+            _animation.done = true;
             return;
         }
-        animation_.current_frame %= animation_.total_frames;
-        animation_.current_time = animation_.current_time - animation_.time_per_frame;
+        _animation.curFrame %= _animation.totalFrames;
+        _animation.curTime = _animation.curTime - _animation.secondsPerFrame;
     }
 }
 
-int Sprite::get_frame() const
+int Sprite::getFrame() const
 {
-    return animation_.current_frame;
+    return _animation.curFrame;
 }
 
-void Sprite::set_flip(bool val)
+void Sprite::setFlip(bool val)
 {
-    flip_ = val;
+    _flip = val;
 }
 
-bool Sprite::get_flip() const
+bool Sprite::getFlip() const
 {
-    return flip_;
+    return _flip;
 }
 
-void Sprite::set_repeat(bool val)
+void Sprite::setRepeat(bool val)
 {
-    if (texture_ && (texture_->num_frames_x > 1 || texture_->num_frames_y > 1)) {
+    if (_texture && (_texture->framesX > 1 || _texture->framesY > 1)) {
         spdlog::warn("Repeat is set for a sprite with multiple frames. This is not implemented.");
     }
-    repeat_ = val;
+    _repeat = val;
 }
 
-bool Sprite::get_repeat() const
+bool Sprite::getRepeat() const
 {
-    return repeat_;
+    return _repeat;
 }
 
-void Sprite::reset_animation()
+void Sprite::resetAnimation()
 {
-    if (!animation_.exists) {
+    if (!_animation.exists) {
         return;
     }
 
-    animation_.current_frame = 0;
-    animation_.current_time = 0;
-    animation_.play = true;
-    animation_.done = false;
+    _animation.curFrame = 0;
+    _animation.curTime = 0;
+    _animation.play = true;
+    _animation.done = false;
 }
 
-void Sprite::set_animation_repeat(bool repeat)
+void Sprite::setAnimationRepeat(bool repeat)
 {
-    if (!animation_.exists) {
+    if (!_animation.exists) {
         return;
     }
 
-    animation_.repeat = repeat;
+    _animation.repeat = repeat;
 }
 
-void Sprite::play_animation()
+void Sprite::playAnimation()
 {
-    animation_.play = true;
+    _animation.play = true;
 }
 
-void Sprite::pause_animation()
+void Sprite::pauseAnimation()
 {
-    animation_.play = false;
+    _animation.play = false;
 }
 
-bool Sprite::is_animation_done() const
+bool Sprite::isAnimationDone() const
 {
-    return animation_.done;
+    return _animation.done;
 }
 
 }    // namespace bty

@@ -5,235 +5,263 @@
 #include "gfx/gfx.hpp"
 #include "gfx/text.hpp"
 #include "gfx/texture.hpp"
-#include "window/glfw.hpp"
 
 namespace bty {
 
 void Dialog::next()
 {
-    if (options_.empty()) {
+    if (_options.empty()) {
         return;
     }
 
     int found = -1;
 
-    for (auto i = 0u; i < options_.size(); i++) {
-        int selection = (selection_ + i + 1) % std::max(static_cast<int>(options_.size()), 1);
-        if (options_[selection].enabled() && options_[selection].visible()) {
+    for (auto i = 0u; i < _options.size(); i++) {
+        int selection = (_selection + i + 1) % std::max(static_cast<int>(_options.size()), 1);
+        if (_options[selection].enabled() && _options[selection].visible()) {
             found = selection;
             break;
         }
     }
 
     if (found != -1) {
-        draw_arrow_ = true;
-        set_selection(found);
+        _arrowVisible = true;
+        setSelection(found);
     }
     else {
-        draw_arrow_ = false;
+        _arrowVisible = false;
         spdlog::warn("Dialog::next: No available option found.");
     }
 }
 
 void Dialog::prev()
 {
-    if (options_.empty()) {
+    if (_options.empty()) {
         return;
     }
 
     int found = -1;
 
-    for (int i = 0; i < static_cast<int>(options_.size()); i++) {
-        int selection = (selection_ - i - 1 + options_.size()) % std::max(static_cast<int>(options_.size()), 1);
-        if (options_[selection].enabled() && options_[selection].visible()) {
+    for (int i = 0; i < static_cast<int>(_options.size()); i++) {
+        int selection = (_selection - i - 1 + _options.size()) % std::max(static_cast<int>(_options.size()), 1);
+        if (_options[selection].enabled() && _options[selection].visible()) {
             found = selection;
             break;
         }
     }
 
     if (found != -1) {
-        draw_arrow_ = true;
-        set_selection(found);
+        _arrowVisible = true;
+        setSelection(found);
     }
     else {
-        draw_arrow_ = false;
+        _arrowVisible = false;
         spdlog::warn("Dialog::prev: No available option found.");
     }
 }
 
-void Dialog::set_position(int x, int y)
+void Dialog::setCellPosition(int x, int y)
 {
-    TextBox::set_position(x, y);
+    TextBox::setCellPosition(x, y);
 
-    for (auto i = 0u; i < options_.size(); i++) {
-        options_[i].set_position({cell_positions[i].x * 8 + 8 * x, cell_positions[i].y * 8 + 8 * y});
+    for (auto i = 0u; i < _options.size(); i++) {
+        _options[i].setPosition({_optCellPositions[i].x * 8 + 8 * x, _optCellPositions[i].y * 8 + 8 * y});
     }
 
-    update_arrow();
+    updateArrow();
 }
 
 /* clang-format off */
 void Dialog::create(
 	int x, int y,
 	int w, int h,
-	bty::BoxColor color
+	bool setCommonBindings
 )
 /* clang-format on */
 {
-    TextBox::create(x, y, w, h, color);
-    TextBox::set_size(w, h);
+    TextBox::create(x, y, w, h);
+    TextBox::setCellSize(w, h);
+    TextBox::setColor(bty::BoxColor::Intro);
 
-    options_.clear();
-    cell_positions.clear();
-    arrow_.set_texture(Textures::instance().get("arrow.png", {2, 2}));
-    selection_ = -1;
+    _options.clear();
+    _optCellPositions.clear();
+    _spArrow.setTexture(Textures::instance().get("arrow.png", {2, 2}));
+    _selection = -1;
 
-    set_position(x, y);
+    setCellPosition(x, y);
+
+    if (setCommonBindings) {
+        bind(Key::Up, [this](int) {
+            prev();
+        });
+        bind(Key::Down, [this](int) {
+            next();
+        });
+    }
 }
 
-Option *Dialog::add_option(int x, int y, const std::string &str)
+Option *Dialog::addOption(int x, int y, std::string str)
 {
     Option opt;
-    opt.create(x_ + x, y_ + y, str);
+    opt.create(_cellX + x, _cellY + y, str);
 
-    options_.push_back(std::move(opt));
-    cell_positions.push_back({x, y});
+    _options.push_back(std::move(opt));
+    _optCellPositions.push_back({x, y});
 
-    set_selection(0);
+    setSelection(0);
 
-    return &options_.back();
+    return &_options.back();
 }
 
-void Dialog::set_option(int index, std::string const &str)
+void Dialog::setSelection(int index)
 {
-    if (index < 0 || index >= static_cast<int>(options_.size())) {
-        spdlog::warn("Dialog::set_option: {} out of range", index);
-        return;
-    }
-    options_[index].set_string(str);
-}
-
-void Dialog::set_selection(int index)
-{
-    if (options_.empty()) {
+    if (_options.empty()) {
         return;
     }
 
-    selection_ = index;
+    _selection = index;
 
-    update_arrow();
+    updateArrow();
 }
 
-void Dialog::draw(Gfx &gfx, glm::mat4 &camera)
+void Dialog::render()
 {
-    TextBox::draw(gfx, camera);
+    TextBox::render();
 
-    if (options_.empty())
+    if (_options.empty())
         return;
 
-    if (draw_arrow_)
-        gfx.draw_sprite(arrow_, camera);
+    if (_arrowVisible)
+        GFX::instance().drawSprite(_spArrow);
 
-    for (auto &opt : options_) {
+    for (auto &opt : _options) {
         if (opt.visible()) {
-            gfx.draw_text(opt, camera);
+            GFX::instance().drawText(opt);
         }
     }
 }
 
-void Dialog::update_arrow()
+void Dialog::updateArrow()
 {
-    if (options_.empty())
+    if (_options.empty())
         return;
 
-    if (!arrow_.get_texture())
+    if (!_spArrow.getTexture())
         return;
 
-    if (!options_[selection_].enabled() || !options_[selection_].visible()) {
-        draw_arrow_ = false;
+    if (!_options[_selection].enabled() || !_options[_selection].visible()) {
+        _arrowVisible = false;
         return;
     }
     else {
-        draw_arrow_ = true;
+        _arrowVisible = true;
     }
 
-    arrow_.set_position(options_[selection_].get_position() - glm::vec2(arrow_.get_texture()->frame_width, 0.0f));
+    _spArrow.setPosition(_options[_selection].getPosition() - glm::vec2(_spArrow.getTexture()->frameW, 0.0f));
 }
 
 void Dialog::update(float dt)
 {
-    arrow_.update(dt);
+    _spArrow.update(dt);
 }
 
-int Dialog::get_selection() const
+int Dialog::getSelection() const
 {
-    return selection_;
+    return _selection;
 }
 
-void Dialog::clear_options()
+void Dialog::clearOptions()
 {
-    options_.clear();
-    cell_positions.clear();
-    selection_ = -1;
+    _options.clear();
+    _optCellPositions.clear();
+    _selection = -1;
 }
 
 std::deque<Option> &Dialog::get_options()
 {
-    return options_;
+    return _options;
 }
 
 void Option::enable()
 {
-    enabled_ = true;
+    _enabled = true;
 }
 
 void Option::disable()
 {
-    enabled_ = false;
+    _enabled = false;
 }
 
 bool Option::enabled() const
 {
-    return enabled_;
+    return _enabled;
 }
 
 void Option::show()
 {
-    visible_ = true;
+    _visible = true;
 }
 
 void Option::hide()
 {
-    visible_ = false;
+    _visible = false;
 }
 
 bool Option::visible() const
 {
-    return visible_;
+    return _visible;
 }
 
-void Option::set_enabled(bool val)
+void Option::setEnabled(bool val)
 {
-    enabled_ = val;
+    _enabled = val;
 }
 
-void Option::set_visible(bool val)
+void Option::setVisible(bool val)
 {
-    visible_ = val;
+    _visible = val;
 }
 
-void Dialog::bind(int code, std::function<void(int)> &callback)
+void Dialog::bind(Key key, std::function<void(int)> callback)
 {
-    _bindings[code] = callback;
+    _keyBindings[key] = callback;
 }
 
-bool Dialog::key(int code)
+bool Dialog::handleEvent(Event event)
 {
-    if (_bindings.contains(code)) {
-        _bindings[code](selection_);
-        return true;
+    switch (event.id) {
+        case EventId::KeyDown:
+            if (_keyBindings.contains(event.key)) {
+                _keyBindings[event.key](_selection);
+                return true;
+            }
+            if (_keyCallback) {
+                return _keyCallback(event.key);
+            }
+        default:
+            break;
     }
     return false;
+}
+
+void Dialog::disableInput()
+{
+    _inputEnabled = false;
+}
+
+void Dialog::enableInput()
+{
+    _inputEnabled = true;
+}
+
+bool Dialog::inputEnabled() const
+{
+    return _inputEnabled;
+}
+
+void Dialog::onKey(std::function<bool(Key)> callback)
+{
+    _keyCallback = callback;
 }
 
 }    // namespace bty

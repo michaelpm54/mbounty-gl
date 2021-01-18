@@ -1,71 +1,85 @@
 #include "game/defeat.hpp"
 
 #include "data/hero.hpp"
-#include "engine/dialog-stack.hpp"
-#include "engine/scene-stack.hpp"
+#include "engine/engine.hpp"
 #include "game/hud.hpp"
+#include "game/state.hpp"
 #include "gfx/gfx.hpp"
 
-Defeat::Defeat(bty::SceneStack &ss, bty::DialogStack &ds, Hud &hud)
-    : ss(ss)
-    , ds(ds)
-    , hud(hud)
+static constexpr const char *const kMessage {
+    "Oh, {}\n"
+    "you have failed to\n"
+    "recover the\n"
+    "Sceptre of Order\n"
+    "in time to save\n"
+    "the land! Beloved\n"
+    "King Maximus has\n"
+    "died and the Demon\n"
+    "King Urthrax\n"
+    "Killspite rules in\n"
+    "his place.  The\n"
+    "Four Continents\n"
+    "lay in ruin about\n"
+    "you, its people\n"
+    "doomed to a life\n"
+    "of misery and\n"
+    "oppression because\n"
+    "you could not find\n"
+    "the Sceptre."
+    "\n"
+    "Final Score: {:>5}",
+};
+
+Defeat::Defeat(bty::Engine &engine)
+    : _engine(engine)
 {
-    lose_pic.set_texture(Textures::instance().get("bg/king-dead.png"));
-    lose_pic.set_position(168, 24);
 }
 
-void Defeat::draw(bty::Gfx &gfx, glm::mat4 &camera)
+void Defeat::load()
 {
-    gfx.draw_sprite(lose_pic, camera);
+    _spImage.setTexture(Textures::instance().get("bg/king-dead.png"));
+    _spImage.setPosition(168, 24);
+    _message.create(1, 3, 20, 24);
+    _btName = _message.addString(1, 2);
 }
 
-void Defeat::key(int, int)
+void Defeat::enter()
 {
+    _pressedEnterOnce = false;
+    _engine.getGUI().getHUD().setBlankFrame();
+    _message.setColor(bty::getBoxColor(State::difficulty));
+    _btName->setString(fmt::format(kMessage, kShortHeroNames[State::hero], State::score));
 }
 
-void Defeat::update(float)
+void Defeat::render()
 {
+    GFX::instance().drawSprite(_spImage);
+    _message.render();
 }
 
-void Defeat::show(int hero)
+bool Defeat::handleEvent(Event event)
 {
-    hud.set_blank_frame();
+    if (event.id == EventId::KeyDown) {
+        return handleKey(event.key);
+    }
+    return false;
+}
 
-    ds.show_dialog({
-        .x = 1,
-        .y = 3,
-        .w = 20,
-        .h = 24,
-        .strings = {
-            {1, 2, fmt::format("Oh, {},", kShortHeroNames[hero])},
-            {1, 4, R"raw(you have failed to
-recover the
-Sceptre of Order
-in time to save
-the land! Beloved
-King Maximus has
-died and the Demon
-King Urthrax
-Killspite rules in
-his place.  The
-Four Continents
-lay in ruin about
-you, its people
-doomed to a life
-of misery and
-oppression because
-you could not find
-the Sceptre.)raw"},
-        },
-        .callbacks = {
-            .confirm = [this](int) {
-                hud.set_error("      Press Enter to play again.", [this]() {
-                    ds.pop();
-                    ss.pop(0);
-                });
-            },
-        },
-        .pop_on_confirm = false,
-    });
+bool Defeat::handleKey(Key key)
+{
+    switch (key) {
+        case Key::Enter:
+            if (!_pressedEnterOnce) {
+                _pressedEnterOnce = true;
+                _engine.getGUI().getHUD().setTitle("      Press Enter to play again.");
+            }
+            else {
+                _engine.getGUI().hideHUD();
+                SceneMan::instance().setScene("intro");
+            }
+            break;
+        default:
+            return false;
+    }
+    return true;
 }

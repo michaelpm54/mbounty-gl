@@ -66,7 +66,7 @@ enum class BoxColor {
     None,
 };
 
-inline constexpr glm::vec4 get_color(BoxColor color, bool outline = false)
+inline constexpr glm::vec4 getColor(BoxColor color, bool outline = false)
 {
     int o = static_cast<int>(!outline);
     switch (color) {
@@ -86,7 +86,7 @@ inline constexpr glm::vec4 get_color(BoxColor color, bool outline = false)
     return {1, 1, 1, 1};
 }
 
-inline constexpr BoxColor get_box_color(int difficulty)
+inline constexpr BoxColor getBoxColor(int difficulty)
 {
     switch (difficulty) {
         case 0:

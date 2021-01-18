@@ -4,15 +4,18 @@
 #include <functional>
 #include <future>
 
+#include "engine/component.hpp"
+#include "engine/dialog.hpp"
+
 namespace bty {
-class DialogStack;
+class Engine;
 }
 
-class SaveManager {
+class SaveManager : public Component {
 private:
     struct SaveInfo {
         std::string name;
-        std::string last_write;
+        std::string lastWriteTime;
         int slot {-1};
     };
 
@@ -22,25 +25,33 @@ private:
     };
 
 public:
-    SaveManager(bty::DialogStack &ds, std::function<void(const std::string &)> save_cb, std::function<void(const std::string &)> load_cb);
+    SaveManager(bty::Engine &engine);
 
-    void show_saves_dialog(bool load);
-    void update();
-    bool waiting() const;
+    void load() override;
+    void enter() override;
+    void renderLate() override;
+    void update(float dt) override;
+    bool isOverlay() const override;
+
+    void onLoad(std::function<void(const std::string &)> cb);
+    void onSave(std::function<void(const std::string &)> cb);
+
+    void setMode(bool toLoad);
 
 private:
-    SavesFuture get_save_list() const;
+    SavesFuture getSaves() const;
     void show();
-    void choose_name();
+    void loadState(SaveInfo save);
+    void saveState(SaveInfo save);
 
 private:
-    bty::DialogStack &ds;
-    std::future<SavesFuture> saves_future;
-    bool waiting_for_saves {false};
-    bool loading {false};
-    std::string chosen_name {""};
-    std::function<void(std::string)> load_cb;
-    std::function<void(std::string)> save_cb;
+    bty::Engine &_engine;
+    bty::Dialog _dlgLoading;
+    std::future<SavesFuture> _savesFuture;
+    bool _waitingForSaves {false};
+    bool _modeIsLoading {false};
+    std::function<void(const std::string &)> _loadCallback {nullptr};
+    std::function<void(const std::string &)> _saveCallback {nullptr};
 };
 
 #endif    // BTY_GAME_SAVE_HPP_

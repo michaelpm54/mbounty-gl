@@ -4,62 +4,62 @@
 
 namespace bty {
 
-void Transformable::set_position(float x, float y)
+void Transformable::setPosition(float x, float y)
 {
-    position_ = {x, y, 0.0f};
-    dirty_ = true;
+    _position = {x, y, 0.0f};
+    _dirty = true;
 }
 
-void Transformable::set_position(const glm::vec2 &position)
+void Transformable::setPosition(const glm::vec2 &position)
 {
-    position_ = {position.x, position.y, 0.0f};
-    dirty_ = true;
+    _position = {position.x, position.y, 0.0f};
+    _dirty = true;
 }
 
 void Transformable::move(float dx, float dy)
 {
-    position_.x += dx;
-    position_.y += dy;
-    dirty_ = true;
+    _position.x += dx;
+    _position.y += dy;
+    _dirty = true;
 }
 
 void Transformable::move(glm::vec2 d)
 {
-    position_.x += d.x;
-    position_.x += d.y;
-    dirty_ = true;
+    _position.x += d.x;
+    _position.x += d.y;
+    _dirty = true;
 }
 
-glm::vec2 Transformable::get_position() const
+glm::vec2 Transformable::getPosition() const
 {
-    return position_;
+    return _position;
 }
 
-glm::mat4 &Transformable::get_transform()
+glm::mat4 &Transformable::getTransform()
 {
-    if (dirty_) {
-        transform_ = glm::translate(position_) * glm::scale(scale_);
-        dirty_ = false;
+    if (_dirty) {
+        _transform = glm::translate(_position) * glm::scale(_scale);
+        _dirty = false;
     }
 
-    return transform_;
+    return _transform;
 }
 
-void Transformable::set_size(float x, float y)
+void Transformable::setSize(float x, float y)
 {
-    scale_ = {x, y, 1.0f};
-    dirty_ = true;
+    _scale = {x, y, 1.0f};
+    _dirty = true;
 }
 
-void Transformable::set_size(const glm::vec2 &size)
+void Transformable::setSize(const glm::vec2 &size)
 {
-    scale_ = {size.x, size.y, 1.0f};
-    dirty_ = true;
+    _scale = {size.x, size.y, 1.0f};
+    _dirty = true;
 }
 
-glm::vec2 Transformable::get_size() const
+glm::vec2 Transformable::getSize() const
 {
-    return scale_;
+    return _scale;
 }
 
 }    // namespace bty

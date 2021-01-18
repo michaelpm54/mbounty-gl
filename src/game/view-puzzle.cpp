@@ -3,32 +3,36 @@
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
+#include <glm/gtc/matrix_transform.hpp>
 
 #include "data/bounty.hpp"
 #include "data/puzzle.hpp"
-#include "engine/scene-stack.hpp"
+#include "engine/scene-manager.hpp"
 #include "engine/texture-cache.hpp"
-#include "game/gen-variables.hpp"
+#include "game/state.hpp"
 #include "gfx/gfx.hpp"
 #include "gfx/texture.hpp"
-#include "window/glfw.hpp"
 
-ViewPuzzle::ViewPuzzle(bty::SceneStack &ss)
-    : ss(ss)
+ViewPuzzle::ViewPuzzle(bty::Engine &engine)
+    : _engine(engine)
+{
+}
+
+void ViewPuzzle::load()
 {
     auto &textures = Textures::instance();
 
     for (int i = 0; i < 17; i++) {
-        textures_[kPuzzleVillainPositions[i]] = textures.get(fmt::format("villains/{}.png", i), {4, 1});
+        _texPieces[kPuzzleVillainPositions[i]] = textures.get(fmt::format("villains/{}.png", i), {4, 1});
     }
     for (int i = 0; i < 8; i++) {
-        textures_[kPuzzleArtifactPositions[i]] = textures.get(fmt::format("artifacts/44x32/{}.png", i));
+        _texPieces[kPuzzleArtifactPositions[i]] = textures.get(fmt::format("artifacts/44x32/{}.png", i));
     }
     int n = 0;
     for (int y = 0; y < 5; y++) {
         for (int x = 0; x < 5; x++) {
-            sprites_[n].set_texture(textures_[n]);
-            sprites_[n++].set_position(18 + x * 44, 40 + y * 32);
+            _spPieces[n].setTexture(_texPieces[n]);
+            _spPieces[n++].setPosition(18.0f + x * 44, 40.0f + y * 32);
         }
     }
 
@@ -38,106 +42,116 @@ ViewPuzzle::ViewPuzzle(bty::SceneStack &ss)
     float height = 5 * 32;
 
     for (int i = 0; i < 8; i++) {
-        border_[i].set_texture(textures.get(fmt::format("border-puzzle/{}.png", i)));
+        _spBorder[i].setTexture(textures.get(fmt::format("border-puzzle/{}.png", i)));
     }
 
     // top bottom
-    border_[1].set_size(width, 16);
-    border_[5].set_size(width, 16);
-    border_[1].set_repeat(true);
-    border_[5].set_repeat(true);
+    _spBorder[1].setSize(width, 16);
+    _spBorder[5].setSize(width, 16);
+    _spBorder[1].setRepeat(true);
+    _spBorder[5].setRepeat(true);
 
     // left right
-    border_[3].set_size(10, height);
-    border_[7].set_size(10, height);
-    border_[3].set_repeat(true);
-    border_[7].set_repeat(true);
+    _spBorder[3].setSize(10, height);
+    _spBorder[7].setSize(10, height);
+    _spBorder[3].setRepeat(true);
+    _spBorder[7].setRepeat(true);
 
-    border_[0].set_position({x, y});
-    border_[1].set_position({x + 10, y});
-    border_[2].set_position({x + 10 + width, y});
-    border_[3].set_position({x + 10 + width, y + 16});
-    border_[4].set_position({x + 10 + width, y + 16 + height});
-    border_[5].set_position({x + 10, y + 16 + height});
-    border_[6].set_position({x, y + 16 + height});
-    border_[7].set_position({x, y + 16});
+    _spBorder[0].setPosition({x, y});
+    _spBorder[1].setPosition({x + 10, y});
+    _spBorder[2].setPosition({x + 10 + width, y});
+    _spBorder[3].setPosition({x + 10 + width, y + 16});
+    _spBorder[4].setPosition({x + 10 + width, y + 16 + height});
+    _spBorder[5].setPosition({x + 10, y + 16 + height});
+    _spBorder[6].setPosition({x, y + 16 + height});
+    _spBorder[7].setPosition({x, y + 16});
 }
 
-void ViewPuzzle::draw(bty::Gfx &gfx, glm::mat4 &camera)
+void ViewPuzzle::render()
 {
+    SceneMan::instance().getLastScene()->render();
+    auto view {glm::ortho(0.0f, 320.0f, 224.0f, 0.0f, -1.0f, 1.0f)};
+    GFX::instance().setView(view);
     for (int i = 0; i < 8; i++) {
-        gfx.draw_sprite(border_[i], camera);
+        GFX::instance().drawSprite(_spBorder[i]);
     }
     for (int i = 0; i < 25; i++) {
-        if (!debug && !hide_[i]) {
-            gfx.draw_sprite(sprites_[i], camera);
+        if (!_debug && !_hiddenPieces[i]) {
+            GFX::instance().drawSprite(_spPieces[i]);
         }
     }
 }
 
-void ViewPuzzle::update_info(const GenVariables &gen)
+void ViewPuzzle::enter()
 {
     for (int i = 0; i < 25; i++) {
-        to_hide_[i] = -1;
+        _piecesToHide[i] = -1;
     }
-    int sprite_index = 0;
+    int spriteIndex = 0;
     for (int i = 0; i < 17; i++) {
-        if (gen.villains_captured[i]) {
-            to_hide_[sprite_index++] = kPuzzleVillainPositions[i];
+        if (State::villains_captured[i]) {
+            _piecesToHide[spriteIndex++] = kPuzzleVillainPositions[i];
         }
     }
     for (int i = 0; i < 8; i++) {
-        if (gen.artifacts_found[i]) {
-            to_hide_[sprite_index++] = kPuzzleArtifactPositions[i];
+        if (State::artifacts_found[i]) {
+            _piecesToHide[spriteIndex++] = kPuzzleArtifactPositions[i];
         }
     }
     for (int i = 0; i < 25; i++) {
-        hide_[i] = false;
+        _hiddenPieces[i] = false;
     }
-    if (sprite_index) {
-        next_pop_ = 0;
-        done_ = false;
+    if (spriteIndex) {
+        _nextPop = 0;
+        _doneAnimation = false;
     }
     else {
-        next_pop_ = -1;
-        done_ = true;
+        _nextPop = -1;
+        _doneAnimation = true;
     }
 }
 
 void ViewPuzzle::update(float dt)
 {
-    if (!done_) {
-        pop_timer_ += dt;
-        if (pop_timer_ >= 0.5f) {
-            pop_timer_ = 0;
-            hide_[to_hide_[next_pop_++]] = true;
-            if (next_pop_ == 25 || to_hide_[next_pop_] == -1) {
-                done_ = true;
+    if (!_doneAnimation) {
+        _popTimer += dt;
+        if (_popTimer >= 0.5f) {
+            _popTimer = 0;
+            _hiddenPieces[_piecesToHide[_nextPop++]] = true;
+            if (_nextPop == 25 || _piecesToHide[_nextPop] == -1) {
+                _doneAnimation = true;
             }
         }
     }
 
     for (int i = 0; i < 25; i++) {
-        if (!hide_[i]) {
-            sprites_[i].update(dt);
+        if (!_hiddenPieces[i]) {
+            _spPieces[i].update(dt);
         }
     }
 }
 
-void ViewPuzzle::key(int key, int action)
+bool ViewPuzzle::handleEvent(Event event)
 {
-    if (action == GLFW_PRESS) {
-        switch (key) {
-            case GLFW_KEY_BACKSPACE:
-                [[fallthrough]];
-            case GLFW_KEY_ENTER:
-                ss.pop(0);
-                break;
-            case GLFW_KEY_D:
-                debug = !debug;
-                break;
-            default:
-                break;
-        }
+    if (event.id == EventId::KeyDown) {
+        return handleKey(event.key);
     }
+    return false;
+}
+
+bool ViewPuzzle::handleKey(Key key)
+{
+    switch (key) {
+        case Key::Backspace:
+            [[fallthrough]];
+        case Key::Enter:
+            SceneMan::instance().back();
+            break;
+        case Key::D:
+            _debug = !_debug;
+            break;
+        default:
+            return false;
+    }
+    return true;
 }

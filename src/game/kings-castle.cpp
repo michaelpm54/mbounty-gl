@@ -3,14 +3,12 @@
 #include <spdlog/spdlog.h>
 
 #include "data/hero.hpp"
-#include "engine/dialog-stack.hpp"
-#include "engine/scene-stack.hpp"
+#include "engine/engine.hpp"
+#include "engine/scene-manager.hpp"
 #include "engine/texture-cache.hpp"
-#include "game/gen-variables.hpp"
 #include "game/hud.hpp"
-#include "game/variables.hpp"
+#include "game/state.hpp"
 #include "gfx/gfx.hpp"
-#include "window/glfw.hpp"
 
 static constexpr int kKingsCastleUnits[5] = {
     Militias,
@@ -20,321 +18,307 @@ static constexpr int kKingsCastleUnits[5] = {
     Knights,
 };
 
-KingsCastle::KingsCastle(bty::SceneStack &ss, bty::DialogStack &ds, Hud &hud, Variables &v, GenVariables &gen)
-    : ss(ss)
-    , ds(ds)
-    , hud(hud)
-    , v(v)
-    , gen(gen)
+inline constexpr const char *const kAudienceMain {
+    "   Trumpets announce your\n"
+    " arrival with regal fanfare.\n"
+    "\n"
+    "   King Maximus rises from\n"
+    "   his throne to greet you\n"
+    "       and proclaims:\n",
+};
+
+inline constexpr const char *const kAudiencePromote {
+    "{},\n"
+    "\n"
+    "      Congratulations!\n"
+    "    I now promote you to\n"
+    "          {}.",
+};
+
+inline constexpr const char *const kAudienceNeedMore {
+    "{},\n"
+    "\n"
+    "	    I can aid you better\n"
+    "   after you've captured {}\n"
+    "        more villains.",
+};
+
+KingsCastle::KingsCastle(bty::Engine &engine)
+    : _engine(engine)
 {
-    dialog_.create(1, 18, 30, 9, bty::BoxColor::Intro);
-    dialog_.add_line(1, 1, "Castle of King Maximus");
-    dialog_.add_line(22, 2, "");    // Gold
-    dialog_.add_option(3, 4, "Recruit soldiers");
-    dialog_.add_option(3, 5, "Audience with the King");
+}
 
-    recruit_.create(1, 18, 30, 9, bty::BoxColor::Intro);
-    recruit_.add_line(1, 1, "Recruit Soldiers");
-    recruit_.add_line(22, 1, "");
+void KingsCastle::load()
+{
+    _dlgMain.create(1, 18, 30, 9);
+    _dlgMain.addString(1, 1, "Castle of King Maximus");
+    _dlgMain.addString(22, 2);    // Gold
+    _dlgMain.addOption(3, 4, "Recruit soldiers");
+    _dlgMain.addOption(3, 5, "Audience with the King");
+    _dlgMain.bind(Key::Backspace, [this](int) {
+        _engine.getGUI().popDialog();
+        SceneMan::instance().back();
+    });
+    _dlgMain.bind(Key::Enter, [this](int opt) {
+        _engine.getGUI().popDialog();
+        if (opt == 0) {
+            _engine.getGUI().pushDialog(_dlgRecruit);
+        }
+        else if (opt == 1) {
+            _engine.getGUI().pushDialog(_dlgAudience);
+        }
+    });
 
-    recruit_.add_line(17, 4, "Select army\nto recruit.");
+    _dlgRecruit.create(1, 18, 30, 9);
+    _dlgRecruit.addString(1, 1, "Recruit Soldiers");
+    _btGP = _dlgRecruit.addString(22, 1);
+    _btSelectArmy = _dlgRecruit.addString(17, 4, "Select army\nto recruit.");
+    _btHowMany = _dlgRecruit.addString(17, 3, "You may get\nup to\n\nRecruit how\nmany?");
+    _btHowMany->hide();
+    _dlgRecruit.bind(Key::Enter, std::bind(&KingsCastle::recruitOpt, this, std::placeholders::_1));
+    _dlgRecruit.bind(Key::Backspace, [this](int) {
+        _engine.getGUI().popDialog();
+        _engine.getGUI().pushDialog(_dlgMain);
+    });
+    _btRecruitCanGet = _dlgRecruit.addString(23, 4);
+    _btRecruitWillGet = _dlgRecruit.addString(25, 7);
 
-    recruit_.add_line(17, 3, "You may get\nup to\n\nRecruit how\nmany?");
-    recruit_.set_line_visible(3, false);
-    may_get_ = recruit_.add_line(23, 4, "");
-    recruit_.set_line_visible(4, false);
-    how_many_ = recruit_.add_line(25, 7, "");
-    recruit_.set_line_visible(5, false);
+    _dlgAudience.create(1, 18, 30, 9);
+    _btAudience = _dlgAudience.addString(1, 1);
 
-    unit_.set_position(64, 104);
-    bg_.set_texture(Textures::instance().get("bg/castle.png"));
-    bg_.set_position(8, 24);
+    _spUnit.setPosition(64, 104);
+    _spBg.setTexture(Textures::instance().get("bg/castle.png"));
+    _spBg.setPosition(8, 24);
 
     for (int i = 0; i < 5; i++) {
-        unit_textures_[i] = Textures::instance().get(fmt::format("units/{}.png", kKingsCastleUnits[i]), {2, 2});
+        _texUnits[i] = Textures::instance().get(fmt::format("units/{}.png", kKingsCastleUnits[i]), {2, 2});
     }
 }
 
-void KingsCastle::draw(bty::Gfx &gfx, glm::mat4 &camera)
+void KingsCastle::render()
 {
-    gfx.draw_sprite(bg_, camera);
-    if (show_recruit_) {
-        recruit_.draw(gfx, camera);
-    }
-    else {
-        dialog_.draw(gfx, camera);
-    }
-    gfx.draw_sprite(unit_, camera);
+    GFX::instance().drawSprite(_spBg);
+    GFX::instance().drawSprite(_spUnit);
 }
 
-void KingsCastle::view()
+void KingsCastle::enter()
 {
-    set_color(bty::get_box_color(v.diff));
+    auto color {bty::getBoxColor(State::difficulty)};
+    _dlgMain.setColor(color);
+    _dlgRecruit.setColor(color);
+    _dlgAudience.setColor(color);
+    resetAudience();
 
-    recruit_input_.clear();
+    _recruitInput.clear();
 
-    how_many_->set_string("  0");
+    _btRecruitWillGet->setString("  0");
 
-    set_gold(v.gold);
-    unit_.set_texture(unit_textures_[rand() % 5]);
+    _btGP->setString(fmt::format("GP={}", bty::numberK(State::gold)));
+    _spUnit.setTexture(_texUnits[rand() % 5]);
 
-    recruit_.clear_options();
+    _dlgRecruit.clearOptions();
 
-    if (v.rank == 0) {
-        recruit_.add_option(3, 3, "Militia   50");
-        recruit_.add_option(3, 4, "Archers  250");
-        recruit_.add_option(3, 5, "Pikemen  300");
-        auto *a = recruit_.add_option(3, 6, "Cavalry  n/a");
-        auto *b = recruit_.add_option(3, 7, "Knights  n/a");
+    if (State::rank == 0) {
+        _dlgRecruit.addOption(3, 3, "Militia   50");
+        _dlgRecruit.addOption(3, 4, "Archers  250");
+        _dlgRecruit.addOption(3, 5, "Pikemen  300");
+        auto *a = _dlgRecruit.addOption(3, 6, "Cavalry  n/a");
+        auto *b = _dlgRecruit.addOption(3, 7, "Knights  n/a");
         a->disable();
         b->disable();
     }
-    else if (v.rank == 1) {
-        recruit_.add_option(3, 3, "Militia   50");
-        recruit_.add_option(3, 4, "Archers  250");
-        recruit_.add_option(3, 5, "Pikemen  300");
-        recruit_.add_option(3, 6, "Cavalry  800");
-        auto *a = recruit_.add_option(3, 7, "Knights  n/a");
+    else if (State::rank == 1) {
+        _dlgRecruit.addOption(3, 3, "Militia   50");
+        _dlgRecruit.addOption(3, 4, "Archers  250");
+        _dlgRecruit.addOption(3, 5, "Pikemen  300");
+        _dlgRecruit.addOption(3, 6, "Cavalry  800");
+        auto *a = _dlgRecruit.addOption(3, 7, "Knights  n/a");
         a->disable();
     }
-    else if (v.rank == 2 || v.rank == 3) {
-        recruit_.add_option(3, 3, "Militia   50");
-        recruit_.add_option(3, 4, "Archers  250");
-        recruit_.add_option(3, 5, "Pikemen  300");
-        recruit_.add_option(3, 6, "Cavalry  800");
-        recruit_.add_option(3, 7, "Knights  1000");
+    else if (State::rank == 2 || State::rank == 3) {
+        _dlgRecruit.addOption(3, 3, "Militia   50");
+        _dlgRecruit.addOption(3, 4, "Archers  250");
+        _dlgRecruit.addOption(3, 5, "Pikemen  300");
+        _dlgRecruit.addOption(3, 6, "Cavalry  800");
+        _dlgRecruit.addOption(3, 7, "Knights  1000");
     }
+
+    _engine.getGUI().pushDialog(_dlgMain);
 }
 
 void KingsCastle::update(float dt)
 {
-    dialog_.update(dt);
-    recruit_.update(dt);
-    unit_.update(dt);
-    recruit_input_.update(dt);
-    how_many_->set_string(fmt::format("{:>3}", recruit_input_.get_current()));
+    _spUnit.update(dt);
+    if (_recruitInput.update(dt)) {
+        _btRecruitWillGet->setString(fmt::format("{:>3}", _recruitInput.getCurrentAmount()));
+    }
 }
 
-void KingsCastle::key(int key, int action)
+bool KingsCastle::handleEvent(Event event)
 {
-    if (show_recruit_amount_) {
-        recruit_input_.key(key, action);
+    if (event.id == EventId::KeyDown) {
+        return handleKeyDown(event.key);
+    }
+    else if (event.id == EventId::KeyUp) {
+        return handleKeyUp(event.key);
+    }
+    return false;
+}
+
+bool KingsCastle::handleKeyDown(Key key)
+{
+    if (_givingRecruitInput) {
+        if (key == Key::Enter) {
+            confirmRecruitAmount();
+        }
+        else if (key == Key::Backspace) {
+            stopRecruiting();
+        }
+        else {
+            _recruitInput.handleKeyDown(key);
+        }
+        return true;
     }
 
-    switch (action) {
-        case GLFW_PRESS:
-            switch (key) {
-                case GLFW_KEY_DOWN:
-                    if (show_recruit_ && !show_recruit_amount_) {
-                        recruit_.next();
-                    }
-                    else {
-                        dialog_.next();
-                    }
-                    break;
-                case GLFW_KEY_UP:
-                    if (show_recruit_ && !show_recruit_amount_) {
-                        recruit_.prev();
-                    }
-                    else {
-                        dialog_.prev();
-                    }
-                    break;
-                    break;
-                case GLFW_KEY_ENTER:
-                    if (show_recruit_) {
-                        recruit_opt();
-                    }
-                    else {
-                        main_opt();
-                    }
-                    break;
-                case GLFW_KEY_BACKSPACE:
-                    if (show_recruit_) {
-                        if (show_recruit_amount_) {
-                            show_recruit_amount_ = false;
-                            how_many_->set_string("  0");
-                            recruit_.set_line_visible(2, true);
-                            recruit_.set_line_visible(3, false);
-                            recruit_.set_line_visible(4, false);
-                            recruit_.set_line_visible(5, false);
-                        }
-                        else {
-                            show_recruit_ = false;
-                        }
-                        break;
-                    }
-                    else {
-                        ss.pop(0);
-                    }
-                    break;
-                default:
-                    break;
-            }
-        default:
+    return false;
+}
+
+bool KingsCastle::handleKeyUp(Key key)
+{
+    if (_givingRecruitInput) {
+        _recruitInput.handleKeyUp(key);
+        return true;
+    }
+
+    return false;
+}
+
+void KingsCastle::recruitOpt(int opt)
+{
+    startRecruiting();
+
+    int current = _recruitInput.getCurrentAmount();
+
+    int id = kKingsCastleUnits[opt];
+    int potentialAmt = State::leadership / kUnits[id].hp;
+    int existingAmt = 0;
+
+    for (int i = 0; i < 5; i++) {
+        if (State::army[i] == id) {
+            existingAmt = State::counts[i];
             break;
+        }
     }
+
+    int maxAmt = potentialAmt > existingAmt ? potentialAmt - existingAmt : 0;
+    maxAmt = std::min(maxAmt, State::gold / kUnits[id].recruitCost);
+    _recruitInput.setMax(maxAmt);
+    _btRecruitCanGet->setString(fmt::format("{}.", maxAmt));
+
+    if (kUnits[id].recruitCost > State::gold) {
+        _engine.getGUI().getHUD().setError("     You do not have enough gold!");
+    }
+
+    _btRecruitWillGet->setString(fmt::format("{:>3}", std::min(current, maxAmt)));
 }
 
-void KingsCastle::set_gold(int gold)
+void KingsCastle::confirmRecruitAmount()
 {
-    recruit_.set_line(1, fmt::format("GP={}", bty::number_with_ks(gold)));
-}
+    int current = _recruitInput.getCurrentAmount();
 
-void KingsCastle::set_color(bty::BoxColor color)
-{
-    dialog_.set_color(color);
-    recruit_.set_color(color);
-}
+    if (current > 0) {
+        int id = kKingsCastleUnits[_dlgRecruit.getSelection()];
 
-void KingsCastle::recruit_opt()
-{
-    int current = recruit_input_.get_current();
+        int cost = current * kUnits[id].recruitCost;
+        State::gold -= cost;
+        _engine.getGUI().getHUD().setGold(State::gold);
+        _btGP->setString(fmt::format("GP={}", bty::numberK(State::gold)));
+        _givingRecruitInput = false;
 
-    if (!show_recruit_amount_) {
-        show_recruit_amount_ = true;
-        recruit_.set_line_visible(2, false);
-        recruit_.set_line_visible(3, true);
-        recruit_.set_line_visible(4, true);
-        recruit_.set_line_visible(5, true);
-
-        int id = kKingsCastleUnits[recruit_.get_selection()];
-        int potential_amount = v.leadership / kUnits[id].hp;
-        int existing_amount = 0;
-
+        bool found = false;
         for (int i = 0; i < 5; i++) {
-            if (v.army[i] == id) {
-                existing_amount = v.counts[i];
+            if (State::army[i] == id) {
+                State::counts[i] += current;
+                found = true;
                 break;
             }
         }
 
-        int max_amt = potential_amount > existing_amount ? potential_amount - existing_amount : 0;
-        max_amt = std::min(max_amt, v.gold / kUnits[id].recruit_cost);
-        recruit_input_.set_max(max_amt);
-        may_get_->set_string(fmt::format("{}.", max_amt));
-
-        if (kUnits[id].recruit_cost > v.gold) {
-            hud.set_error("     You do not have enough gold!");
-        }
-
-        how_many_->set_string(fmt::format("{:>3}", current));
-    }
-    else {
-        if (current > 0) {
-            int id = kKingsCastleUnits[recruit_.get_selection()];
-
-            int cost = current * kUnits[id].recruit_cost;
-            v.gold -= cost;
-            hud.set_gold(v.gold);
-            set_gold(v.gold);
-            show_recruit_amount_ = false;
-            recruit_.set_line_visible(2, true);
-            recruit_.set_line_visible(3, false);
-            recruit_.set_line_visible(4, false);
-            recruit_.set_line_visible(5, false);
-
-            bool found = false;
+        if (!found) {
             for (int i = 0; i < 5; i++) {
-                if (v.army[i] == id) {
-                    v.counts[i] += current;
-                    found = true;
+                if (State::army[i] == -1) {
+                    State::army[i] = id;
+                    State::counts[i] = current;
                     break;
                 }
             }
-
-            if (!found) {
-                for (int i = 0; i < 5; i++) {
-                    if (v.army[i] == -1) {
-                        v.army[i] = id;
-                        v.counts[i] = current;
-                        break;
-                    }
-                }
-            }
         }
     }
+
+    stopRecruiting();
+    _givingRecruitInput = false;
+    _dlgRecruit.enableInput();
 }
 
-void KingsCastle::main_opt()
+void KingsCastle::checkPromote(int)
 {
-    switch (dialog_.get_selection()) {
-        case 0:
-            show_recruit_ = true;
-            break;
-        case 1:
-            show_audience();
-            break;
-        default:
-            break;
-    }
-}
+    _dlgAudience.bind(Key::Enter, [this](int) {
+        _engine.getGUI().popDialog();
+        _engine.getGUI().pushDialog(_dlgMain);
+        resetAudience();
+    });
 
-void KingsCastle::show_audience()
-{
     int num_captured = 0;
     for (int i = 0; i < 17; i++) {
-        if (gen.villains_captured[i]) {
+        if (State::villains_captured[i]) {
             num_captured++;
         }
     }
 
-    int required_villains = 0;
-    if (v.rank < 3) {
-        if (num_captured < kRankVillainsCaptured[v.hero][v.rank + 1]) {
-            required_villains = kRankVillainsCaptured[v.hero][v.rank + 1] - num_captured;
+    int reqVillains = 0;
+    if (State::rank < 3) {
+        if (num_captured < kRankVillainsCaptured[State::hero][State::rank + 1]) {
+            reqVillains = kRankVillainsCaptured[State::hero][State::rank + 1] - num_captured;
         }
     }
 
-    ds.show_dialog({
-        .x = 1,
-        .y = 18,
-        .w = 30,
-        .h = 9,
-        .strings = {
-            {1, 1, R"raw(   Trumpets announce your
- arrival with regal fanfare.
+    if (reqVillains <= 0) {
+        if (State::rank != 3) {
+            _btAudience->setString(fmt::format(kAudiencePromote, kHeroNames[State::hero][State::rank], kHeroNames[State::hero][State::rank + 1]));
+            State::rank++;
+        }
+        else {
+            /* TODO */
+            assert(0);
+        }
+    }
+    else {
+        _btAudience->setString(fmt::format(kAudienceNeedMore, kHeroNames[State::hero][State::rank], reqVillains));
+    }
+}
 
-   King Maximus rises from
-   his throne to greet you
-       and proclaims:)raw"},
-        },
-        .callbacks = {
-            .confirm = [this, required_villains](int) {
-                if (required_villains <= 0) {
-                    ds.show_dialog({
-                        .x = 1,
-                        .y = 18,
-                        .w = 30,
-                        .h = 9,
-                        .strings = {
-                            {1, 1, fmt::format("{},", kHeroNames[v.hero][v.rank])},
-                            {1, 3, fmt::format(R"raw(      Congratulations!
+void KingsCastle::resetAudience()
+{
+    _dlgAudience.bind(Key::Enter, std::bind(&KingsCastle::checkPromote, this, std::placeholders::_1));
+    _btAudience->setString(kAudienceMain);
+}
 
-    I now promote you to
-          {}.)raw",
-                                               kHeroRankNames[v.hero][v.rank + 1])},
-                        },
-                    });
-                    v.rank++;
-                    hud.set_hero(v.hero, v.rank);
-                }
-                else {
-                    ds.show_dialog({
-                        .x = 1,
-                        .y = 18,
-                        .w = 30,
-                        .h = 9,
-                        .strings = {
-                            {1, 1, fmt::format("{},", kHeroNames[v.hero][0])},
-                            {1, 3, fmt::format(R"raw(    I can aid you better
-   after you've captured {}
-        more villains.)raw",
-                                               required_villains)},
-                        },
-                    });
-                }
-            },
-        },
-    });
+void KingsCastle::startRecruiting()
+{
+    _givingRecruitInput = true;
+    _btSelectArmy->hide();
+    _btHowMany->show();
+    _btRecruitCanGet->show();
+    _btRecruitWillGet->show();
+    _dlgRecruit.disableInput();
+}
+
+void KingsCastle::stopRecruiting()
+{
+    _givingRecruitInput = false;
+    _btSelectArmy->show();
+    _btHowMany->hide();
+    _btRecruitCanGet->hide();
+    _btRecruitWillGet->hide();
+    _dlgRecruit.enableInput();
 }

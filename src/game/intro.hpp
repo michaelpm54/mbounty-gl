@@ -1,8 +1,8 @@
 #ifndef BTY_GAME_INTRO_HPP_
 #define BTY_GAME_INTRO_HPP_
 
+#include "engine/component.hpp"
 #include "engine/dialog.hpp"
-#include "engine/scene.hpp"
 #include "engine/textbox.hpp"
 #include "game/ingame.hpp"
 #include "gfx/font.hpp"
@@ -11,28 +11,28 @@
 
 namespace bty {
 class Gfx;
-class SceneStack;
-class DialogStack;
+class Engine;
 }    // namespace bty
 
-class Intro : public bty::Scene {
+class Intro : public Component {
 public:
-    Intro(bty::SceneStack &ss, bty::DialogStack &ds, Ingame &ingame);
-    void draw(bty::Gfx &gfx, glm::mat4 &camera) override;
-    void key(int key, int action) override;
-    void update(float dt) override;
+    Intro(bty::Engine &engine);
+
+    bool handleEvent(Event event) override;
+    bool handleKey(Key key) override;
+    void load() override;
+    void enter() override;
+    void render() override;
 
 private:
-    void show_difficulty();
-
-private:
-    bty::SceneStack &ss;
-    bty::DialogStack &ds;
-    Ingame &ingame;
-    int hero {0};
-    bty::Sprite bg_;
-    bty::TextBox name_box_;
-    bty::TextBox help_box_;
+    bty::Engine &_engine;
+    bty::Sprite _spBg;
+    bty::TextBox _nameBox;
+    bty::TextBox _helpBox;
+    bty::Text *_btName;
+    bty::Text *_btHelp;
+    bty::Dialog _dlgDifficulty;
+    bool _pickedHero {false};
 };
 
 #endif    // BTY_INTRO_INTRO_HPP_

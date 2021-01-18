@@ -1,35 +1,33 @@
 #ifndef GAME_GAME_CONTROLS_HPP_
 #define GAME_GAME_CONTROLS_HPP_
 
+#include "engine/component.hpp"
 #include "engine/dialog.hpp"
-#include "engine/scene.hpp"
 
 namespace bty {
-class Asssets;
-class Gfx;
-class SceneStack;
+class Engine;
 }    // namespace bty
 
 struct GameOptions;
 
-class GameControls : public bty::Scene {
+class GameControls : public Component {
 public:
-    GameControls(bty::SceneStack &ss, GameOptions &game_options);
-    void key(int key, int action) override;
-    void draw(bty::Gfx &gfx, glm::mat4 &camera) override;
+    GameControls(bty::Engine &engine);
+    void load() override;
+    void enter() override;
+    bool handleEvent(Event event) override;
+    bool handleKey(Key key) override;
+    void render() override;
     void update(float dt) override;
-    void set_color(bty::BoxColor color);
-    void set_battle(bool battle);
 
 private:
-    bty::SceneStack &ss;
-    GameOptions &game_options;
-    bty::Dialog dialog;
-    bty::Option *t_music;
-    bty::Option *t_sound;
-    bty::Option *t_delay;
+    bty::Engine &_engine;
+    bty::Dialog _dlg;
+    bty::Option *_optMusic;
+    bty::Option *_optSound;
+    bty::Option *_optDelay;
 
-    void update_options();
+    void updateOptions();
 };
 
 #endif    // GAME_GAME_CONTROLS_HPP_

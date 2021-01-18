@@ -1,42 +1,37 @@
 #ifndef BTY_GAME_VICTORY_HPP_
 #define BTY_GAME_VICTORY_HPP_
 
-#include "engine/scene.hpp"
+#include "engine/component.hpp"
+#include "engine/textbox.hpp"
 #include "gfx/rect.hpp"
 #include "gfx/sprite.hpp"
 #include "gfx/text.hpp"
 
 namespace bty {
-class Font;
-class Gfx;
-struct Texture;
-class SceneStack;
-class DialogStack;
+class Engine;
 }    // namespace bty
 
-struct Variables;
-class Hud;
-
-class Victory : public bty::Scene {
+class Victory : public Component {
 public:
-    Victory(bty::SceneStack &ss, bty::DialogStack &ds, Variables &v, Hud &hud);
+    Victory(bty::Engine &engine);
 
-    void draw(bty::Gfx &gfx, glm::mat4 &camera) override;
+    void load() override;
+    void enter() override;
+    void render() override;
     void update(float dt) override;
-    void key(int key, int action) override;
-
-    void view();
+    bool handleEvent(Event event) override;
+    bool handleKey(Key key) override;
 
 private:
-    bty::SceneStack &ss;
-    bty::DialogStack &ds;
-    Variables &v;
-    Hud &hud;
-    bty::Sprite bg;
-    bty::Sprite unit_sprites[25];
-    bty::Sprite hero;
-    bty::Sprite king;
-    bool parade {true};
+    bty::Engine &_engine;
+    bty::Sprite _spBg;
+    bty::Sprite _spUnits[25];
+    bty::Sprite _spHero;
+    bty::Sprite _spImage;
+    bty::TextBox _message;
+    bty::Text *_btName;
+    bool _inParade {true};
+    bool _pressedEnterOnce {false};
 };
 
 #endif    // BTY_GAME_VICTORY_HPP_

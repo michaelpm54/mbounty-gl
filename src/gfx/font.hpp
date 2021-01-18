@@ -11,20 +11,20 @@ namespace bty {
 
 class Font {
 public:
-    void load_from_texture(const Texture *texture, glm::vec2 glyph_size);
-    glm::vec2 get_glyph_size() const;
-    glm::vec2 get_advance() const;
-    const Texture *get_texture() const;
-    std::array<glm::vec2, 6> get_texture_coordinates(uint16_t code) const;
-    glm::vec2 get_uv(uint16_t code) const;
+    void loadFromTexture(const Texture *texture, glm::vec2 glyphSize);
+    glm::vec2 getGlyphSize() const;
+    glm::vec2 getAdvance() const;
+    const Texture *getTexture() const;
+    std::array<glm::vec2, 6> getTexCoords(uint16_t code) const;
+    glm::vec2 getUV(uint16_t code) const;
 
 private:
-    const Texture *texture_ {nullptr};
-    int columns_ {0};
-    int rows_ {0};
-    glm::vec2 glyph_size_ {0.0f};
-    glm::vec2 advance_ {0.0f};
-    std::vector<std::array<glm::vec2, 6>> texture_coordinates_;
+    const Texture *_texture {nullptr};
+    int _columns {0};
+    int _rows {0};
+    glm::vec2 _glyphSize {0.0f};
+    glm::vec2 _advance {0.0f};
+    std::vector<std::array<glm::vec2, 6>> _texCoords;
 };
 
 }    // namespace bty

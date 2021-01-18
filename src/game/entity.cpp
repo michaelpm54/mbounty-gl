@@ -13,47 +13,47 @@ Entity::Entity(const bty::Texture *texture, const glm::vec2 &position)
 {
 }
 
-glm::vec2 Entity::get_center() const
+glm::vec2 Entity::getCenter() const
 {
-    if (!texture_) {
-        return get_position();
+    if (!_texture) {
+        return getPosition();
     }
 
-    return {position_.x + 24, position_.y + 16};
+    return {_position.x + 24, _position.y + 16};
 }
 
-bool Entity::can_move(int id, int, int, int)
+bool Entity::canMove(int id, int, int, int)
 {
     return id == Tile_Grass;
 }
 
-void Entity::move_to_tile(const Tile &tile)
+void Entity::moveToTile(const Tile &tile)
 {
-    tile_ = tile;
-    set_position({tile.tx * 48.0f, tile.ty * 40.0f - 8.0f});
+    _tile = tile;
+    setPosition({tile.tx * 48.0f, tile.ty * 40.0f - 8.0f});
 }
 
-void Entity::set_tile_info(const Tile &tile)
+void Entity::setTileInfo(const Tile &tile)
 {
-    tile_ = tile;
+    _tile = tile;
 }
 
-const Tile &Entity::get_tile() const
+const Tile &Entity::getTile() const
 {
-    return tile_;
+    return _tile;
 }
 
-void Entity::draw(bty::Gfx &gfx, glm::mat4 &camera)
+void Entity::draw()
 {
-    gfx.draw_sprite(*this, camera);
+    GFX::instance().drawSprite(*this);
 }
 
-c2AABB Entity::get_aabb() const
+c2AABB Entity::getAABB() const
 {
     c2AABB aabb;
 
-    aabb.min.x = position_.x + kEntityOffsetX;
-    aabb.min.y = position_.y + kEntityOffsetY;
+    aabb.min.x = _position.x + kEntityOffsetX;
+    aabb.min.y = _position.y + kEntityOffsetY;
     aabb.max.x = aabb.min.x + kEntitySizeX;
     aabb.max.y = aabb.min.y + kEntitySizeY;
 

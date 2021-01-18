@@ -1,42 +1,35 @@
 #ifndef BTY_GAME_VIEW_CHARACTER_HPP_
 #define BTY_GAME_VIEW_CHARACTER_HPP_
 
-#include "engine/scene.hpp"
+#include "engine/component.hpp"
 #include "gfx/rect.hpp"
 #include "gfx/sprite.hpp"
 #include "gfx/text.hpp"
 
 namespace bty {
-class Font;
-class Gfx;
-struct Texture;
-class SceneStack;
+class Engine;
 }    // namespace bty
 
-struct Variables;
-struct GenVariables;
-
-class ViewCharacter : public bty::Scene {
+class ViewCharacter : public Component {
 public:
-    ViewCharacter(bty::SceneStack &ss);
-    void draw(bty::Gfx &gfx, glm::mat4 &camera) override;
-    void update(float dt) override;
-    void key(int key, int action) override;
-    void update_info(const Variables &v, const GenVariables &gen);
-    void set_color(bty::BoxColor color);
+    ViewCharacter(bty::Engine &engine);
+    void load() override;
+    void render() override;
+    bool handleEvent(Event event) override;
+    bool handleKey(Key key) override;
 
 private:
-    bty::SceneStack &ss;
-    bty::Sprite frame_;
-    bty::Sprite portrait_;
-    bty::Rect rect_;
-    bty::Text info_[11];
-    const bty::Texture *artifacts_[8];
-    const bty::Texture *portraits_[4];
-    bty::Sprite artifact_sprites_[8];
-    bty::Sprite map_sprites_[4];
-    const bool *maps_found_;
-    const bool *artifacts_found_;
+    bty::Engine &_engine;
+    bty::Sprite _spFrame;
+    bty::Sprite _spPortrait;
+    bty::Rect _fillRect;
+    bty::Text _btInfo[11];
+    const bty::Texture *_texArtifacts[8];
+    const bty::Texture *_texPortraits[4];
+    bty::Sprite _spArtifacts[8];
+    bty::Sprite _spMaps[4];
+    const bool *_artifactsFound;
+    const bool *_mapsFound;
 };
 
 #endif    // BTY_GAME_VIEW_CHARACTER_HPP_

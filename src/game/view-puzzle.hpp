@@ -1,41 +1,37 @@
 #ifndef BTY_GAME_VIEW_PUZZLE_HPP_
 #define BTY_GAME_VIEW_PUZZLE_HPP_
 
-#include "engine/scene.hpp"
+#include "engine/component.hpp"
 #include "gfx/rect.hpp"
 #include "gfx/sprite.hpp"
 #include "gfx/text.hpp"
 
 namespace bty {
-class Font;
-class Gfx;
-struct Texture;
-class SceneStack;
+class Engine;
 }    // namespace bty
 
-struct GenVariables;
-
-class ViewPuzzle : public bty::Scene {
+class ViewPuzzle : public Component {
 public:
-    ViewPuzzle(bty::SceneStack &ss);
+    ViewPuzzle(bty::Engine &engine);
 
-    void draw(bty::Gfx &gfx, glm::mat4 &camera) override;
+    void load() override;
+    void enter() override;
+    void render() override;
     void update(float dt) override;
-    void key(int key, int action) override;
-
-    void update_info(const GenVariables &gen);
+    bool handleEvent(Event event) override;
+    bool handleKey(Key key) override;
 
 private:
-    bty::SceneStack &ss;
-    const bty::Texture *textures_[25] {nullptr};
-    bty::Sprite sprites_[25];
-    bty::Sprite border_[8];
-    bool hide_[25];
-    int to_hide_[25];
-    float pop_timer_ {0};
-    int next_pop_ {-1};
-    bool done_ {false};
-    bool debug {false};
+    bty::Engine &_engine;
+    const bty::Texture *_texPieces[25] {nullptr};
+    bty::Sprite _spPieces[25];
+    bty::Sprite _spBorder[8];
+    bool _hiddenPieces[25];
+    int _piecesToHide[25];
+    float _popTimer {0};
+    int _nextPop {-1};
+    bool _doneAnimation {false};
+    bool _debug {false};
 };
 
 #endif    // BTY_GAME_VIEW_PUZZLE_HPP_

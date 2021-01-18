@@ -1,14 +1,14 @@
 #ifndef BTY_DATA_TOWNS_HPP_
 #define BTY_DATA_TOWNS_HPP_
 
-struct TownInfo {
+struct TownStatic {
     std::string name;
     int x;
     int y;
     int continent;
 };
 
-inline const TownInfo kTownInfo[] = {
+inline const TownStatic kTownInfo[] = {
     {"Riverton", 29, 12, 0},
     {"Underfoot", 58, 4, 1},
     {"Path's End", 38, 50, 0},

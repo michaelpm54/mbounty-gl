@@ -6,61 +6,54 @@
 #include "engine/texture-cache.hpp"
 #include "game/map.hpp"
 
-Hero::Hero(int &boat_x, int &boat_y, int &boat_c)
-    : boat_x(boat_x)
-    , boat_y(boat_y)
-    , boat_c(boat_c)
-{
-}
-
 void Hero::load()
 {
     auto &textures {Textures::instance()};
-    tex_walk_moving_ = textures.get("hero/walk-moving.png", {4, 1});
-    tex_walk_stationary_ = textures.get("hero/walk-stationary.png", {4, 1});
-    tex_boat_moving_ = textures.get("hero/boat-moving.png", {4, 1});
-    tex_boat_stationary_ = textures.get("hero/boat-stationary.png", {2, 1});
-    tex_flying = textures.get("hero/flying.png", {4, 1});
-    set_texture(tex_walk_stationary_);
+    _texWalkMoving = textures.get("hero/walk-moving.png", {4, 1});
+    _texWalkStationary = textures.get("hero/walk-stationary.png", {4, 1});
+    _texBoatMoving = textures.get("hero/boat-moving.png", {4, 1});
+    _texBoatStationary = textures.get("hero/boat-stationary.png", {2, 1});
+    _texFlying = textures.get("hero/flying.png", {4, 1});
+    setTexture(_texWalkStationary);
 }
 
-void Hero::update_texture()
+void Hero::updateTexture()
 {
-    switch (mount_) {
+    switch (_mount) {
         case Mount::Walk:
-            set_texture(moving_ ? tex_walk_moving_ : tex_walk_stationary_);
+            setTexture(_moving ? _texWalkMoving : _texWalkStationary);
             break;
         case Mount::Boat:
-            set_texture(moving_ ? tex_boat_moving_ : tex_boat_stationary_);
+            setTexture(_moving ? _texBoatMoving : _texBoatStationary);
             break;
         case Mount::Fly:
-            set_texture(tex_flying);
+            setTexture(_texFlying);
             break;
         default:
             break;
     }
 }
 
-void Hero::set_mount(Mount mount)
+void Hero::setMount(Mount mount)
 {
-    mount_ = mount;
-    update_texture();
+    _mount = mount;
+    updateTexture();
 }
 
-Mount Hero::get_mount() const
+Mount Hero::getMount() const
 {
-    return mount_;
+    return _mount;
 }
 
-void Hero::set_moving(bool val)
+void Hero::setMoving(bool val)
 {
-    moving_ = val;
-    update_texture();
+    _moving = val;
+    updateTexture();
 }
 
-bool Hero::can_move(int id, int x, int y, int c)
+bool Hero::canMove(int id, int x, int y, int c)
 {
-    switch (mount_) {
+    switch (_mount) {
         case Mount::Fly:
             return true;
         case Mount::Boat:
@@ -73,12 +66,12 @@ bool Hero::can_move(int id, int x, int y, int c)
     return false;
 }
 
-float Hero::get_speed_multiplier() const
+float Hero::getSpeedMul() const
 {
-    return speed_multiplier;
+    return _speedMul;
 }
 
-void Hero::set_speed_multiplier(float n)
+void Hero::setSpeedMul(float n)
 {
-    speed_multiplier = n;
+    _speedMul = n;
 }

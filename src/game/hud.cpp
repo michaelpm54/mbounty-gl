@@ -14,42 +14,42 @@ Hud::Hud()
 {
     auto &textures {Textures::instance()};
 
-    blank_frame_ = textures.get("frame/game-empty.png");
-    hud_frame_ = textures.get("frame/game-hud.png");
+    _texBlankFrame = textures.get("frame/game-empty.png");
+    _texHudFrame = textures.get("frame/game-hud.png");
 
-    frame_.set_texture(hud_frame_);
+    _spFrame.setTexture(_texHudFrame);
 
-    top_bar_.set_size(304, 9);
-    top_bar_.set_position({8, 7});
+    _topFillRect.setSize(304, 9);
+    _topFillRect.setPosition({8, 7});
 
-    name_.create(1, 1, "");
-    days_.create(26, 1, "");
-    error_text.create(1, 1, "");
-    timestop_string_.create(26, 1, "");
+    _btName.create(1, 1, "");
+    _btDays.create(26, 1, "");
+    _btError.create(1, 1, "");
+    _btTimestop.create(26, 1, "");
 
-    contract_textures_.resize(18);
-    for (int i = 0, max = static_cast<int>(contract_textures_.size() - 1); i < max; i++) {
-        contract_textures_[i] = textures.get(fmt::format("villains/{}.png", i), {4, 1});
+    _texContracts.resize(18);
+    for (int i = 0, max = static_cast<int>(_texContracts.size() - 1); i < max; i++) {
+        _texContracts[i] = textures.get(fmt::format("villains/{}.png", i), {4, 1});
     }
-    contract_textures_.back() = textures.get("villains/empty.png");
-    contract_.set_texture(contract_textures_[0]);
-    contract_.set_position({262, 24});
+    _texContracts.back() = textures.get("villains/empty.png");
+    _spContract.setTexture(_texContracts[0]);
+    _spContract.setPosition({262, 24});
 
-    siege_no = textures.get("hud/siege-no.png");
-    siege_yes = textures.get("hud/siege-yes.png", {4, 1});
-    siege_.set_position({262, 64});
+    _texSiegeNo = textures.get("hud/siege-no.png");
+    _texSiegeYes = textures.get("hud/siege-yes.png", {4, 1});
+    _spSiege.setPosition({262, 64});
 
-    magic_no = textures.get("hud/magic-no.png");
-    magic_yes = textures.get("hud/magic-yes.png", {4, 1});
-    magic_.set_position({262, 104});
+    _texMagicNo = textures.get("hud/magic-no.png");
+    _texMagicYes = textures.get("hud/magic-yes.png", {4, 1});
+    _spMagic.setPosition({262, 104});
 
-    puzzle_.set_texture(textures.get("hud/puzzle-bg.png"));
-    puzzle_.set_position({262, 144});
+    _spPuzzle.setTexture(textures.get("hud/puzzle-bg.png"));
+    _spPuzzle.setPosition({262, 144});
 
-    money_.set_texture(textures.get("hud/gold-bg.png"));
-    money_.set_position({262, 184});
+    _spMoney.setTexture(textures.get("hud/gold-bg.png"));
+    _spMoney.setPosition({262, 184});
 
-    const auto *piece_texture = textures.get("hud/puzzle-piece.png");
+    const auto *texPiece = textures.get("hud/puzzle-piece.png");
 
     int p = 0;
 
@@ -57,179 +57,180 @@ Hud::Hud()
     float y = 145;
     for (int j = 0; j < 5; j++) {
         for (int i = 0; i < 5; i++) {
-            auto &piece = pieces_[p++];
-            piece.set_position(x + i * 8, y + j * 6);
-            piece.set_texture(piece_texture);
+            auto &piece = _spPieces[p++];
+            piece.setPosition(x + i * 8, y + j * 6);
+            piece.setTexture(texPiece);
         }
     }
 
-    const auto *gold_tex = textures.get("hud/gold-2-gold.png");
-    const auto *silver_tex = textures.get("hud/gold-1-silver.png");
-    const auto *copper_tex = textures.get("hud/gold-0-copper.png");
+    const auto *texGold = textures.get("hud/gold-2-gold.png");
+    const auto *texSilver = textures.get("hud/gold-1-silver.png");
+    const auto *texCopper = textures.get("hud/gold-0-copper.png");
 
     for (int i = 0; i < 10; i++) {
-        gold_[i].set_texture(gold_tex);
-        gold_[i].set_position(264, 208.0f - i * 2);
+        _spGold[i].setTexture(texGold);
+        _spGold[i].setPosition(264, 208.0f - i * 2);
     }
     for (int i = 0; i < 10; i++) {
-        gold_[10 + i].set_texture(silver_tex);
-        gold_[10 + i].set_position(280, 208.0f - i * 2);
+        _spGold[10 + i].setTexture(texSilver);
+        _spGold[10 + i].setPosition(280, 208.0f - i * 2);
     }
     for (int i = 0; i < 10; i++) {
-        gold_[20 + i].set_texture(copper_tex);
-        gold_[20 + i].set_position(296, 208.0f - i * 2);
+        _spGold[20 + i].setTexture(texCopper);
+        _spGold[20 + i].setPosition(296, 208.0f - i * 2);
     }
 }
 
-void Hud::draw(bty::Gfx &gfx, glm::mat4 &camera)
+void Hud::render()
 {
-    gfx.draw_sprite(frame_, camera);
-    gfx.draw_rect(top_bar_, camera);
-    if (error) {
-        gfx.draw_text(error_text, camera);
+    auto &gfx {GFX::instance()};
+    gfx.drawSprite(_spFrame);
+    gfx.drawRect(_topFillRect);
+    if (_isError) {
+        gfx.drawText(_btError);
     }
     else {
-        gfx.draw_text(name_, camera);
-        if (timestop_) {
-            gfx.draw_text(timestop_string_, camera);
+        gfx.drawText(_btName);
+        if (_isTimestop) {
+            gfx.drawText(_btTimestop);
         }
         else {
-            gfx.draw_text(days_, camera);
+            gfx.drawText(_btDays);
         }
     }
-    if (no_sprites) {
+    if (_noSprites) {
         return;
     }
-    gfx.draw_sprite(contract_, camera);
-    gfx.draw_sprite(siege_, camera);
-    gfx.draw_sprite(magic_, camera);
-    gfx.draw_sprite(puzzle_, camera);
-    gfx.draw_sprite(money_, camera);
+    gfx.drawSprite(_spContract);
+    gfx.drawSprite(_spSiege);
+    gfx.drawSprite(_spMagic);
+    gfx.drawSprite(_spPuzzle);
+    gfx.drawSprite(_spMoney);
     for (int i = 0; i < 25; i++) {
-        if (!hide_piece_[i]) {
-            gfx.draw_sprite(pieces_[i], camera);
+        if (!_hiddenPieces[i]) {
+            gfx.drawSprite(_spPieces[i]);
         }
     }
-    for (int i = 0; i < num_gold_coins_; i++) {
-        gfx.draw_sprite(gold_[i], camera);
+    for (int i = 0; i < _numGoldSprites; i++) {
+        gfx.drawSprite(_spGold[i]);
     }
-    for (int i = 0; i < num_silver_coins_; i++) {
-        gfx.draw_sprite(gold_[10 + i], camera);
+    for (int i = 0; i < _numSilverSprites; i++) {
+        gfx.drawSprite(_spGold[10 + i]);
     }
-    for (int i = 0; i < num_copper_coins_; i++) {
-        gfx.draw_sprite(gold_[20 + i], camera);
+    for (int i = 0; i < _numCopperSprites; i++) {
+        gfx.drawSprite(_spGold[20 + i]);
     }
 }
 
-void Hud::set_contract(int contract)
+void Hud::setContract(int contract)
 {
-    contract_.set_texture(contract_textures_[contract]);
+    _spContract.setTexture(_texContracts[contract]);
 }
 
-void Hud::set_days(int days)
+void Hud::setDays(int days)
 {
-    days_.set_string(fmt::format("Days Left:{}", days));
+    _btDays.setString(fmt::format("Days Left:{}", days));
 }
 
-void Hud::set_magic(bool val)
+void Hud::setMagic(bool val)
 {
-    magic_.set_texture(val ? magic_yes : magic_no);
+    _spMagic.setTexture(val ? _texMagicYes : _texMagicNo);
 }
 
-void Hud::set_siege(bool val)
+void Hud::setSiege(bool val)
 {
-    siege_.set_texture(val ? siege_yes : siege_no);
+    _spSiege.setTexture(val ? _texSiegeYes : _texSiegeNo);
 }
 
-void Hud::set_puzzle(bool *villains, bool *artifacts)
+void Hud::setPuzzle(bool *villains, bool *artifacts)
 {
     for (int i = 0; i < 17; i++) {
-        hide_piece_[kPuzzleVillainPositions[i]] = villains[i];
+        _hiddenPieces[kPuzzleVillainPositions[i]] = villains[i];
     }
     for (int i = 0; i < 8; i++) {
-        hide_piece_[kPuzzleArtifactPositions[i]] = artifacts[i];
+        _hiddenPieces[kPuzzleArtifactPositions[i]] = artifacts[i];
     }
 }
 
-void Hud::set_title(const std::string &str)
+void Hud::setTitle(const std::string &str)
 {
-    name_.set_string(str);
-    days_.set_string("");
+    _btName.setString(str);
+    _btDays.setString("");
 }
 
-void Hud::set_gold(int gold)
+void Hud::setGold(int gold)
 {
-    int num_gold = gold / 10000;
-    gold -= (num_gold * 10000);
-    int num_silver = gold / 1000;
-    gold -= (num_silver * 1000);
-    int num_copper = gold / 100;
-    num_gold_coins_ = num_gold > 10 ? 10 : num_gold;
-    num_silver_coins_ = num_silver > 10 ? 10 : num_silver;
-    num_copper_coins_ = num_copper > 10 ? 10 : num_copper;
+    int numGold = gold / 10000;
+    gold -= (numGold * 10000);
+    int numSilver = gold / 1000;
+    gold -= (numSilver * 1000);
+    int numCopper = gold / 100;
+    _numGoldSprites = numGold > 10 ? 10 : numGold;
+    _numSilverSprites = numSilver > 10 ? 10 : numSilver;
+    _numCopperSprites = numCopper > 10 ? 10 : numCopper;
 }
 
 void Hud::update(float dt)
 {
-    contract_.update(dt);
-    siege_.update(dt);
-    magic_.update(dt);
+    _spContract.update(dt);
+    _spSiege.update(dt);
+    _spMagic.update(dt);
 }
 
-void Hud::set_error(const std::string &msg, std::function<void()> then)
+void Hud::setError(const std::string &msg, std::function<void()> then)
 {
-    error_then_ = then;
-    error_text.set_string(msg);
-    error = true;
+    _errorCallback = then;
+    _btError.setString(msg);
+    _isError = true;
 }
 
-void Hud::clear_error()
+void Hud::clearError()
 {
-    error = false;
-    if (error_then_) {
-        error_then_();
+    _isError = false;
+    if (_errorCallback) {
+        _errorCallback();
     }
 }
 
-bty::Sprite *Hud::get_contract()
+bty::Sprite *Hud::getContractSprite()
 {
-    return &contract_;
+    return &_spContract;
 }
 
-void Hud::set_blank_frame()
+void Hud::setBlankFrame()
 {
-    frame_.set_texture(blank_frame_);
-    no_sprites = true;
+    _spFrame.setTexture(_texBlankFrame);
+    _noSprites = true;
 }
 
-void Hud::set_hud_frame()
+void Hud::setHudFrame()
 {
-    frame_.set_texture(hud_frame_);
-    no_sprites = false;
+    _spFrame.setTexture(_texHudFrame);
+    _noSprites = false;
 }
 
-void Hud::set_color(bty::BoxColor color)
+void Hud::setColor(bty::BoxColor color)
 {
-    top_bar_.set_color(color);
+    _topFillRect.setColor(color);
 }
 
-void Hud::set_timestop(int amount)
+void Hud::setTimestop(int amount)
 {
-    timestop_string_.set_string(fmt::format("Timestop:{:>4}", amount));
-    timestop_ = true;
+    _btTimestop.setString(fmt::format("Timestop:{:>4}", amount));
+    _isTimestop = true;
 }
 
-void Hud::clear_timestop()
+void Hud::clearTimestop()
 {
-    timestop_ = false;
+    _isTimestop = false;
 }
 
-void Hud::set_hero(int hero, int rank)
+void Hud::setHero(int hero, int rank)
 {
-    name_.set_string(kHeroNames[hero][rank]);
+    _btName.setString(kHeroNames[hero][rank]);
 }
 
-bool Hud::get_error() const
+bool Hud::getError() const
 {
-    return error;
+    return _isError;
 }

@@ -20,30 +20,32 @@ struct Tile {
 class Map {
 public:
     ~Map();
+    void setContinent(int continent);
     void load();
-    void draw(glm::mat4 &camera, int continent);
+    void draw(const glm::mat4 &camera);
     void update(float dt);
-    Tile get_tile(int tx, int ty, int continent) const;
-    Tile get_tile(float x, float y, int continent) const;
-    Tile get_tile(glm::vec2 pos, int continent) const;
-    Tile get_tile(glm::ivec2 coord, int continent) const;
-    unsigned char *get_data(int continent);
-    void create_geometry();
+    Tile getTile(int tx, int ty, int continent) const;
+    Tile getTile(float x, float y, int continent) const;
+    Tile getTile(glm::vec2 pos, int continent) const;
+    Tile getTile(glm::ivec2 coord, int continent) const;
+    unsigned char *getTiles(int continent);
+    void createGeometry();
     void reset();
-    void set_tile(const Tile &tile, int continent, int id);
+    void setTile(const Tile &tile, int continent, int id);
 
 private:
-    int num_vertices_ {0};
-    GLuint vbos_[4] {GL_NONE};
-    GLuint vaos_[4] {GL_NONE};
-    GLuint program_ {GL_NONE};
-    GLint camera_loc_ {-1};
-    GLint texture_loc_ {-1};
-    const bty::Texture *tilesets_[10] {nullptr};
-    float tileset_anim_timer_ {0};
-    int tileset_index_ {0};
-    std::array<std::vector<unsigned char>, 4> tiles_;
-    std::array<std::vector<unsigned char>, 4> read_only_tiles_;
+    int _continent {0};
+    int _numVerts {0};
+    GLuint _vbos[4] {GL_NONE};
+    GLuint _vaos[4] {GL_NONE};
+    GLuint _shader {GL_NONE};
+    GLint _viewLoc {-1};
+    GLint _texLoc {-1};
+    const bty::Texture *_texTilesets[10] {nullptr};
+    float _tilesetAnimTimer {0};
+    int _curTilesetIndex {0};
+    std::array<std::vector<unsigned char>, 4> _tiles;
+    std::array<std::vector<unsigned char>, 4> _readOnlyTiles;
 };
 
 #endif    // BTY_GAME_MAP_HPP_

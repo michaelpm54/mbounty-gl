@@ -1,109 +1,110 @@
 #include "game/recruit-input.hpp"
 
-#include <spdlog/spdlog.h>
-
-#include "window/glfw.hpp"
-
-void RecruitInput::set_max(int max)
+void RecruitInput::setMax(int max)
 {
-    max_ = max;
+    _maxAmount = max;
 
-    if (cur_ > max_) {
-        cur_ = max_;
+    if (_currentAmount > _maxAmount) {
+        _currentAmount = _maxAmount;
     }
 }
 
-void RecruitInput::key(int key, int action)
+void RecruitInput::handleKeyDown(Key key)
 {
-    switch (action) {
-        case GLFW_PRESS:
-            switch (key) {
-                case GLFW_KEY_DOWN:
-                    [[fallthrough]];
-                case GLFW_KEY_LEFT:
-                    decreasing_ = true;
-                    increment_ = -1;
-                    timer_ = 0.099f;
-                    break;
-                case GLFW_KEY_UP:
-                    [[fallthrough]];
-                case GLFW_KEY_RIGHT:
-                    increasing_ = true;
-                    increment_ = 1;
-                    timer_ = 0.099f;
-                    break;
-                default:
-                    break;
-            }
+    _anyKeyDown = true;
+    switch (key) {
+        case Key::Down:
+            [[fallthrough]];
+        case Key::Left:
+            _isDecreasing = true;
+            _currentIncrement = -1;
+            _timer = 0.099f;
             break;
-        case GLFW_RELEASE:
-            switch (key) {
-                case GLFW_KEY_RIGHT:
-                    [[fallthrough]];
-                case GLFW_KEY_UP:
-                    increasing_ = false;
-                    increment_ = 0;
-                    amount_added_while_holding_ = 0;
-                    timer_ = 0;
-                    break;
-                case GLFW_KEY_LEFT:
-                    [[fallthrough]];
-                case GLFW_KEY_DOWN:
-                    decreasing_ = false;
-                    increment_ = 0;
-                    amount_added_while_holding_ = 0;
-                    timer_ = 0;
-                    break;
-                default:
-                    break;
-            }
+        case Key::Up:
+            [[fallthrough]];
+        case Key::Right:
+            _isIncreasing = true;
+            _currentIncrement = 1;
+            _timer = 0.099f;
             break;
         default:
             break;
     }
 }
 
-void RecruitInput::update(float dt)
+void RecruitInput::handleKeyUp(Key key)
 {
-    if (increasing_) {
-        timer_ += dt;
-        if (amount_added_while_holding_ == 10) {
-            increment_ = 10;
-        }
-    }
-    else if (decreasing_) {
-        timer_ += dt;
-        if (amount_added_while_holding_ == -10) {
-            increment_ = -10;
-        }
-    }
-
-    if (timer_ > 0.1f) {
-        cur_ += increment_;
-        amount_added_while_holding_ += increment_;
-        timer_ = 0;
-        if (cur_ < 0) {
-            cur_ = 0;
-        }
-        if (cur_ > max_) {
-            cur_ = max_;
-        }
-        cur_ = max_ < cur_ ? max_ : cur_;
+    _anyKeyDown = false;
+    switch (key) {
+        case Key::Right:
+            [[fallthrough]];
+        case Key::Up:
+            _isIncreasing = false;
+            _currentIncrement = 0;
+            _amountAddedWhileHolding = 0;
+            _timer = 0;
+            break;
+        case Key::Left:
+            [[fallthrough]];
+        case Key::Down:
+            _isDecreasing = false;
+            _currentIncrement = 0;
+            _amountAddedWhileHolding = 0;
+            _timer = 0;
+            break;
+        default:
+            break;
     }
 }
 
-int RecruitInput::get_current() const
+bool RecruitInput::update(float dt)
 {
-    return cur_;
+    if (!_anyKeyDown) {
+        return false;
+    }
+
+    if (_isIncreasing) {
+        _timer += dt;
+        if (_amountAddedWhileHolding == 10) {
+            _currentIncrement = 10;
+        }
+    }
+    else if (_isDecreasing) {
+        _timer += dt;
+        if (_amountAddedWhileHolding == -10) {
+            _currentIncrement = -10;
+        }
+    }
+
+    if (_timer > 0.1f) {
+        _currentAmount += _currentIncrement;
+        _amountAddedWhileHolding += _currentIncrement;
+        _timer = 0;
+        if (_currentAmount < 0) {
+            _currentAmount = 0;
+        }
+        if (_currentAmount > _maxAmount) {
+            _currentAmount = _maxAmount;
+        }
+        _currentAmount = _maxAmount < _currentAmount ? _maxAmount : _currentAmount;
+        return true;
+    }
+
+    return false;
+}
+
+int RecruitInput::getCurrentAmount() const
+{
+    return _currentAmount;
 }
 
 void RecruitInput::clear()
 {
-    max_ = 0;
-    cur_ = 0;
-    timer_ = 0;
-    amount_added_while_holding_ = 0;
-    increasing_ = false;
-    decreasing_ = false;
-    increment_ = 0;
+    _maxAmount = 0;
+    _currentAmount = 0;
+    _timer = 0;
+    _amountAddedWhileHolding = 0;
+    _isIncreasing = false;
+    _isDecreasing = false;
+    _currentIncrement = 0;
 }

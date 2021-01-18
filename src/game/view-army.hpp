@@ -3,37 +3,32 @@
 
 #include <array>
 
-#include "data/color.hpp"
-#include "engine/scene.hpp"
+#include "engine/component.hpp"
 #include "gfx/rect.hpp"
 #include "gfx/sprite.hpp"
 #include "gfx/text.hpp"
 
 namespace bty {
-class Font;
-class Gfx;
-struct Texture;
-class SceneStack;
+class Engine;
 }    // namespace bty
 
-class ViewArmy : public bty::Scene {
+class ViewArmy : public Component {
 public:
-    ViewArmy(bty::SceneStack &ss);
-    void draw(bty::Gfx &gfx, glm::mat4 &camera) override;
+    ViewArmy(bty::Engine &engine);
+    void load() override;
+    void render() override;
     void update(float dt) override;
-    void key(int key, int action) override;
-
-    void set_color(bty::BoxColor color);
-    void update_info(int *army, int *counts, int *morales, int diff);
+    bool handleEvent(Event event) override;
+    bool handleKey(Key key) override;
 
 private:
-    bty::SceneStack &ss;
-    bty::Sprite frame_;
-    std::array<const bty::Texture *, 25> unit_textures_;
-    std::array<bty::Rect, 5> rects_;
-    std::array<bty::Sprite, 5> units_;
-    std::array<std::array<bty::Text, 7>, 5> info_;
-    int num_units_ {0};
+    bty::Engine &_engine;
+    bty::Sprite _spFrame;
+    std::array<const bty::Texture *, 25> _texUnits;
+    std::array<bty::Rect, 5> _fillRects;
+    std::array<bty::Sprite, 5> _spUnits;
+    std::array<std::array<bty::Text, 7>, 5> _btInfo;
+    int _armySize {0};
 };
 
 #endif    // BTY_GAME_VIEW_ARMY_HPP_

@@ -4,19 +4,39 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#include <chrono>
 #include <filesystem>
 #include <regex>
 
-#include "engine/dialog-stack.hpp"
+#include "engine/engine.hpp"
+#include "game/state.hpp"
 
-SaveManager::SaveManager(bty::DialogStack &ds, std::function<void(const std::string &)> save_cb, std::function<void(const std::string &)> load_cb)
-    : ds(ds)
-    , save_cb(save_cb)
-    , load_cb(load_cb)
+SaveManager::SaveManager(bty::Engine &engine)
+    : _engine(engine)
 {
 }
 
-SaveManager::SavesFuture SaveManager::get_save_list() const
+void SaveManager::load()
+{
+    _dlgLoading.create(10, 13, 12, 3);
+    _dlgLoading.addString(1, 1, "Loading...");
+}
+
+void SaveManager::enter()
+{
+    _dlgLoading.setColor(bty::getBoxColor(State::difficulty));
+    _waitingForSaves = true;
+    _savesFuture = std::async(&SaveManager::getSaves, this);
+}
+
+void SaveManager::renderLate()
+{
+    if (_waitingForSaves) {
+        _dlgLoading.render();
+    }
+}
+
+SaveManager::SavesFuture SaveManager::getSaves() const
 {
     bool failed {false};
 
@@ -31,10 +51,10 @@ SaveManager::SavesFuture SaveManager::get_save_list() const
 
     auto dir = std::filesystem::directory_iterator("./saves");
 
-    std::regex slot_regex("^slot-[1-6]\\.sav$");
+    std::regex slotRegex("^slot-[1-6]\\.sav$");
 
     for (const auto &file : dir) {
-        if (std::regex_match(file.path().filename().generic_string(), slot_regex)) {
+        if (std::regex_match(file.path().filename().generic_string(), slotRegex)) {
             entries.push_back(file);
         }
     }
@@ -58,8 +78,8 @@ SaveManager::SavesFuture SaveManager::get_save_list() const
 
         /* Modified time */
         const auto modified = std::localtime(&info.st_mtime);
-        char time_str[18];
-        size_t result = strftime(time_str, 18, "%y-%m-%d %T", modified);
+        char timeStr[18];
+        size_t result = strftime(timeStr, 18, "%y-%m-%d %T", modified);
 
         if (result == 0) {
             spdlog::warn("strftime failed");
@@ -67,7 +87,7 @@ SaveManager::SavesFuture SaveManager::get_save_list() const
         }
 
         save.name = entry.path().filename().generic_string();
-        save.last_write = std::string(time_str);
+        save.lastWriteTime = std::string(timeStr);
         save.slot = slot;
     }
 
@@ -81,142 +101,139 @@ SaveManager::SavesFuture SaveManager::get_save_list() const
     return {saves, failed};
 }
 
-void SaveManager::show_saves_dialog(bool load)
+void SaveManager::setMode(bool toLoad)
 {
-    ds.show_dialog({
-        .x = 10,
-        .y = 13,
-        .w = 12,
-        .h = 3,
-        .strings = {
-            {1, 1, "Loading..."},
-        },
-    });
-
-    saves_future = std::async(&SaveManager::get_save_list, this);
-    waiting_for_saves = true;
-    loading = load;
+    _modeIsLoading = toLoad;
 }
 
 void SaveManager::show()
 {
-    if (!ds.empty()) {
-        ds.pop();
-    }
-
-    auto sf = saves_future.get();
+    auto sf = _savesFuture.get();
 
     if (sf.failed) {
-        ds.show_dialog({
-            .x = 10,
-            .y = 12,
-            .w = 12,
-            .h = 4,
-            .strings = {
-                {1, 1, "Failed to\nread saves"},
-            },
-        });
+        _engine.getGUI().showMessage(10, 12, 12, 4, "Failed to\nread saves");
         return;
     }
     else if (sf.saves.empty()) {
-        ds.show_dialog({
-            .x = 9,
-            .y = 12,
-            .w = 13,
-            .h = 3,
-            .strings = {
-                {1, 1, "Saves empty"},
-            },
-        });
+        _engine.getGUI().showMessage(9, 12, 13, 3, "Saves empty");
         return;
     }
 
-    std::vector<bty::DialogDef::StringDef> options;
+    auto dialog = _engine.getGUI().makeDialog(4, 5, 24, 20);
 
     int i = 1;
     for (const auto save : sf.saves) {
-        options.push_back({3, 1 + 3 * (save.slot - 1), fmt::format("{}\n\t{}", save.name, save.last_write)});
+        auto *opt = dialog->addOption(3, 1 + 3 * (save.slot - 1), fmt::format("{}\n\t{}", save.name, save.lastWriteTime));
+        if (_modeIsLoading && save.lastWriteTime.empty()) {
+            opt->disable();
+        }
     }
 
-    ds.show_dialog({
-        .x = 4,
-        .y = 5,
-        .w = 24,
-        .h = 20,
-        .options = options,
-        .callbacks = {
-            .confirm = [this, sf](int save_index) {
-                if (loading) {
-                    if (!sf.saves[save_index].last_write.empty()) {
-                        ds.show_dialog({
-                            .x = 7,
-                            .y = 12,
-                            .w = 18,
-                            .h = 6,
-                            .strings = {
-                                {2, 1, "Load this save?"},
-                            },
-                            .options = {
-                                {3, 3, "Yes"},
-                                {3, 4, "No"},
-                            },
-                            .callbacks = {
-                                .confirm = [this, sf, save_index](int opt) {
-                                    if (opt == 0) {
-                                        load_cb(sf.saves[save_index].name);
-                                        ds.pop();
-                                    }
-                                },
-                            },
-                        });
-                    }
+    dialog->onKey([this, dialog, sf](Key key) {
+        switch (key) {
+            case Key::Backspace:
+                _engine.getGUI().popDialog();
+                SceneMan::instance().back();
+                break;
+            case Key::Enter:
+                if (_modeIsLoading) {
+                    loadState(sf.saves[dialog->getSelection()]);
                 }
                 else {
-                    if (!sf.saves[save_index].last_write.empty()) {
-                        ds.show_dialog({
-                            .x = 9,
-                            .y = 12,
-                            .w = 13,
-                            .h = 6,
-                            .strings = {
-                                {2, 1, "Overwrite?"},
-                            },
-                            .options = {
-                                {3, 3, "Yes"},
-                                {3, 4, "No"},
-                            },
-                            .callbacks = {
-                                .confirm = [this, sf, save_index](int opt) {
-                                    if (opt == 0) {
-                                        save_cb(sf.saves[save_index].name);
-                                        ds.pop();
-                                    }
-                                },
-                            },
-                        });
-                    }
-                    else {
-                        save_cb(fmt::format("slot-{}.sav", save_index + 1));
-                        ds.pop();
-                    }
+                    saveState(sf.saves[dialog->getSelection()]);
                 }
-            },
-        },
-        .pop_on_confirm = false,
+                break;
+            default:
+                return false;
+        }
+        return true;
     });
 }
 
-void SaveManager::update()
+void SaveManager::onLoad(std::function<void(const std::string &)> cb)
 {
-    if (waiting_for_saves) {
-        if (saves_future._Is_ready()) {
-            waiting_for_saves = false;
+    _loadCallback = cb;
+}
+
+void SaveManager::onSave(std::function<void(const std::string &)> cb)
+{
+    _saveCallback = cb;
+}
+
+bool SaveManager::isOverlay() const
+{
+    return true;
+}
+
+void SaveManager::update(float dt)
+{
+    if (_waitingForSaves) {
+        if (_savesFuture._Is_ready()) {
+            _waitingForSaves = false;
             show();
         }
+        return;
     }
 }
 
-bool SaveManager::waiting() const
+void SaveManager::loadState(SaveInfo save)
 {
-    return waiting_for_saves;
+    if (save.lastWriteTime.empty()) {
+        spdlog::warn("Invalid save state");
+        return;
+    }
+
+    auto dialog = _engine.getGUI().makeDialog(7, 12, 18, 6);
+    dialog->addString(2, 1, "Load this save?");
+    dialog->addOption(3, 3, "Yes");
+    dialog->addOption(3, 4, "No");
+    dialog->onKey([this, dialog, save](Key key) {
+        switch (key) {
+            case Key::Backspace:
+                _engine.getGUI().popDialog();
+                break;
+            case Key::Enter:
+                _engine.getGUI().popDialog();
+                if (dialog->getSelection() == 0) {
+                    _loadCallback(save.name);
+                    _engine.getGUI().popDialog();
+                    SceneMan::instance().back();
+                }
+                break;
+            default:
+                return false;
+        }
+        return true;
+    });
+}
+
+void SaveManager::saveState(SaveInfo save)
+{
+    if (save.lastWriteTime.empty()) {
+        _saveCallback(fmt::format("slot-{}.sav", save.slot));
+    }
+    else {
+        auto dialog = _engine.getGUI().makeDialog(9, 12, 13, 6);
+        dialog->addString(2, 1, "Overwrite?");
+        dialog->addOption(3, 3, "Yes");
+        dialog->addOption(3, 4, "No");
+        dialog->onKey([this, dialog, save](Key key) {
+            switch (key) {
+                case Key::Backspace:
+                    _engine.getGUI().popDialog();
+                    break;
+                case Key::Enter:
+                    _engine.getGUI().popDialog();
+                    if (dialog->getSelection() == 0) {
+                        _saveCallback(save.name);
+                        _engine.getGUI().popDialog();
+                        SceneMan::instance().setScene("ingame");
+                    }
+                    break;
+                default:
+                    return false;
+            }
+            return true;
+        });
+    }
 }

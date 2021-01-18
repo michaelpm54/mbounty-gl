@@ -25,7 +25,7 @@ inline constexpr int const kMoraleChart[25] = {
 
 namespace bty {
 
-inline constexpr int check_morale(int me, int *army)
+inline constexpr int getUnitMorale(int me, int *army)
 {
     bool normal = false;
     for (int i = 0; i < 5; i++) {

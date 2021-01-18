@@ -3,13 +3,12 @@
 #include <fmt/format.h>
 
 #include "data/hero.hpp"
-#include "engine/dialog-stack.hpp"
-#include "engine/scene-stack.hpp"
+#include "engine/engine.hpp"
 #include "game/hud.hpp"
-#include "game/variables.hpp"
+#include "game/state.hpp"
 #include "gfx/gfx.hpp"
 
-static constexpr const char *const kVictoryString = {
+static constexpr const char *const kMessage {
     "Congratulations,\n"
     "{}!  You\n"
     "have recovered the\n"
@@ -32,23 +31,24 @@ static constexpr const char *const kVictoryString = {
     "Final Score: {:>5}",
 };
 
-Victory::Victory(bty::SceneStack &ss, bty::DialogStack &ds, Variables &v, Hud &hud)
-    : ss(ss)
-    , ds(ds)
-    , v(v)
-    , hud(hud)
+Victory::Victory(bty::Engine &engine)
+    : _engine(engine)
+{
+}
+
+void Victory::load()
 {
     auto &textures {Textures::instance()};
 
-    bg.set_position(8, 24);
-    bg.set_texture(textures.get("battle/encounter.png"));
+    _spBg.setPosition(8, 24);
+    _spBg.setTexture(textures.get("battle/encounter.png"));
 
-    king.set_position(8, 24);
-    king.set_texture(textures.get("bg/king-massive-smile.png"));
+    _spImage.setPosition(8, 24);
+    _spImage.setTexture(textures.get("bg/king-massive-smile.png"));
 
-    hero.set_position(20.0f + 4 * 48.0f, 24.0f + 6 * 40.0f);
-    hero.set_texture(textures.get("hero/walk-moving.png", {4, 1}));
-    hero.set_flip(true);
+    _spHero.setPosition(20.0f + 4 * 48.0f, 24.0f + 6 * 40.0f);
+    _spHero.setTexture(textures.get("hero/walk-moving.png", {4, 1}));
+    _spHero.setFlip(true);
 
     for (int i = 0; i < 5; i++) {
         for (int j = 0; j < 5; j++) {
@@ -57,64 +57,82 @@ Victory::Victory(bty::SceneStack &ss, bty::DialogStack &ds, Variables &v, Hud &h
             float y = 24.0f + j * 40.0f;
             if (i == 4) {
                 x += 48.0f;
-                unit_sprites[index].set_flip(true);
+                _spUnits[index].setFlip(true);
             }
-            unit_sprites[index].set_position(x, y);
-            unit_sprites[index].set_texture(textures.get(fmt::format("units/{}.png", index), {2, 2}));
+            _spUnits[index].setPosition(x, y);
+            _spUnits[index].setTexture(textures.get(fmt::format("units/{}.png", index), {2, 2}));
         }
     }
+
+    _message.create(19, 3, 20, 24);
+    _btName = _message.addString(1, 2);
 }
 
-void Victory::draw(bty::Gfx &gfx, glm::mat4 &camera)
+void Victory::enter()
 {
-    if (parade) {
-        gfx.draw_sprite(bg, camera);
+    _message.setColor(bty::getBoxColor(State::difficulty));
+    _pressedEnterOnce = false;
+    _btName->setString(fmt::format(kMessage, kShortHeroNames[State::hero], State::score));
+}
+
+void Victory::render()
+{
+    if (_inParade) {
+        GFX::instance().drawSprite(_spBg);
         for (int i = 0; i < 25; i++) {
-            gfx.draw_sprite(unit_sprites[i], camera);
+            GFX::instance().drawSprite(_spUnits[i]);
         }
-        gfx.draw_sprite(hero, camera);
+        GFX::instance().drawSprite(_spHero);
     }
     else {
-        gfx.draw_sprite(king, camera);
+        GFX::instance().drawSprite(_spImage);
+        _message.render();
     }
-    hud.draw(gfx, camera);
 }
 
 void Victory::update(float dt)
 {
-    if (parade) {
+    if (_inParade) {
         for (int i = 0; i < 25; i++) {
-            unit_sprites[i].update(dt);
+            _spUnits[i].update(dt);
         }
-        hero.move(0.0f, -70.0f * dt);
-        hero.update(dt);
+        _spHero.move(0.0f, -70.0f * dt);
+        _spHero.update(dt);
 
-        if (hero.get_position().y <= -140.0f) {
-            parade = false;
-            ds.show_dialog({
-                .x = 19,
-                .y = 3,
-                .w = 20,
-                .h = 24,
-                .strings = {
-                    {1, 2, fmt::format(kVictoryString, kShortHeroNames[v.hero], v.score)},
-                },
-                .callbacks = {
-                    .confirm = [this](int) {
-                        hud.set_error("      Press Enter to play again.", [this]() {
-                            ds.pop();
-                            ss.pop(0);
-                        });
-                    },
-                },
-                .pop_on_confirm = false,
-            });
+        if (_spHero.getPosition().y <= -140.0f) {
+            _inParade = false;
         }
     }
 }
 
-void Victory::key(int key, int action)
+bool Victory::handleEvent(Event event)
 {
-    (void)key;
-    (void)action;
+    if (event.id == EventId::KeyDown) {
+        return handleKey(event.key);
+    }
+    return false;
+}
+
+bool Victory::handleKey(Key key)
+{
+    if (_inParade) {
+        return false;
+    }
+
+    switch (key) {
+        case Key::Enter:
+            if (!_pressedEnterOnce) {
+                _pressedEnterOnce = true;
+                _engine.getGUI().getHUD().setTitle("      Press Enter to play again.");
+            }
+            else {
+                _engine.getGUI().hideHUD();
+                SceneMan::instance().setScene("intro");
+            }
+            break;
+        default:
+            return false;
+    }
+
+    return true;
 }

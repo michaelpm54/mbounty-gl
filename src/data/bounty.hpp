@@ -29,24 +29,24 @@ enum ArtifactId {
 
 namespace bty {
 
-inline constexpr void sort_army(std::array<int, 5> &army, std::array<int, 5> &counts)
+inline constexpr void sortArmy(std::array<int, 5> &army, std::array<int, 5> &counts)
 {
-    int last_free = -1;
+    int lastFree = -1;
     for (int i = 0; i < 5; i++) {
-        if (last_free == -1 && army[i] == -1) {
-            last_free = i;
+        if (lastFree == -1 && army[i] == -1) {
+            lastFree = i;
         }
-        else if (last_free != -1 && army[i] != -1) {
-            army[last_free] = army[i];
+        else if (lastFree != -1 && army[i] != -1) {
+            army[lastFree] = army[i];
             army[i] = -1;
-            counts[last_free] = counts[i];
+            counts[lastFree] = counts[i];
             counts[i] = -1;
-            last_free = i;
+            lastFree = i;
         }
     }
 }
 
-inline std::string get_descriptor(int count)
+inline std::string unitDescriptor(int count)
 {
     static constexpr const char *const kDescriptors[] = {
         "A few",
@@ -83,7 +83,7 @@ inline constexpr int random(int min, int max)
     return min + random(max);
 }
 
-inline std::string number_with_ks(int num)
+inline std::string numberK(int num)
 {
     if (num < 10'000) {
         return std::to_string(num);
@@ -150,19 +150,19 @@ enum Ability {
 };
 
 struct Unit {
-    std::string name_singular;
-    std::string name_plural;
+    std::string nameSingle;
+    std::string namePlural;
     int hp;
-    int skill_level;
-    int initial_moves;
-    int melee_damage_min;
-    int melee_damage_max;
-    int ranged_damage_min;
-    int ranged_damage_max;
-    int initial_ammo;
-    int recruit_cost;
-    int weekly_cost;
-    MoraleGroup morale_group;
+    int skillLevel;
+    int initialMoves;
+    int meleeMinDmg;
+    int meleeMaxDmg;
+    int shootMinDmg;
+    int shootMaxDmg;
+    int initialAmmo;
+    int recruitCost;
+    int weeklyCost;
+    MoraleGroup moraleGroup;
     uint16_t abilities;
 };
 
@@ -172,16 +172,16 @@ inline const Unit kUnits[UnitId::UnitCount] =
             "Peasant",
             "Peasants",
             1,                // hp
-            1,                // skill_level
+            1,                // skillLevel
             1,                // moves
             1,                // dmg_min
             1,                // dmg_max
             0,                // shot_dmg_min
             0,                // shot_dmg_max
             0,                // num_shots
-            10,               // recruit_cost
-            1,                // weekly_cost
-            kMoraleGroupA,    // morale_group
+            10,               // recruitCost
+            1,                // weeklyCost
+            kMoraleGroupA,    // moraleGroup
             0,
         },
         {

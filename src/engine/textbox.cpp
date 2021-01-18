@@ -2,103 +2,92 @@
 
 #include <spdlog/spdlog.h>
 
+#include "engine/texture-cache.hpp"
+#include "game/state.hpp"
 #include "gfx/font.hpp"
 #include "gfx/gfx.hpp"
 #include "gfx/sprite.hpp"
 #include "gfx/text.hpp"
+#include "window/keys.hpp"
 
 namespace bty {
 
 /* clang-format off */
 void TextBox::create(
 	int x, int y,
-	int w, int h,
-	bty::BoxColor color
+	int w, int h
 )
 /* clang-format on */
 {
-    lines_.clear();
-    cell_positions.clear();
+    _strings.clear();
+    _stringCellPositions.clear();
 
-    auto &border {Textures::instance().get_border()};
+    auto &border {Textures::instance().getBorder()};
 
     for (int i = 0; i < 8; i++) {
-        box_[i].set_texture(border[i]);
+        _spBox[i].setTexture(border[i]);
     }
 
-    set_color(color);
+    setColor(bty::BoxColor::Intro);
 
-    set_size(w, h);
-    set_position(x, y);
+    setCellSize(w, h);
+    setCellPosition(x, y);
 }
 
-void TextBox::set_size(int w, int h)
+void TextBox::setCellSize(int w, int h)
 {
+    _cellWidth = w;
+    _cellHeight = h;
+
     /* Minus one here because each border takes 4 pixels. 2x4 = 8 = 1 cell. */
-    width_ = static_cast<float>(w - 1) * 8;
-    height_ = static_cast<float>(h - 1) * 8;
+    _realWidth = static_cast<float>(w - 1) * 8;
+    _realHeight = static_cast<float>(h - 1) * 8;
 
     // top bottom
-    box_[1].set_size(width_, 4);
-    box_[5].set_size(width_, 4);
+    _spBox[1].setSize(_realWidth, 4);
+    _spBox[5].setSize(_realWidth, 4);
 
     // left right
-    box_[3].set_size(4, height_);
-    box_[7].set_size(4, height_);
+    _spBox[3].setSize(4, _realHeight);
+    _spBox[7].setSize(4, _realHeight);
 
-    background_.set_size(width_ - 2, height_ - 2);
-    background_outline_.set_size(width_, height_);
+    _rectBg.setSize(_realWidth - 2, _realHeight - 2);
+    _rectBgOutline.setSize(_realWidth, _realHeight);
 }
 
-void TextBox::set_position(int x__, int y__)
+void TextBox::setCellPosition(int x__, int y__)
 {
-    x_ = x__;
-    y_ = y__;
+    _cellX = x__;
+    _cellY = y__;
 
-    float x = static_cast<float>(x_) * 8;
-    float y = static_cast<float>(y_) * 8;
+    float x = static_cast<float>(_cellX) * 8;
+    float y = static_cast<float>(_cellY) * 8;
 
-    box_[0].set_position({x, y});
-    box_[1].set_position({x + 4, y});
-    box_[2].set_position({x + 4 + width_, y});
-    box_[3].set_position({x + 4 + width_, y + 4});
-    box_[4].set_position({x + 4 + width_, y + 4 + height_});
-    box_[5].set_position({x + 4, y + 4 + height_});
-    box_[6].set_position({x, y + 4 + height_});
-    box_[7].set_position({x, y + 4});
+    _spBox[0].setPosition({x, y});
+    _spBox[1].setPosition({x + 4, y});
+    _spBox[2].setPosition({x + 4 + _realWidth, y});
+    _spBox[3].setPosition({x + 4 + _realWidth, y + 4});
+    _spBox[4].setPosition({x + 4 + _realWidth, y + 4 + _realHeight});
+    _spBox[5].setPosition({x + 4, y + 4 + _realHeight});
+    _spBox[6].setPosition({x, y + 4 + _realHeight});
+    _spBox[7].setPosition({x, y + 4});
 
-    background_.set_position({x + 5, y + 5});
-    background_outline_.set_position({x + 4, y + 4});
+    _rectBg.setPosition({x + 5, y + 5});
+    _rectBgOutline.setPosition({x + 4, y + 4});
 
-    for (int i = 0; i < lines_.size(); i++) {
-        lines_[i].set_position(cell_positions[i].x * 8.0f + x, cell_positions[i].y * 8.0f + y);
+    for (int i = 0; i < _strings.size(); i++) {
+        _strings[i].setPosition(_stringCellPositions[i].x * 8.0f + x, _stringCellPositions[i].y * 8.0f + y);
     }
 }
 
-void TextBox::draw(Gfx &gfx, glm::mat4 &camera)
-{
-    for (int i = 0; i < 8; i++)
-        gfx.draw_sprite(box_[i], camera);
-
-    gfx.draw_rect(background_outline_, camera);
-    gfx.draw_rect(background_, camera);
-
-    for (auto i = 0u; i < lines_.size(); i++) {
-        if (lines_visible_[i]) {
-            gfx.draw_text(lines_[i], camera);
-        }
-    }
-}
-
-Text *TextBox::add_line(int x, int y, std::string const &str)
+Text *TextBox::addString(int x, int y, std::string str)
 {
     Text text;
-    text.create(x_ + x, y_ + y, str);
-    lines_.push_back(std::move(text));
-    cell_positions.push_back({x, y});
-    lines_visible_.push_back(true);
+    text.create(_cellX + x, _cellY + y, str);
+    _strings.push_back(std::move(text));
+    _stringCellPositions.push_back({x, y});
 
-    return &lines_.back();
+    return &_strings.back();
 }
 
 void TextBox::set_line(int i, std::string const &str)
@@ -106,37 +95,43 @@ void TextBox::set_line(int i, std::string const &str)
     if (i < 0) {
         spdlog::warn("TextBox::set_line: i < 0");
     }
-    else if (i >= static_cast<int>(lines_.size())) {
+    else if (i >= static_cast<int>(_strings.size())) {
         spdlog::warn("TextBox::set_line: didn't exist so adding '{}'", str);
         Text text;
-        text.create(x_ + 2, y_ + i, str);
-        lines_.push_back(std::move(text));
+        text.create(_cellX + 2, _cellY + i, str);
+        _strings.push_back(std::move(text));
     }
     else {
-        lines_[i].set_string(str);
+        _strings[i].setString(str);
     }
 }
 
-void TextBox::set_color(bty::BoxColor color)
+void TextBox::setColor(BoxColor color)
 {
-    background_outline_.set_color(bty::get_color(color, true));
-    background_.set_color(bty::get_color(color, false));
-}
-
-void TextBox::set_line_visible(int index, bool value)
-{
-    if (index < 0 || index >= static_cast<int>(lines_.size())) {
-        spdlog::warn("TextBox::set_line_visible: {} out of range", index);
-        return;
+    if (color == BoxColor::None) {
+        color = getBoxColor(State::difficulty);
     }
-    lines_visible_[index] = value;
+    _rectBgOutline.setColor(bty::getColor(color, true));
+    _rectBg.setColor(bty::getColor(color, false));
 }
 
 void TextBox::clear()
 {
-    lines_.clear();
-    lines_visible_.clear();
-    cell_positions.clear();
+    _strings.clear();
+    _stringCellPositions.clear();
+}
+
+void TextBox::render()
+{
+    for (int i = 0; i < 8; i++)
+        GFX::instance().drawSprite(_spBox[i]);
+
+    GFX::instance().drawRect(_rectBgOutline);
+    GFX::instance().drawRect(_rectBg);
+
+    for (auto i = 0u; i < _strings.size(); i++) {
+        GFX::instance().drawText(_strings[i]);
+    }
 }
 
 }    // namespace bty

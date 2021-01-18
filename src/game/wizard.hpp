@@ -2,36 +2,33 @@
 #define BTY_GAME_WIZARD_HPP_
 
 #include "data/bounty.hpp"
+#include "engine/component.hpp"
 #include "engine/dialog.hpp"
-#include "engine/scene.hpp"
 #include "gfx/sprite.hpp"
 
 namespace bty {
-class Gfx;
-struct Texture;
-class DialogStack;
-class SceneStack;
+class Engine;
 }    // namespace bty
 
-struct Variables;
-class Hud;
-
-class Wizard : public bty::Scene {
+class Wizard : public Component {
 public:
-    Wizard(bty::SceneStack &ss, Variables &v, Hud &hud);
+    Wizard(bty::Engine &engine);
 
-    void draw(bty::Gfx &gfx, glm::mat4 &camera) override;
+    void load() override;
+    void enter() override;
+    void render() override;
     void update(float dt) override;
-    void key(int key, int action) override;
-
-    void view(bty::DialogStack &ds);
+    bool handleEvent(Event event) override;
+    bool handleKey(Key key) override;
 
 private:
-    bty::SceneStack &ss;
-    Variables &v;
-    Hud &hud;
-    bty::Sprite bg_;
-    bty::Sprite unit_;
+    void handleDialogOption(int opt);
+
+    bty::Engine &_engine;
+    bty::Sprite _spBg;
+    bty::Sprite _spUnit;
+    bty::Dialog _dlgWizard;
+    bty::Dialog _dlgScold;
 };
 
 #endif    // BTY_GAME_WIZARD_HPP_

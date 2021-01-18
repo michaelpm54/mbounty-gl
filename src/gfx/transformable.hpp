@@ -14,21 +14,21 @@ public:
     void move(glm::vec2 d);
     void move(float dx, float dy);
 
-    void set_position(float x, float y);
-    void set_position(const glm::vec2 &position);
-    glm::vec2 get_position() const;
-    void set_size(float x, float y);
-    void set_size(const glm::vec2 &size);
-    glm::vec2 get_size() const;
-    glm::mat4 &get_transform();
+    void setPosition(float x, float y);
+    void setPosition(const glm::vec2 &position);
+    glm::vec2 getPosition() const;
+    void setSize(float x, float y);
+    void setSize(const glm::vec2 &size);
+    glm::vec2 getSize() const;
+    glm::mat4 &getTransform();
 
 protected:
-    glm::vec3 position_ {0.0f};
-    glm::vec3 scale_ {1.0f};
+    glm::vec3 _position {0.0f};
+    glm::vec3 _scale {1.0f};
 
 private:
-    glm::mat4 transform_ {1.0f};
-    bool dirty_ {false};
+    glm::mat4 _transform {1.0f};
+    bool _dirty {false};
 };
 
 }    // namespace bty

@@ -2,60 +2,53 @@
 #define BTY_GAME_TOWN_HPP_
 
 #include "data/bounty.hpp"
-#include "engine/dialog-def.hpp"
+#include "engine/component.hpp"
 #include "engine/dialog.hpp"
-#include "engine/scene.hpp"
 #include "gfx/sprite.hpp"
 
 namespace bty {
-class Gfx;
-struct Texture;
-class SceneStack;
-class DialogStack;
+class Engine;
 }    // namespace bty
 
-class Hud;
-class ViewContract;
-struct Variables;
-struct GenVariables;
-struct Tile;
+struct TownGen;
 
-class Town : public bty::Scene {
+class Town : public Component {
 public:
-    Town(bty::SceneStack &ss, bty::DialogStack &ds, Variables &v, GenVariables &gen, Hud &hud, ViewContract &view_contract, bty::Sprite &boat);
-    void draw(bty::Gfx &gfx, glm::mat4 &camera) override;
+    Town(bty::Engine &engine);
+
+    void load() override;
+    void enter() override;
+    void render() override;
     void update(float dt) override;
-    void key(int key, int action) override;
 
-    void view(int town_id, int unit_id, int spell);
-
-    void get_contract();
-    void rent_boat();
-    void gather_information();
-    void buy_spell();
-    void buy_siege();
+    void setTown(TownGen *info);
 
 private:
-    bty::SceneStack &ss;
-    bty::DialogStack &ds;
-    Variables &v;
-    GenVariables &gen;
-    Hud &hud;
-    ViewContract &view_contract;
-    bty::Sprite &boat;
-    bty::Sprite bg_;
-    bty::Sprite unit_;
-    const bty::Texture *unit_textures_[25];
-    int town_id {-1};
+    void optGetContract();
+    void optRentBoat();
+    void optGatherInfo();
+    void optBuySpell();
+    void optBuySiege();
+    void handleSelection(int opt);
 
-    bty::Dialog dialog;
-    bty::Text *t_town_name;
-    bty::Text *t_gp;
-    bty::Option *t_get_contract;
-    bty::Option *t_rent_boat;
-    bty::Option *t_gather_information;
-    bty::Option *t_buy_spell;
-    bty::Option *t_buy_siege;
+private:
+    bty::Engine &_engine;
+    TownGen *_info {nullptr};
+    bty::Sprite _spBg;
+    bty::Sprite _spUnit;
+    const bty::Texture *_texUnits[25];
+
+    bty::Dialog _dlgMain;
+    bty::Dialog _dlgOccupier;
+    bty::Text *_btOccupierName;
+    bty::Text *_btOccupierArmy;
+    bty::Text *_btTownName;
+    bty::Text *_btGP;
+    bty::Option *_optGetContract;
+    bty::Option *_optRentBoat;
+    bty::Option *_optGatherInfo;
+    bty::Option *_optBuySpell;
+    bty::Option *_optBuySiege;
 };
 
 #endif    // BTY_GAME_TOWN_HPP_

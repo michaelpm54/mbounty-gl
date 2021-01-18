@@ -17,22 +17,26 @@ public:
     Text(Text &&other);
 
     void create(int x, int y, const std::string &string);
-    void set_string(const std::string &string);
-    const std::string get_string() const;
-    GLuint get_vao() const;
-    GLuint get_num_vertices() const;
-    void set_font(const Font &font);
-    const Font *get_font() const;
+    void setString(const std::string &string);
+    const std::string getString() const;
+    GLuint getVao() const;
+    GLuint getNumVerts() const;
+    void setFont(const Font &font);
+    const Font *getFont() const;
+    void hide();
+    void show();
+    bool visible() const;
 
 private:
-    void update_vbo();
+    void updateVbo();
 
 private:
-    GLuint vbo_ {GL_NONE};
-    GLuint vao_ {GL_NONE};
-    GLuint num_vertices_ {0};
-    std::string string_ {""};
+    GLuint _vbo {GL_NONE};
+    GLuint _vao {GL_NONE};
+    GLuint _numVerts {0};
+    std::string _string {""};
     const Font *_font {nullptr};
+    bool _visible {true};
 };
 
 }    // namespace bty

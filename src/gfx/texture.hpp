@@ -9,10 +9,10 @@ struct Texture {
     int width;
     int height;
     GLuint handle;
-    int num_frames_x;
-    int num_frames_y;
-    int frame_width;
-    int frame_height;
+    int framesX;
+    int framesY;
+    int frameW;
+    int frameH;
 };
 
 }    // namespace bty

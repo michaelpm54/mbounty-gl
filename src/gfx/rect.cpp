@@ -2,26 +2,26 @@
 
 namespace bty {
 
-void Rect::set_color(const glm::vec4 &color)
+void Rect::setColor(const glm::vec4 &color)
 {
-    color_ = color;
+    _color = color;
 }
 
-const glm::vec4 &Rect::get_color() const
+const glm::vec4 &Rect::getColor() const
 {
-    return color_;
+    return _color;
 }
 
-void Rect::set_color(BoxColor color)
+void Rect::setColor(BoxColor color)
 {
-    set_color(bty::get_color(color));
+    setColor(bty::getColor(color));
 }
 
 Rect::Rect(const glm::vec4 &color, const glm::vec2 &size, const glm::vec2 &position)
 {
-    set_color(color);
-    set_position(position);
-    set_size(size);
+    setColor(color);
+    setPosition(position);
+    setSize(size);
 }
 
 }    // namespace bty

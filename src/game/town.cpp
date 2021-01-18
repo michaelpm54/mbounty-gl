@@ -6,214 +6,178 @@
 #include "data/spells.hpp"
 #include "data/towns.hpp"
 #include "data/villains.hpp"
-#include "engine/dialog-stack.hpp"
-#include "engine/scene-stack.hpp"
+#include "engine/engine.hpp"
+#include "engine/scene-manager.hpp"
 #include "engine/texture-cache.hpp"
-#include "game/gen-variables.hpp"
 #include "game/hud.hpp"
 #include "game/map.hpp"
-#include "game/variables.hpp"
-#include "game/view-contract.hpp"
+#include "game/state.hpp"
 #include "gfx/gfx.hpp"
-#include "window/glfw.hpp"
 
-Town::Town(bty::SceneStack &ss, bty::DialogStack &ds, Variables &v, GenVariables &gen, Hud &hud, ViewContract &view_contract, bty::Sprite &boat)
-    : ss(ss)
-    , ds(ds)
-    , v(v)
-    , gen(gen)
-    , hud(hud)
-    , view_contract(view_contract)
-    , boat(boat)
+Town::Town(bty::Engine &engine)
+    : _engine(engine)
 {
-    unit_.set_position(64, 104);
-    bg_.set_texture(Textures::instance().get("bg/town.png"));
-    bg_.set_position(8, 24);
+}
+
+void Town::load()
+{
+    _spUnit.setPosition(64, 104);
+    _spBg.setTexture(Textures::instance().get("bg/town.png"));
+    _spBg.setPosition(8, 24);
     for (int i = 0; i < 25; i++) {
-        unit_textures_[i] = Textures::instance().get(fmt::format("units/{}.png", i), {2, 2});
+        _texUnits[i] = Textures::instance().get(fmt::format("units/{}.png", i), {2, 2});
     }
 
-    dialog.create(1, 18, 30, 9, bty::BoxColor::Intro);
-    t_town_name = dialog.add_line(1, 1, "");
-    t_gp = dialog.add_line(22, 2, "");
-    t_get_contract = dialog.add_option(3, 3, "Get contract");
-    t_rent_boat = dialog.add_option(3, 4, "");
-    t_gather_information = dialog.add_option(3, 5, "Gather information");
-    t_buy_spell = dialog.add_option(3, 6, "");
-    t_buy_siege = dialog.add_option(3, 7, "");
+    _dlgMain.create(1, 18, 30, 9);
+    _btTownName = _dlgMain.addString(1, 1);
+    _btGP = _dlgMain.addString(22, 2);
+    _optGetContract = _dlgMain.addOption(3, 3, "Get contract");
+    _optRentBoat = _dlgMain.addOption(3, 4);
+    _optGatherInfo = _dlgMain.addOption(3, 5, "Gather information");
+    _optBuySpell = _dlgMain.addOption(3, 6);
+    _optBuySiege = _dlgMain.addOption(3, 7);
+    _dlgMain.bind(Key::Enter, std::bind(&Town::handleSelection, this, std::placeholders::_1));
+    _dlgMain.bind(Key::Backspace, [this](int) {
+        _engine.getGUI().popDialog();
+        SceneMan::instance().setScene("ingame");
+    });
+
+    _dlgOccupier.create(1, 18, 30, 9);
+    _dlgOccupier.bind(Key::Enter, [this](int) {
+        _engine.getGUI().popDialog();
+    });
+    _btOccupierName = _dlgOccupier.addString(1, 1);
+    _btOccupierArmy = _dlgOccupier.addString(1, 3);
 }
 
-void Town::draw(bty::Gfx &gfx, glm::mat4 &camera)
+void Town::render()
 {
-    gfx.draw_sprite(bg_, camera);
-    gfx.draw_sprite(unit_, camera);
-    dialog.draw(gfx, camera);
+    GFX::instance().drawSprite(_spBg);
+    GFX::instance().drawSprite(_spUnit);
+    _dlgMain.render();
 }
 
-void Town::view(int town_id, int unit_id, int spell)
+void Town::setTown(TownGen *info)
 {
-    dialog.set_color(bty::get_box_color(v.diff));
+    _info = info;
+}
 
-    bool have_anchor = gen.artifacts_found[ArtiAnchorOfAdmirality];
-    int boat_cost = have_anchor ? 100 : 500;
+void Town::enter()
+{
+    auto color {bty::getBoxColor(State::difficulty)};
+    _dlgMain.setColor(color);
+    _dlgOccupier.setColor(color);
 
-    t_town_name->set_string(fmt::format("Town of {}", kTownInfo[town_id].name));
-    t_gp->set_string(fmt::format("GP={}", bty::number_with_ks(v.gold)));
-    t_rent_boat->set_string(v.boat_rented ? "Cancel boat rental" : fmt::format("Rent boat ({} week)", boat_cost));
-    t_buy_spell->set_string(fmt::format("{} spell ({})", kSpellNames[spell], kSpellCosts[spell]));
-    t_buy_siege->set_string(v.siege ? "" : "Buy siege weapons (1000)");
+    bool hasAnchor = State::artifacts_found[ArtiAnchorOfAdmirality];
+    int boatCost = hasAnchor ? 100 : 500;
+
+    _btTownName->setString(fmt::format("Town of {}", kTownInfo[_info->id].name));
+    _btGP->setString(fmt::format("GP={}", bty::numberK(State::gold)));
+    _optRentBoat->setString(State::boat_rented ? "Cancel boat rental" : fmt::format("Rent boat ({} week)", boatCost));
+    _optBuySpell->setString(fmt::format("{} spell ({})", kSpellNames[_info->spell], kSpellCosts[_info->spell]));
+    _optBuySiege->setString(State::siege ? "" : "Buy siege weapons (1000)");
 
     int num_captured = 0;
     for (int i = 0; i < 17; i++) {
-        if (gen.villains_captured[i]) {
+        if (State::villains_captured[i]) {
             num_captured++;
         }
     }
 
-    t_get_contract->set_visible(num_captured < 17);
-    t_buy_siege->set_visible(!v.siege);
+    _optGetContract->setVisible(num_captured < 17);
+    _optBuySiege->setVisible(!State::siege);
 
-    this->town_id = town_id;
-    unit_.set_texture(unit_textures_[unit_id]);
+    _spUnit.setTexture(_texUnits[_info->unit]);
 
-    hud.set_gold(v.gold);
+    _engine.getGUI().getHUD().setGold(State::gold);
+    _engine.getGUI().pushDialog(_dlgMain);
 }
 
 void Town::update(float dt)
 {
-    unit_.update(dt);
-    dialog.update(dt);
+    _spUnit.update(dt);
 }
 
-void Town::key(int key, int action)
+void Town::optBuySpell()
 {
-    if (action == GLFW_RELEASE || action == GLFW_REPEAT) {
-        return;
-    }
-
-    switch (key) {
-        case GLFW_KEY_ENTER:
-            switch (dialog.get_selection()) {
-                case 0:
-                    get_contract();
-                    break;
-                case 1:
-                    rent_boat();
-                    break;
-                case 2:
-                    gather_information();
-                    break;
-                case 3:
-                    buy_spell();
-                    break;
-                case 4:
-                    buy_siege();
-                    break;
-                default:
-                    break;
-            }
-            break;
-        case GLFW_KEY_BACKSPACE:
-            ss.pop(0);
-            break;
-        case GLFW_KEY_UP:
-            dialog.prev();
-            break;
-        case GLFW_KEY_DOWN:
-            dialog.next();
-            break;
-        default:
-            break;
-    }
-}
-
-void Town::buy_spell()
-{
-    if (v.known_spells < v.max_spells) {
-        if (v.gold >= kSpellCosts[gen.town_spells[town_id]]) {
-            v.gold -= kSpellCosts[gen.town_spells[town_id]];
-            v.spells[gen.town_spells[town_id]]++;
-            v.known_spells++;
-            hud.set_gold(v.gold);
-
-            int remaining = v.max_spells - v.known_spells;
-            hud.set_title(fmt::format("     You can learn {} more spell{}.", remaining, remaining != 1 ? "s" : ""));
+    if (State::known_spells < State::max_spells) {
+        if (State::gold >= kSpellCosts[_info->spell]) {
+            State::gold -= kSpellCosts[_info->spell];
+            State::spells[_info->spell]++;
+            State::known_spells++;
+            _engine.getGUI().getHUD().setGold(State::gold);
+            int remaining = State::max_spells - State::known_spells;
+            _engine.getGUI().getHUD().setTitle(fmt::format("     You can learn {} more spell{}.", remaining, remaining != 1 ? "s" : ""));
         }
         else {
-            hud.set_error("    You do not have enough gold!");
+            _engine.getGUI().getHUD().setError("    You do not have enough gold!");
         }
     }
     else {
-        hud.set_error("   You can not learn anymore spells!", [this]() {
-            hud.set_hero(v.hero, v.rank);
-            hud.set_days(v.days);
+        _engine.getGUI().getHUD().setError("   You can not learn anymore spells!", [this]() {
+            _engine.getGUI().getHUD().setHero(State::hero, State::rank);
+            _engine.getGUI().getHUD().setDays(State::days);
         });
     }
 }
 
-void Town::buy_siege()
+void Town::optBuySiege()
 {
-    if (v.gold < 3000) {
-        hud.set_error("    You do not have enough gold!");
+    if (State::gold < 3000) {
+        _engine.getGUI().getHUD().setError("    You do not have enough gold!");
     }
     else {
-        v.gold -= 3000;
-        v.siege = true;
-        hud.set_gold(v.gold);
-        t_gp->set_string(fmt::format("GP={}", bty::number_with_ks(v.gold)));
-        hud.set_siege(true);
+        State::gold -= 3000;
+        State::siege = true;
+        _engine.getGUI().getHUD().setGold(State::gold);
+        _btGP->setString(fmt::format("GP={}", bty::numberK(State::gold)));
+        _engine.getGUI().getHUD().setSiege(true);
     }
-    dialog.prev();
-    t_buy_siege->set_visible(!v.siege);
+    _dlgMain.prev();
+    _optBuySiege->setVisible(!State::siege);
 }
 
-void Town::gather_information()
+void Town::optGatherInfo()
 {
     std::string army;
     for (int i = 0; i < 5; i++) {
-        army += fmt::format(" {} {}\n", bty::get_descriptor(gen.castle_counts[town_id][i]), kUnits[gen.castle_armies[town_id][i]].name_plural);
+        army += fmt::format(" {} {}\n", bty::unitDescriptor(State::castle_counts[_info->id][i]), kUnits[State::castle_armies[_info->id][i]].namePlural);
     }
 
-    int villain_id = gen.castle_occupants[town_id];
+    int villainId = State::castle_occupants[_info->id];
     std::string occupier;
-    switch (villain_id) {
+    switch (villainId) {
         case -1:
-            occupier = fmt::format("Castle {}\nis under your rule.", kCastleInfo[town_id].name);
+            occupier = fmt::format("Castle {}\nis under your rule.", kCastleInfo[_info->id].name);
             break;
         case 0x7F:
-            occupier = fmt::format("Castle {}\nis under no one's rule.", kCastleInfo[town_id].name);
+            occupier = fmt::format("Castle {}\nis under no one's rule.", kCastleInfo[_info->id].name);
             break;
         default:
-            occupier = fmt::format("Castle {} is under\n{}'s rule.", kCastleInfo[town_id].name, kVillains[villain_id][0]);
+            occupier = fmt::format("Castle {} is under\n{}'s rule.", kCastleInfo[_info->id].name, kVillains[villainId][0]);
             break;
     }
 
-    ds.show_dialog({
-        .x = 1,
-        .y = 18,
-        .w = 30,
-        .h = 9,
-        .strings = {
-            {1, 1, occupier},
-            {1, 3, army},
-        },
-    });
+    _btOccupierName->setString(occupier);
+    _btOccupierArmy->setString(army);
 
-    if (villain_id != 0x7F && villain_id != -1) {
-        gen.villains_found[villain_id] = true;
+    if (villainId != 0x7F && villainId != -1) {
+        State::villains_found[villainId] = true;
     }
+
+    _engine.getGUI().pushDialog(_dlgOccupier);
 }
 
-void Town::get_contract()
+void Town::optGetContract()
 {
-    std::array<int, 5> available_contracts;
-    std::fill(available_contracts.begin(), available_contracts.end(), -1);
+    std::array<int, 5> availableContracts;
+    std::fill(availableContracts.begin(), availableContracts.end(), -1);
 
     /* Gather the first five uncaught villains. */
     int found = 0;
     for (int i = 0; i < 17; i++) {
-        if (!gen.villains_captured[i]) {
-            available_contracts[found++] = i;
+        if (!State::villains_captured[i]) {
+            availableContracts[found++] = i;
             if (found == 5) {
                 break;
             }
@@ -221,49 +185,72 @@ void Town::get_contract()
     }
 
     /* Find the current contract amongst the first five uncaught villains. */
-    int current_index_amongst_available = -1;
+    int curIndexAmongstAvailable = -1;
     for (int i = 0; i < 5; i++) {
-        if (available_contracts[i] == v.contract) {
-            current_index_amongst_available = i;
+        if (availableContracts[i] == State::contract) {
+            curIndexAmongstAvailable = i;
             break;
         }
     }
 
     /* If we don't have a contract, use the first available one, else use the next one. */
-    if (current_index_amongst_available == -1) {
-        v.contract = available_contracts[0];
+    if (curIndexAmongstAvailable == -1) {
+        State::contract = availableContracts[0];
     }
     else {
-        v.contract = available_contracts[(current_index_amongst_available + 1) % 5];
+        State::contract = availableContracts[(curIndexAmongstAvailable + 1) % 5];
     }
 
-    hud.set_contract(v.contract);
-    view_contract.update_info();
-    ss.push(&view_contract, nullptr);
+    _engine.getGUI().popDialog();
+    _engine.getGUI().getHUD().setContract(State::contract);
+    SceneMan::instance().setScene("viewcontract");
 }
 
-void Town::rent_boat()
+void Town::optRentBoat()
 {
-    if (!v.boat_rented) {
-        v.boat_x = kTownBoatX[town_id];
-        v.boat_y = 63 - kTownBoatY[town_id];
-        v.boat_c = v.continent;
-        boat.set_position(v.boat_x * 48.0f + 8.0f, v.boat_y * 40.0f + 8.0f);
+    if (!State::boat_rented) {
+        State::boat_x = kTownBoatX[_info->id];
+        State::boat_y = 63 - kTownBoatY[_info->id];
+        State::boat_c = State::continent;
+        _engine.setBoatPosition(State::boat_x * 48.0f + 8.0f, State::boat_y * 40.0f + 8.0f);
     }
     else {
-        v.boat_x = -1;
-        v.boat_y = -1;
-        v.boat_c = -1;
+        State::boat_x = -1;
+        State::boat_y = -1;
+        State::boat_c = -1;
     }
 
-    v.boat_rented = !v.boat_rented;
+    State::boat_rented = !State::boat_rented;
 
-    bool have_anchor = gen.artifacts_found[ArtiAnchorOfAdmirality];
-    int boat_cost = have_anchor ? 100 : 500;
-    if (v.boat_rented) {
-        v.gold -= boat_cost;
-        hud.set_gold(v.gold);
+    bool hasAnchor = State::artifacts_found[ArtiAnchorOfAdmirality];
+    int boatCost = hasAnchor ? 100 : 500;
+    if (State::boat_rented) {
+        State::gold -= boatCost;
+        _engine.getGUI().getHUD().setGold(State::gold);
     }
-    t_gp->set_string(fmt::format("GP={}", bty::number_with_ks(v.gold)));
-    t_rent_boat->set_string(v.boat_rented ? "Cancel boat rental" : fmt::format("Rent boat ({} week)", boat_cost));
+    _btGP->setString(fmt::format("GP={}", bty::numberK(State::gold)));
+    _optRentBoat->setString(State::boat_rented ? "Cancel boat rental" : fmt::format("Rent boat ({} week)", boatCost));
+}
+
+void Town::handleSelection(int opt)
+{
+    switch (opt) {
+        case 0:
+            optGetContract();
+            break;
+        case 1:
+            optRentBoat();
+            break;
+        case 2:
+            optGatherInfo();
+            break;
+        case 3:
+            optBuySpell();
+            break;
+        case 4:
+            optBuySiege();
+            break;
+        default:
+            break;
+    }
 }

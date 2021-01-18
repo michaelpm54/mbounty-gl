@@ -3,57 +3,51 @@
 
 #include "data/bounty.hpp"
 #include "data/color.hpp"
+#include "engine/component.hpp"
 #include "engine/dialog.hpp"
-#include "engine/scene.hpp"
 #include "game/recruit-input.hpp"
 #include "gfx/sprite.hpp"
 
 namespace bty {
-class Gfx;
-struct Texture;
-class SceneStack;
-class DialogStack;
+class Engine;
 }    // namespace bty
 
-class Hud;
-struct Variables;
-struct GenVariables;
-
-class KingsCastle : public bty::Scene {
+class KingsCastle : public Component {
 public:
-    KingsCastle(bty::SceneStack &ss, bty::DialogStack &ds, Hud &hud, Variables &v, GenVariables &gen);
-    void draw(bty::Gfx &gfx, glm::mat4 &camera) override;
-    void key(int key, int action) override;
+    KingsCastle(bty::Engine &engine);
+    void render() override;
+    void load();
+    void enter();
+    bool handleEvent(Event event) override;
     void update(float dt) override;
 
-    void view();
-    void set_gold(int gold);
-    void set_color(bty::BoxColor color);
+private:
+    void recruitOpt(int opt);
+    void showAudience();
+    bool handleKeyDown(Key key);
+    bool handleKeyUp(Key key);
+    void checkPromote(int);
+    void resetAudience();
+    void confirmRecruitAmount();
+    void startRecruiting();
+    void stopRecruiting();
 
 private:
-    void recruit_opt();
-    void main_opt();
-    void show_audience();
-
-private:
-    bty::SceneStack &ss;
-    bty::DialogStack &ds;
-    Hud &hud;
-    Variables &v;
-    GenVariables &gen;
-    bty::Sprite bg_;
-    bty::Sprite unit_;
-    bty::Dialog dialog_;
-    bty::Dialog recruit_;
-    const bty::Texture *unit_textures_[5];
-
-    bool show_recruit_ {false};
-    bool show_recruit_amount_ {false};
-
-    bty::Text *may_get_ {nullptr};
-    bty::Text *how_many_ {nullptr};
-
-    RecruitInput recruit_input_;
+    bty::Engine &_engine;
+    bty::Sprite _spBg;
+    bty::Sprite _spUnit;
+    bty::Dialog _dlgMain;
+    bty::Dialog _dlgRecruit;
+    bty::Dialog _dlgAudience;
+    bty::Text *_btRecruitCanGet;
+    bty::Text *_btRecruitWillGet;
+    bty::Text *_btAudience;
+    bty::Text *_btGP;
+    bty::Text *_btSelectArmy;
+    bty::Text *_btHowMany;
+    const bty::Texture *_texUnits[5];
+    bool _givingRecruitInput {false};
+    RecruitInput _recruitInput;
 };
 
 #endif    // BTY_GAME_KINGS_CASTLE_HPP_

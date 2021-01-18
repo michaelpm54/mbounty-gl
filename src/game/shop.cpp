@@ -4,14 +4,13 @@
 
 #include "data/shop.hpp"
 #include "data/tiles.hpp"
-#include "engine/scene-stack.hpp"
+#include "engine/engine.hpp"
+#include "engine/scene-manager.hpp"
 #include "engine/texture-cache.hpp"
 #include "game/hud.hpp"
-#include "game/map.hpp"
 #include "game/shop-info.hpp"
-#include "game/variables.hpp"
+#include "game/state.hpp"
 #include "gfx/gfx.hpp"
-#include "window/glfw.hpp"
 
 enum Dwellings {
     Cave,
@@ -27,25 +26,27 @@ static constexpr const char *const kShopNames[] = {
     "Plains",
 };
 
-Shop::Shop(bty::SceneStack &ss, Variables &v, Hud &hud)
-    : ss(ss)
-    , v(v)
-    , hud(hud)
+Shop::Shop(bty::Engine &engine)
+    : _engine(engine)
 {
-    box_.create(1, 18, 30, 9, bty::BoxColor::Intro);
-    box_.add_line(1, 1, "");     // Shop name
-    box_.add_line(1, 2, "");     // underline
-    box_.add_line(1, 4, "");     // available
-    box_.add_line(1, 5, "");     // cost
-    box_.add_line(22, 5, "");    // gp
-    box_.add_line(1, 6, "");     // you may recuit up to
-    box_.add_line(1, 7, "Recruit how many?");
-    box_.add_line(25, 7, "");    // current
+}
 
-    unit_.set_position(64, 104);
-    bg_.set_position(8, 24);
+void Shop::load()
+{
+    _box.create(1, 18, 30, 9);
+    _box.addString(1, 1);     // Shop name
+    _box.addString(1, 2);     // underline
+    _box.addString(1, 4);     // available
+    _box.addString(1, 5);     // cost
+    _box.addString(22, 5);    // gp
+    _box.addString(1, 6);     // you may recuit up to
+    _box.addString(1, 7, "Recruit how many?");
+    _box.addString(25, 7);    // current
+
+    _spUnit.setPosition(64, 104);
+    _spBg.setPosition(8, 24);
     for (int i = 0; i < 25; i++) {
-        unit_textures_[i] = Textures::instance().get(fmt::format("units/{}.png", i), {2, 2});
+        _texUnits[i] = Textures::instance().get(fmt::format("units/{}.png", i), {2, 2});
     }
 
     static constexpr const char *const kShopImages[] = {
@@ -56,31 +57,30 @@ Shop::Shop(bty::SceneStack &ss, Variables &v, Hud &hud)
     };
 
     for (int i = 0; i < 4; i++) {
-        dwelling_textures_[i] = Textures::instance().get(kShopImages[i]);
+        _texDwellings[i] = Textures::instance().get(kShopImages[i]);
     }
 }
 
-void Shop::draw(bty::Gfx &gfx, glm::mat4 &camera)
+void Shop::render()
 {
-    gfx.draw_sprite(bg_, camera);
-    gfx.draw_sprite(unit_, camera);
-    box_.draw(gfx, camera);
+    GFX::instance().drawSprite(_spBg);
+    GFX::instance().drawSprite(_spUnit);
+    _box.render();
 }
 
-void Shop::view(ShopInfo &info)
+void Shop::setShop(ShopInfo &info)
 {
-    if (info.unit == -1) {
-        spdlog::debug("Shop: invalid unit ID");
-        return;
-    }
+    assert(info.unit != -1);
+    _info = &info;
+}
 
-    set_color(bty::get_box_color(v.diff));
+void Shop::enter()
+{
+    _box.setColor(bty::getBoxColor(State::difficulty));
 
-    info_ = &info;
+    _recruitInput.clear();
 
-    recruit_input_.clear();
-
-    unit_.set_texture(unit_textures_[info.unit]);
+    _spUnit.setTexture(_texUnits[_info->unit]);
 
     static constexpr int kTileToTypeMapping[] = {
         Tile_ShopCave,
@@ -89,121 +89,139 @@ void Shop::view(ShopInfo &info)
         Tile_ShopWagon,
     };
 
-    int shop_type = 0;
+    int shopType = 0;
     for (int i = 0; i < 4; i++) {
-        if (kShopTileForUnit[info.unit] == kTileToTypeMapping[i]) {
-            shop_type = i;
+        if (kShopTileForUnit[_info->unit] == kTileToTypeMapping[i]) {
+            shopType = i;
             break;
         }
     }
 
-    const auto &unit = kUnits[info.unit];
+    const auto &unit = kUnits[_info->unit];
 
-    int already_have = 0;
+    int alreadyHave = 0;
     for (int i = 0; i < 5; i++) {
-        if (v.army[i] == info.unit) {
-            already_have = v.counts[i];
+        if (State::army[i] == _info->unit) {
+            alreadyHave = State::counts[i];
             break;
         }
     }
 
-    int recruitable = (v.leadership / unit.hp) - already_have;
-    recruitable = std::min(v.gold / unit.recruit_cost, recruitable);
+    int recruitable = (State::leadership / unit.hp) - alreadyHave;
+    recruitable = std::min(State::gold / unit.recruitCost, recruitable);
 
-    const std::string shop_name = kShopNames[shop_type];
-    int num_spaces = 14 - (shop_name.size() / 2);
-    std::string spaces = std::string(num_spaces, ' ');
+    const std::string shopName = kShopNames[shopType];
+    int numSpaces = static_cast<int>(floor(14.0f - (shopName.size() / 2)));
+    std::string spaces = std::string(numSpaces, ' ');
 
-    box_.set_line(0, spaces + shop_name);
-    box_.set_line(1, spaces + std::string(shop_name.size(), '_'));
-    box_.set_line(2, fmt::format("{} {} are available.", info.count, kUnits[info.unit].name_plural));
-    box_.set_line(3, fmt::format("Cost = {} each.", kUnits[info.unit].recruit_cost));
-    box_.set_line(4, fmt::format("GP={}", bty::number_with_ks(v.gold)));
-    box_.set_line(5, fmt::format("You may recruit up to {}.", recruitable));
-    recruit_input_.set_max(recruitable);
+    _box.set_line(0, spaces + shopName);
+    _box.set_line(1, spaces + std::string(shopName.size(), '_'));
+    _box.set_line(2, fmt::format("{} {} are available.", _info->count, kUnits[_info->unit].namePlural));
+    _box.set_line(3, fmt::format("Cost = {} each.", kUnits[_info->unit].recruitCost));
+    _box.set_line(4, fmt::format("GP={}", bty::numberK(State::gold)));
+    _box.set_line(5, fmt::format("You may recruit up to {}.", recruitable));
+    _recruitInput.setMax(recruitable);
 
-    bg_.set_texture(dwelling_textures_[shop_type]);
+    _spBg.setTexture(_texDwellings[shopType]);
 }
 
 void Shop::update(float dt)
 {
-    unit_.update(dt);
-    recruit_input_.update(dt);
-    box_.set_line(7, fmt::format("{:>3}", recruit_input_.get_current()));
+    _spUnit.update(dt);
+    _recruitInput.update(dt);
+    _box.set_line(7, fmt::format("{:>3}", _recruitInput.getCurrentAmount()));
 }
 
-void Shop::key(int key, int action)
+bool Shop::handleEvent(Event event)
 {
-    recruit_input_.key(key, action);
+    if (event.id == EventId::KeyDown) {
+        return handleKeyDown(event.key);
+    }
+    else if (event.id == EventId::KeyUp) {
+        return handleKeyUp(event.key);
+    }
+    return false;
+}
 
+bool Shop::handleKeyDown(Key key)
+{
     switch (key) {
-        case GLFW_KEY_ENTER:
-            if (action == GLFW_PRESS) {
-                confirm();
-            }
+        case Key::Backspace:
+            SceneMan::instance().back();
             break;
-        case GLFW_KEY_BACKSPACE:
-            ss.pop(0);
+        case Key::Enter:
+            confirm();
+            break;
+        case Key::Left:
+            break;
+        case Key::Right:
+            break;
+        case Key::Up:
+            break;
+        case Key::Down:
             break;
         default:
-            break;
+            return false;
     }
+    _recruitInput.handleKeyDown(key);
+    return true;
 }
 
-void Shop::set_color(bty::BoxColor color)
+bool Shop::handleKeyUp(Key key)
 {
-    box_.set_color(color);
+    _recruitInput.handleKeyUp(key);
+    return true;
 }
 
 void Shop::confirm()
 {
-    if (info_->unit == -1 || !info_) {
+    if (_info->unit == -1 || !_info) {
         return;
     }
 
-    int recruit_cost = kUnits[info_->unit].recruit_cost;
-    int current = recruit_input_.get_current();
+    int recruitCost = kUnits[_info->unit].recruitCost;
+    int current = _recruitInput.getCurrentAmount();
 
-    if (recruit_cost > v.gold) {
-        hud.set_error("     You do not have enough gold!");
+    if (recruitCost > State::gold) {
+        _engine.getGUI().getHUD().setError("     You do not have enough gold!");
     }
     else if (current > 0) {
-        int cost = current * recruit_cost;
-        v.gold -= cost;
-        hud.set_gold(v.gold);
-        info_->count -= current;
+        int cost = current * recruitCost;
+        State::gold -= cost;
+        _engine.getGUI().getHUD().setGold(State::gold);
+        _info->count -= current;
 
         /* Add the amount to the existing one. */
-        int already_have = 0;
+        int alreadyHave = 0;
         for (int i = 0; i < 5; i++) {
-            if (v.army[i] == info_->unit) {
-                v.counts[i] += current;
-                already_have = v.counts[i];
+            if (State::army[i] == _info->unit) {
+                State::counts[i] += current;
+                alreadyHave = State::counts[i];
                 break;
             }
         }
 
         /* Find the first -1 unit and set it to the new one. */
-        if (!already_have) {
+        if (!alreadyHave) {
             for (int i = 0; i < 5; i++) {
-                if (v.army[i] == -1) {
-                    v.army[i] = info_->unit;
-                    v.counts[i] = current;
-                    already_have = v.counts[i];
+                if (State::army[i] == -1) {
+                    State::army[i] = _info->unit;
+                    State::counts[i] = current;
+                    alreadyHave = State::counts[i];
                     break;
                 }
             }
         }
 
-        /* Update the shop info. */
-        const auto &unit = kUnits[info_->unit];
+        /* Update the shop _info-> */
+        const auto &unit = kUnits[_info->unit];
 
-        int recruitable = (v.leadership / unit.hp) - already_have;
-        recruitable = std::min(v.gold / unit.recruit_cost, recruitable);
+        int recruitable = (State::leadership / unit.hp) - alreadyHave;
+        recruitable = std::min(State::gold / unit.recruitCost, recruitable);
 
-        box_.set_line(2, fmt::format("{} {} are available.", info_->count, kUnits[info_->unit].name_plural));
-        box_.set_line(4, fmt::format("GP={}", bty::number_with_ks(v.gold)));
-        box_.set_line(5, fmt::format("You may recruit up to {}.", recruitable));
-        recruit_input_.set_max(recruitable);
+        _box.set_line(2, fmt::format("{} {} are available.", _info->count, kUnits[_info->unit].namePlural));
+        _box.set_line(4, fmt::format("GP={}", bty::numberK(State::gold)));
+        _box.set_line(5, fmt::format("You may recruit up to {}.", recruitable));
+        _recruitInput.setMax(recruitable);
     }
 }

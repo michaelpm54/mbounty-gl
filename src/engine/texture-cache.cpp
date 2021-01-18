@@ -7,50 +7,55 @@
 
 namespace bty {
 
-void TextureCache::init(const std::string &base_path)
+void TextureCache::init(const std::string &basePath)
 {
-    base_path_ = base_path;
-    border_.resize(8);
+    _basePath = basePath;
+    _border.resize(8);
     for (int i = 0; i < 8; i++) {
-        border_[i] = get(fmt::format("border-normal/box{}.png", i));
+        _border[i] = get(fmt::format("border-normal/box{}.png", i));
     }
-    font_.load_from_texture(get("fonts/genesis_custom.png"), {8.0f, 8.0f});
+    _font.loadFromTexture(get("fonts/genesis_custom.png"), {8.0f, 8.0f});
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 }
 
 void TextureCache::deinit()
 {
+    int memBefore = 0;
+    glGetIntegerv(GL_GPU_MEMORY_INFO_CURRENT_AVAILABLE_VIDMEM_NVX, &memBefore);
     for (auto &[path, texture] : _cache) {
         glDeleteTextures(1, &texture.handle);
     }
+    int memAfter = 0;
+    glGetIntegerv(GL_GPU_MEMORY_INFO_CURRENT_AVAILABLE_VIDMEM_NVX, &memAfter);
+    spdlog::debug("TextureCache :: freed {} bytes", memAfter - memBefore);
 }
 
-const std::vector<const Texture *> &TextureCache::get_border() const
+const std::vector<const Texture *> &TextureCache::getBorder() const
 {
-    return border_;
+    return _border;
 }
 
-const Font &TextureCache::get_font() const
+const Font &TextureCache::getFont() const
 {
-    return font_;
+    return _font;
 }
 
-Texture *TextureCache::get(const std::string &path, glm::ivec2 num_frames)
+Texture *TextureCache::get(const std::string &path, glm::ivec2 numFrames)
 {
-    const auto texture_path = fmt::format("{}/textures/{}", base_path_, path);
+    const auto texturePath = fmt::format("{}/textures/{}", _basePath, path);
 
-    if (_cache.contains(texture_path)) {
-        return &_cache[texture_path];
+    if (_cache.contains(texturePath)) {
+        return &_cache[texturePath];
     }
 
-    if (num_frames.x > 1 || num_frames.y > 1) {
-        return get_texture_array(texture_path, num_frames);
+    if (numFrames.x > 1 || numFrames.y > 1) {
+        return getArrayTexture(texturePath, numFrames);
     }
 
-    return get_single_texture(texture_path);
+    return getSingleTexture(texturePath);
 }
 
-Texture *TextureCache::get_texture_array(const std::string &path, glm::ivec2 num_frames)
+Texture *TextureCache::getArrayTexture(const std::string &path, glm::ivec2 numFrames)
 {
     int c;
     int w;
@@ -64,36 +69,36 @@ Texture *TextureCache::get_texture_array(const std::string &path, glm::ivec2 num
         return nullptr;
     }
     else {
-        // spdlog::debug("Texture {} dimensions {}x{} components {}. Frames: {}x{}", path, w, h, c, num_frames.x, num_frames.y);
+        // spdlog::debug("Texture {} dimensions {}x{} components {}. Frames: {}x{}", path, w, h, c, numFrames.x, numFrames.y);
     }
 
-    GLenum iformat = c == 3 ? GL_RGB8 : GL_RGBA8;
+    GLenum internalFormat = c == 3 ? GL_RGB8 : GL_RGBA8;
     GLenum format = c == 3 ? GL_RGB : GL_RGBA;
 
-    int frame_width = w / num_frames.x;
-    int frame_height = h / num_frames.y;
-    int frame_count = num_frames.x * num_frames.y;
+    int frameWidth = w / numFrames.x;
+    int frameHeight = h / numFrames.y;
+    int frameCount = numFrames.x * numFrames.y;
 
     GLuint tex;
     glCreateTextures(GL_TEXTURE_2D_ARRAY, 1, &tex);
-    glTextureStorage3D(tex, 1, iformat, frame_width, frame_height, frame_count);
+    glTextureStorage3D(tex, 1, internalFormat, frameWidth, frameHeight, frameCount);
 
     glPixelStorei(GL_UNPACK_ROW_LENGTH, w);
 
-    for (int i = 0; i < num_frames.x; i++) {
-        for (int j = 0; j < num_frames.y; j++) {
+    for (int i = 0; i < numFrames.x; i++) {
+        for (int j = 0; j < numFrames.y; j++) {
             glTextureSubImage3D(
                 tex,
                 0,
                 0,
                 0,
-                num_frames.x * j + i,
-                frame_width,
-                frame_height,
+                numFrames.x * j + i,
+                frameWidth,
+                frameHeight,
                 1,
                 format,
                 GL_UNSIGNED_BYTE,
-                data + ((j * frame_height * w) + (i * frame_width)) * c);
+                data + ((j * frameHeight * w) + (i * frameWidth)) * c);
         }
     }
 
@@ -107,12 +112,12 @@ Texture *TextureCache::get_texture_array(const std::string &path, glm::ivec2 num
 
     stbi_image_free(data);
 
-    _cache[path] = {w, h, tex, num_frames.x, num_frames.y, frame_width, frame_height};
+    _cache[path] = {w, h, tex, numFrames.x, numFrames.y, frameWidth, frameHeight};
 
     return &_cache[path];
 }
 
-Texture *TextureCache::get_single_texture(const std::string &path)
+Texture *TextureCache::getSingleTexture(const std::string &path)
 {
     int c;
     int w;
@@ -129,7 +134,7 @@ Texture *TextureCache::get_single_texture(const std::string &path)
         // spdlog::debug("Texture {} dimensions {}x{} components {}", path, w, h, c);
     }
 
-    GLenum iformat = c == 3 ? GL_RGB8 : GL_RGBA8;
+    GLenum internalFormat = c == 3 ? GL_RGB8 : GL_RGBA8;
     GLenum format = c == 3 ? GL_RGB : GL_RGBA;
 
     GLuint tex;
@@ -142,7 +147,7 @@ Texture *TextureCache::get_single_texture(const std::string &path)
     glTextureParameteri(tex, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTextureParameteri(tex, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-    glTextureStorage2D(tex, 1, iformat, w, h);
+    glTextureStorage2D(tex, 1, internalFormat, w, h);
     glTextureSubImage2D(tex, 0, 0, 0, w, h, format, GL_UNSIGNED_BYTE, data);
 
     stbi_image_free(data);
@@ -152,9 +157,26 @@ Texture *TextureCache::get_single_texture(const std::string &path)
     return &_cache[path];
 }
 
-const std::string &TextureCache::get_base_path() const
+const std::string &TextureCache::getBasePath() const
 {
-    return base_path_;
+    return _basePath;
+}
+
+void TextureCache::free(const Texture *texture)
+{
+    auto it = _cache.begin();
+    for (it; it != _cache.end(); ++it) {
+        if (&it->second == texture) {
+            break;
+        }
+    }
+    if (it == _cache.end()) {
+        spdlog::warn("Attempted to free texture not contained in cache");
+    }
+    else {
+        glDeleteTextures(1, &const_cast<Texture *>(texture)->handle);
+        _cache.erase(it->first);
+    }
 }
 
 }    // namespace bty

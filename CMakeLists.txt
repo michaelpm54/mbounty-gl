@@ -14,9 +14,16 @@ set(MBOUNTYGL_SRC
 	src/engine/engine.cpp
 	src/engine/dialog.cpp
 	src/engine/textbox.cpp
-	src/engine/scene-stack.cpp
-	src/engine/dialog-stack.cpp
+	src/engine/scene-manager.cpp
 	src/engine/timer.cpp
+	src/engine/gui.cpp
+	src/game/chest-generator.cpp
+	src/game/chest-gold.cpp
+	src/game/chest-commission.cpp
+	src/game/chest-spell-power.cpp
+	src/game/chest-spell-capacity.cpp
+	src/game/chest-spell.cpp
+	src/game/state.cpp
 	src/game/game-controls.cpp
 	src/game/garrison.cpp
 	src/game/victory.cpp
@@ -38,8 +45,8 @@ set(MBOUNTYGL_SRC
 	src/game/shop.cpp
 	src/game/shop-gen.cpp
 	src/game/recruit-input.cpp
-	src/game/chest.cpp
 	src/game/army-gen.cpp
+	src/game/use-magic.cpp
 	src/game/battle.cpp
 	src/game/save.cpp
 	src/gfx/font.cpp
@@ -57,6 +64,7 @@ add_executable(${PROJECT_NAME}
     ${MBOUNTYGL_SRC}
 )
 
+target_compile_definitions(${PROJECT_NAME} PRIVATE BTY_USE_GLFW)
 find_package(glfw3 CONFIG REQUIRED)
 find_package(GLEW CONFIG REQUIRED)
 find_package(GLM CONFIG REQUIRED)

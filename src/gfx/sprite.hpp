@@ -12,10 +12,10 @@ namespace bty {
 
 struct Animation {
     bool exists {false};
-    int current_frame {0};
-    int total_frames {0};
-    float time_per_frame {0.0f};
-    float current_time {0.0f};
+    int curFrame {0};
+    int totalFrames {0};
+    float secondsPerFrame {0.0f};
+    float curTime {0.0f};
     bool repeat {true};
     bool play {true};
     bool done {false};
@@ -26,30 +26,30 @@ public:
     Sprite() = default;
     Sprite(const Sprite &) = default;
     Sprite(const Texture *texture, const glm::vec2 &position);
-    void set_texture(const Texture *texture);
-    const Texture *get_texture() const;
+    void setTexture(const Texture *texture);
+    const Texture *getTexture() const;
     void update(float dt);
-    int get_frame() const;
-    void set_flip(bool val);
-    bool get_flip() const;
-    void set_repeat(bool val);
-    bool get_repeat() const;
-    void reset_animation();
-    void set_animation_repeat(bool repeat);
-    bool is_animation_done() const;
-    void play_animation();
-    void pause_animation();
+    int getFrame() const;
+    void setFlip(bool val);
+    bool getFlip() const;
+    void setRepeat(bool val);
+    bool getRepeat() const;
+    void resetAnimation();
+    void setAnimationRepeat(bool repeat);
+    bool isAnimationDone() const;
+    void playAnimation();
+    void pauseAnimation();
 
 private:
-    void load_animation();
+    void loadAnimation();
 
 protected:
-    const Texture *texture_ {nullptr};
+    const Texture *_texture {nullptr};
 
 private:
-    bool flip_ {false};
-    bool repeat_ {false};
-    Animation animation_;
+    bool _flip {false};
+    bool _repeat {false};
+    Animation _animation;
 };
 
 }    // namespace bty

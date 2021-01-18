@@ -1,43 +1,33 @@
 #ifndef BTY_GAME_VIEW_CONTRACT_HPP_
 #define BTY_GAME_VIEW_CONTRACT_HPP_
 
-#include "engine/scene.hpp"
+#include "engine/component.hpp"
 #include "engine/textbox.hpp"
 #include "gfx/rect.hpp"
 #include "gfx/sprite.hpp"
 #include "gfx/text.hpp"
 
 namespace bty {
-class Font;
-class Gfx;
-struct Texture;
-class SceneStack;
+class Engine;
 }    // namespace bty
 
-struct GenVariables;
-struct Variables;
-
-class ViewContract : public bty::Scene {
+class ViewContract : public Component {
 public:
-    ViewContract(bty::SceneStack &ss, Variables &v, GenVariables &gen, bty::Sprite *contract_sprite);
+    ViewContract(bty::Engine &engine, bty::Sprite *contract_sprite);
 
-    void draw(bty::Gfx &gfx, glm::mat4 &camera) override;
-    void key(int key, int action) override;
-    void update(float dt) override;
-
-    void view(int contract, const std::string &castle, bty::Sprite *contract_sprite);
-    void update_info();
-    void set_color(bty::BoxColor color);
+    void render() override;
+    void enter() override;
+    void load() override;
+    bool handleEvent(Event event) override;
+    bool handleKey(Key key) override;
 
 private:
-    bty::SceneStack &ss;
-    Variables &v;
-    GenVariables &gen;
-    bty::TextBox box_;
-    bty::Text no_contract_text_;
-    bool no_contract_ {false};
-    bty::Sprite *contract_sprite_ {nullptr};
-    bty::Text info_;
+    bty::Engine &_engine;
+    bty::Sprite *_spVillain {nullptr};
+    bty::TextBox _box;
+    bty::Text _btNoContract;
+    bty::Text _btInfo;
+    bool _noContract {false};
 };
 
 #endif    // BTY_GAME_VIEW_CONTRACT_HPP_

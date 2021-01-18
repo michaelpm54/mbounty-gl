@@ -2,81 +2,73 @@
 
 #include <spdlog/spdlog.h>
 
+#include <glm/gtc/matrix_transform.hpp>
 #include <glm/trigonometric.hpp>
 
 #include "data/bounty.hpp"
 #include "data/tiles.hpp"
-#include "engine/scene-stack.hpp"
+#include "engine/scene-manager.hpp"
 #include "engine/texture-cache.hpp"
-#include "game/map.hpp"
-#include "game/variables.hpp"
+#include "game/ingame.hpp"
+#include "game/state.hpp"
 #include "gfx/gfx.hpp"
 #include "gfx/texture.hpp"
-#include "window/glfw.hpp"
 
-ViewContinent::ViewContinent(bty::SceneStack &ss)
-    : ss(ss)
-    , map_texture_({64, 64, GL_NONE, 1, 1, 64, 64})
+ViewContinent::ViewContinent(bty::Engine &engine)
+    : _engine(engine)
+    , _texMap({64, 64, GL_NONE, 1, 1, 64, 64})
+    , _view(glm::ortho(0.0f, 320.0f, 224.0f, 0.0f, -1.0f, 1.0f))
 {
-    box_.create(6, 4, 20, 22, bty::BoxColor::Intro);
-    continent_ = box_.add_line(5, 1, "");
-    coordinates_ = box_.add_line(1, 20, "");
-
-    glCreateTextures(GL_TEXTURE_2D, 1, &map_texture_.handle);
-    glTextureStorage2D(map_texture_.handle, 1, GL_RGBA8, 64, 64);
-    glTextureParameterf(map_texture_.handle, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTextureParameterf(map_texture_.handle, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTextureParameterf(map_texture_.handle, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTextureParameterf(map_texture_.handle, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-    map_.set_texture(&map_texture_);
-    map_.set_position(64, 56);
-    map_.set_size(128, 128);
 }
 
-ViewContinent::~ViewContinent()
+void ViewContinent::load()
 {
-    glDeleteTextures(1, &map_texture_.handle);
+    _box.create(6, 4, 20, 22);
+    _btContinent = _box.addString(5, 1);
+    _btCoordinates = _box.addString(1, 20);
+
+    glCreateTextures(GL_TEXTURE_2D, 1, &_texMap.handle);
+    glTextureStorage2D(_texMap.handle, 1, GL_RGBA8, 64, 64);
+    glTextureParameterf(_texMap.handle, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTextureParameterf(_texMap.handle, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTextureParameterf(_texMap.handle, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTextureParameterf(_texMap.handle, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    _spMap.setTexture(&_texMap);
+    _spMap.setPosition(64, 56);
+    _spMap.setSize(128, 128);
 }
 
-void ViewContinent::draw(bty::Gfx &gfx, glm::mat4 &camera)
+void ViewContinent::unload()
 {
-    box_.draw(gfx, camera);
-    gfx.draw_sprite(map_, camera);
+    glDeleteTextures(1, &_texMap.handle);
 }
 
-void ViewContinent::update_info(Variables &v, bool have_map, bool force_show)
+void ViewContinent::render()
 {
-    this->v = &v;
-    this->have_map = have_map;
-    fog = !force_show;
-
-    set_color(bty::get_box_color(v.diff));
-
-    x_ = v.x;
-    y_ = v.y;
-
-    continent_->set_string(kContinentNames[v.continent]);
-    coordinates_->set_string(fmt::format("X={:>2} Position Y={:>2}", v.x, 63 - v.y));
-
-    gen_texture();
+    SceneMan::instance().getLastScene()->render();
+    GFX::instance().setView(_view);
+    _box.render();
+    GFX::instance().drawSprite(_spMap);
 }
 
 void ViewContinent::update(float dt)
 {
-    dot_timer_ += dt;
-    dot_alpha_ = glm::abs(glm::cos(dot_timer_ * 4));
+    static_cast<Ingame *>(SceneMan::instance().getLastScene())->updateAnimations(dt);
 
-    uint8_t val = static_cast<uint8_t>(255 * dot_alpha_);
+    _dotTimer += dt;
+    _dotAlpha = glm::abs(glm::cos(_dotTimer * 4));
+
+    uint8_t val = static_cast<uint8_t>(255 * _dotAlpha);
 
     /* Cyan */
     uint32_t pixel = 0xFF000000 | (val << 8) | val;
 
     glTextureSubImage2D(
-        map_texture_.handle,
+        _texMap.handle,
         0,
-        x_,
-        y_,
+        State::x,
+        State::y,
         1,
         1,
         GL_BGRA,
@@ -84,43 +76,57 @@ void ViewContinent::update(float dt)
         &pixel);
 }
 
-void ViewContinent::set_color(bty::BoxColor color)
+void ViewContinent::enter()
 {
-    box_.set_color(color);
+    _box.setColor(bty::getBoxColor(State::difficulty));
+
+    this->_haveThisMap = State::continent_maps_found[State::continent];
+
+    _btContinent->setString(kContinentNames[State::continent]);
+    _btCoordinates->setString(fmt::format("X={:>2} Position Y={:>2}", State::x, 63 - State::y));
+
+    genTexture();
 }
 
-void ViewContinent::key(int key, int action)
+bool ViewContinent::handleEvent(Event event)
 {
-    if (action == GLFW_PRESS) {
-        switch (key) {
-            case GLFW_KEY_BACKSPACE:
-                ss.pop(0);
-                break;
-            case GLFW_KEY_ENTER:
-                if (have_map) {
-                    fog = !fog;
-                    gen_texture();
-                }
-                break;
-            default:
-                break;
-        }
+    if (event.id == EventId::KeyDown) {
+        return handleKey(event.key);
     }
+    return false;
 }
 
-void ViewContinent::gen_texture()
+bool ViewContinent::handleKey(Key key)
+{
+    switch (key) {
+        case Key::Backspace:
+            SceneMan::instance().back();
+            break;
+        case Key::Enter:
+            if (_haveThisMap) {
+                _fogEnabled = !_fogEnabled;
+                genTexture();
+            }
+            break;
+        default:
+            return false;
+    }
+    return true;
+}
+
+void ViewContinent::genTexture()
 {
     /* ARGB */
-    static constexpr uint32_t water_edge = 0xFF2161C7;
-    static constexpr uint32_t water_deep = 0xFF002084;
+    static constexpr uint32_t waterEdge = 0xFF2161C7;
+    static constexpr uint32_t waterDeep = 0xFF002084;
     static constexpr uint32_t grass = 0xFF21A300;
     static constexpr uint32_t trees = 0xFF006100;
     static constexpr uint32_t rocks = 0xFF844100;
     static constexpr uint32_t black = 0xFF000000;
     static constexpr uint32_t yellow = 0xFFCCCC00;
-    static constexpr uint32_t castle = 0xFFe8E4E8;
+    static constexpr uint32_t castle = 0xFFE8E4E8;
 
-    const unsigned char *const map = fog ? v->visited_tiles[v->continent].data() : v->tiles[v->continent];
+    const unsigned char *const map = _fogEnabled ? State::visited_tiles[State::continent].data() : State::tiles[State::continent];
 
     std::vector<unsigned char> pixels(64 * 64 * 4);
     unsigned char *p = pixels.data();
@@ -134,10 +140,10 @@ void ViewContinent::gen_texture()
             std::memcpy(p + i * 4, &grass, 4);
         }
         else if (id >= Tile_WaterIRT && id < Tile_Water) {
-            std::memcpy(p + i * 4, &water_edge, 4);
+            std::memcpy(p + i * 4, &waterEdge, 4);
         }
         else if (id == Tile_Water) {
-            std::memcpy(p + i * 4, &water_deep, 4);
+            std::memcpy(p + i * 4, &waterDeep, 4);
         }
         else if (id >= Tile_TreeERB && id <= Tile_Tree) {
             std::memcpy(p + i * 4, &trees, 4);
@@ -159,7 +165,7 @@ void ViewContinent::gen_texture()
     glPixelStorei(GL_UNPACK_ROW_LENGTH, 64);
 
     glTextureSubImage2D(
-        map_texture_.handle,
+        _texMap.handle,
         0,
         0,
         0,

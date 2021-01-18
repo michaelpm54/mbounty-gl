@@ -3,12 +3,11 @@
 
 #include <array>
 #include <deque>
-#include <glm/vec4.hpp>
+#include <glm/vec2.hpp>
 #include <string>
 
 #include "data/bounty.hpp"
 #include "data/color.hpp"
-#include "engine/texture-cache.hpp"
 #include "gfx/rect.hpp"
 #include "gfx/sprite.hpp"
 #include "gfx/text.hpp"
@@ -24,33 +23,32 @@ public:
     /* clang-format off */
 	void create(
 		int x, int y,
-		int w, int h,
-		BoxColor color
+		int w, int h
 	);
     /* clang-format on */
 
-    void draw(Gfx &gfx, glm::mat4 &camera);
-    Text *add_line(int x, int y, std::string const &str);
-    void set_line(int i, std::string const &str);
-    void set_color(BoxColor color);
-    void set_line_visible(int index, bool value);
-    void set_size(int w, int h);
-    void set_position(int x, int y);
+    Text *addString(int x, int y, std::string str = "");
+    void set_line(int i, std::string const &str);    // TODO: Don't need this; use addString
+    void setColor(BoxColor color);
+    void setCellSize(int w, int h);
+    void setCellPosition(int x, int y);
     void clear();
+    void render();
 
 private:
-    std::array<Sprite, 8> box_;
-    std::vector<bool> lines_visible_;
-    Rect background_;
-    Rect background_outline_;
-    float width_;
-    float height_;
+    std::array<Sprite, 8> _spBox;
+    Rect _rectBg;
+    Rect _rectBgOutline;
+    float _realWidth;
+    float _realHeight;
 
 protected:
-    std::vector<glm::ivec2> cell_positions;
-    std::deque<Text> lines_;
-    int x_;
-    int y_;
+    std::vector<glm::ivec2> _stringCellPositions;
+    std::deque<Text> _strings;
+    int _cellX;
+    int _cellY;
+    int _cellWidth {0};
+    int _cellHeight {0};
 };
 
 }    // namespace bty

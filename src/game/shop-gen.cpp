@@ -3,12 +3,12 @@
 #include "data/bounty.hpp"
 #include "data/shop.hpp"
 
-int gen_shop_unit(int shop_index, int continent)
+int genShopUnit(int shopIndex, int continent)
 {
-    return kShopUnits[shop_index + continent * 6];
+    return kShopUnits[shopIndex + continent * 6];
 }
 
-int gen_shop_count(int unit)
+int genShopCount(int unit)
 {
     int max = kMaxShopCounts[unit];
     int a = bty::random(kMaxShopCounts[unit] >> 4, max / 2);
@@ -17,7 +17,7 @@ int gen_shop_count(int unit)
     return c + a + b + max;
 }
 
-int get_shop_tile(int unit)
+int getShopTileType(int unit)
 {
     return kShopTileForUnit[unit];
 }

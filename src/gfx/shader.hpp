@@ -7,7 +7,7 @@
 
 namespace bty {
 
-GLuint load_shader(const std::string &vert_shader, const std::string &frag_shader);
+GLuint loadShader(const std::string &vertShader, const std::string &fragShader);
 
 }    // namespace bty
 

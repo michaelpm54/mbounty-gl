@@ -1,16 +1,11 @@
-#ifndef BTY_GAME_CHEST_HPP_
-#define BTY_GAME_CHEST_HPP_
+#ifndef BTY_GAME_CHEST2_HPP_
+#define BTY_GAME_CHEST2_HPP_
 
-#include "engine/dialog-def.hpp"
+class Chest {
+public:
+    virtual void load() = 0;
+    virtual void show() = 0;
+    virtual int getChance() = 0;
+};
 
-namespace bty {
-class DialogStack;
-}    // namespace bty
-
-class Hud;
-struct Variables;
-struct GenVariables;
-
-void chest_roll(Variables &v, GenVariables &gen, bty::DialogStack &ds, Hud &hud);
-
-#endif    // BTY_GAME_CHEST_HPP_
+#endif    // BTY_GAME_CHEST2_HPP_

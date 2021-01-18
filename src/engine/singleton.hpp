@@ -4,7 +4,7 @@
 namespace bty {
 
 template <typename T>
-struct singleton_provider {
+struct SingletonProvider {
     static T& instance()
     {
         static T instance_ {};

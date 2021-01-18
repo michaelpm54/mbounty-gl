@@ -12,7 +12,6 @@
 
 namespace bty {
 class Font;
-class Gfx;
 struct Texture;
 }    // namespace bty
 
@@ -20,66 +19,66 @@ class Hud {
 public:
     Hud();
 
-    void draw(bty::Gfx &gfx, glm::mat4 &camera);
+    void render();
     void update(float dt);
-    bty::Sprite *get_contract();
-    void set_timestop(int amount);
-    void clear_timestop();
+    bty::Sprite *getContractSprite();
+    void setTimestop(int amount);
+    void clearTimestop();
 
-    void set_error(const std::string &msg, std::function<void()> then = nullptr);
-    void set_title(const std::string &msg); /* Similar to set_error except it doesn't take input. */
-    void clear_error();
-    bool get_error() const;
+    void setError(const std::string &msg, std::function<void()> then = nullptr);
+    void setTitle(const std::string &msg); /* Similar to setError except it doesn't take input. */
+    void clearError();
+    bool getError() const;
 
-    void set_blank_frame();
-    void set_hud_frame();
-    void set_color(bty::BoxColor color);
+    void setBlankFrame();
+    void setHudFrame();
+    void setColor(bty::BoxColor color);
 
-    void set_hero(int hero, int rank);
-    void set_days(int days);
-    void set_contract(int contract);
-    void set_magic(bool val);
-    void set_siege(bool val);
-    void set_puzzle(bool *villains, bool *artifacts);
-    void set_gold(int gold);
+    void setHero(int hero, int rank);
+    void setDays(int days);
+    void setContract(int contract);
+    void setMagic(bool val);
+    void setSiege(bool val);
+    void setPuzzle(bool *villains, bool *artifacts);
+    void setGold(int gold);
 
 private:
-    const bty::Texture *blank_frame_;
-    const bty::Texture *hud_frame_;
+    const bty::Texture *_texBlankFrame;
+    const bty::Texture *_texHudFrame;
 
-    bty::Sprite frame_;
-    bty::Rect top_bar_;
-    bty::Text name_;
-    bty::Text days_;
-    bty::Text timestop_string_;
-    bty::Sprite contract_;
-    bty::Sprite siege_;
-    bty::Sprite magic_;
-    bty::Sprite puzzle_;
-    bty::Sprite money_;
-    std::vector<const bty::Texture *> contract_textures_;
+    bty::Sprite _spFrame;
+    bty::Rect _topFillRect;
+    bty::Text _btName;
+    bty::Text _btDays;
+    bty::Text _btTimestop;
+    bty::Sprite _spContract;
+    bty::Sprite _spSiege;
+    bty::Sprite _spMagic;
+    bty::Sprite _spPuzzle;
+    bty::Sprite _spMoney;
+    std::vector<const bty::Texture *> _texContracts;
 
-    const bty::Texture *siege_no {nullptr};
-    const bty::Texture *siege_yes {nullptr};
+    const bty::Texture *_texSiegeNo {nullptr};
+    const bty::Texture *_texSiegeYes {nullptr};
 
-    const bty::Texture *magic_no {nullptr};
-    const bty::Texture *magic_yes {nullptr};
+    const bty::Texture *_texMagicNo {nullptr};
+    const bty::Texture *_texMagicYes {nullptr};
 
-    bty::Sprite pieces_[25];
-    bool hide_piece_[25];
+    bty::Sprite _spPieces[25];
+    bool _hiddenPieces[25];
 
-    bty::Sprite gold_[30];
-    int num_gold_coins_ {0};
-    int num_silver_coins_ {0};
-    int num_copper_coins_ {0};
+    bty::Sprite _spGold[30];
+    int _numGoldSprites {0};
+    int _numSilverSprites {0};
+    int _numCopperSprites {0};
 
-    bool timestop_ {false};
+    bool _isTimestop {false};
 
-    bty::Text error_text;
-    std::function<void()> error_then_;
-    bool error {false};
+    bty::Text _btError;
+    std::function<void()> _errorCallback;
+    bool _isError {false};
 
-    bool no_sprites {false};
+    bool _noSprites {false};
 };
 
 #endif    // GAME_HUD_HPP_

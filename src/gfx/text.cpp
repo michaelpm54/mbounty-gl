@@ -10,98 +10,98 @@ namespace bty {
 
 Text::~Text()
 {
-    if (vao_ != GL_NONE) {
-        glDeleteVertexArrays(1, &vao_);
+    if (_vao != GL_NONE) {
+        glDeleteVertexArrays(1, &_vao);
     }
-    if (vbo_ != GL_NONE) {
-        glDeleteBuffers(1, &vbo_);
+    if (_vbo != GL_NONE) {
+        glDeleteBuffers(1, &_vbo);
     }
 }
 
 Text::Text(Text &&other)
     : Transformable(other)
 {
-    string_ = other.string_;
-    num_vertices_ = other.num_vertices_;
+    _string = other._string;
+    _numVerts = other._numVerts;
     _font = other._font;
 
     /* Move constructor to prevent automatic destruction
         of the OpenGL resources. */
-    vao_ = other.vao_;
-    vbo_ = other.vbo_;
-    other.vao_ = GL_NONE;
-    other.vbo_ = GL_NONE;
+    _vao = other._vao;
+    _vbo = other._vbo;
+    other._vao = GL_NONE;
+    other._vbo = GL_NONE;
 }
 
 Text::Text()
 {
-    glCreateVertexArrays(1, &vao_);
+    glCreateVertexArrays(1, &_vao);
 }
 
 void Text::create(int x, int y, const std::string &string)
 {
-    _font = &Textures::instance().get_font();
-    set_string(string);
-    set_position({x * 8.0f, y * 8.0f});
+    _font = &Textures::instance().getFont();
+    setString(string);
+    setPosition({x * 8.0f, y * 8.0f});
 }
 
-void Text::set_string(const std::string &string)
+void Text::setString(const std::string &string)
 {
-    if (string_ == string) {
+    if (_string == string) {
         return;
     }
 
-    bool same = string_ == string;
-    string_ = string;
+    bool same = _string == string;
+    _string = string;
 
     if (!same) {
-        update_vbo();
+        updateVbo();
     }
 }
 
-GLuint Text::get_vao() const
+GLuint Text::getVao() const
 {
-    return vao_;
+    return _vao;
 }
 
-GLuint Text::get_num_vertices() const
+GLuint Text::getNumVerts() const
 {
-    return num_vertices_;
+    return _numVerts;
 }
 
-void Text::set_font(const Font &font)
+void Text::setFont(const Font &font)
 {
     _font = &font;
 }
 
-const Font *Text::get_font() const
+const Font *Text::getFont() const
 {
     return _font;
 }
 
-const std::string Text::get_string() const
+const std::string Text::getString() const
 {
-    return string_;
+    return _string;
 }
 
-void Text::update_vbo()
+void Text::updateVbo()
 {
     assert(_font);
 
-    num_vertices_ = 6 * static_cast<GLuint>(string_.size());
+    _numVerts = 6 * static_cast<GLuint>(_string.size());
 
     struct Vertex {
         glm::vec2 pos;
-        glm::vec2 tex_coord;
+        glm::vec2 texCoord;
     };
 
-    std::vector<Vertex> vertices(num_vertices_);
+    std::vector<Vertex> vertices(_numVerts);
 
     float x = 0;
     float y = 0;
 
-    for (size_t i = 0u, s = string_.size(); i < s; i++) {
-        switch (string_[i]) {
+    for (size_t i = 0u, s = _string.size(); i < s; i++) {
+        switch (_string[i]) {
             case '\n':
                 x = 0;
                 y += 8;
@@ -113,38 +113,53 @@ void Text::update_vbo()
                 break;
         }
 
-        uint16_t char_code = (string_[i] - 32) & 0xFF;
-        const auto texture_coords = _font->get_texture_coordinates(char_code);
+        uint16_t char_code = (_string[i] - 32) & 0xFF;
+        const auto texCoords = _font->getTexCoords(char_code);
 
         auto *vertex = &vertices.data()[i * 6];
 
-        *vertex++ = {{x, y}, texture_coords[0]};
-        *vertex++ = {{x + 8, y}, texture_coords[1]};
-        *vertex++ = {{x, y + 8}, texture_coords[2]};
-        *vertex++ = {{x + 8, y}, texture_coords[3]};
-        *vertex++ = {{x + 8, y + 8}, texture_coords[4]};
-        *vertex++ = {{x, y + 8}, texture_coords[5]};
+        *vertex++ = {{x, y}, texCoords[0]};
+        *vertex++ = {{x + 8, y}, texCoords[1]};
+        *vertex++ = {{x, y + 8}, texCoords[2]};
+        *vertex++ = {{x + 8, y}, texCoords[3]};
+        *vertex++ = {{x + 8, y + 8}, texCoords[4]};
+        *vertex++ = {{x, y + 8}, texCoords[5]};
 
         x += 8;
     }
 
-    if (vbo_ != GL_NONE) {
-        glDeleteBuffers(1, &vbo_);
+    if (_vbo != GL_NONE) {
+        glDeleteBuffers(1, &_vbo);
     }
 
-    glGenBuffers(1, &vbo_);
+    glGenBuffers(1, &_vbo);
 
-    glBindBuffer(GL_ARRAY_BUFFER, vbo_);
+    glBindBuffer(GL_ARRAY_BUFFER, _vbo);
     glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(vertices[0]), vertices.data(), GL_STATIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, GL_NONE);
 
-    glBindVertexArray(vao_);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo_);
+    glBindVertexArray(_vao);
+    glBindBuffer(GL_ARRAY_BUFFER, _vbo);
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 4, nullptr);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 4, (const void *)(sizeof(GLfloat) * 2));
     glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(1);
     glBindVertexArray(GL_NONE);
+}
+
+void Text::hide()
+{
+    _visible = false;
+}
+
+void Text::show()
+{
+    _visible = true;
+}
+
+bool Text::visible() const
+{
+    return _visible;
 }
 
 }    // namespace bty

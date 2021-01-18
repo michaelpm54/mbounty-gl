@@ -3,6 +3,7 @@
 
 #include <glm/mat4x4.hpp>
 
+#include "engine/singleton.hpp"
 #include "gfx/gl.hpp"
 
 namespace bty {
@@ -37,26 +38,33 @@ public:
     Gfx();
     ~Gfx();
     void clear();
-    void draw_sprite(Sprite &sprite, glm::mat4 &camera);
-    void draw_rect(Rect &rect, glm::mat4 &camera);
-    void draw_text(Text &text, glm::mat4 &camera);
+    void setView(const glm::mat4 &mat);
+    void drawSprite(Sprite &sprite);
+    void drawRect(Rect &rect);
+    void drawText(Text &text);
+    void drawSprite(Sprite &sprite, glm::mat4 &camera);
+    void drawRect(Rect &rect, glm::mat4 &camera);
+    void drawText(Text &text, glm::mat4 &camera);
 
 private:
-    void set_initial_gl_state();
-    void load_shaders();
-    void get_uniform_locations();
-    void create_quad_vao();
+    void initGLState();
+    void loadShaders();
+    void getUniformLocations();
+    void createQuadVao();
 
 private:
-    GLuint sprite_shader_ {GL_NONE};
-    GLuint sprite_single_texture_shader_ {GL_NONE};
-    GLuint rect_shader_ {GL_NONE};
-    GLuint text_shader_ {GL_NONE};
-    GLuint quad_vao_ {GL_NONE};
-    GLuint quad_vbo_ {GL_NONE};
-    GLint locations_[Locations::Count];
+    GLuint _shdSpriteMulti {GL_NONE};
+    GLuint _shdSpriteSingle {GL_NONE};
+    GLuint _shdRect {GL_NONE};
+    GLuint _shdText {GL_NONE};
+    GLuint _quadVao {GL_NONE};
+    GLuint _quadVbo {GL_NONE};
+    GLint _locations[Locations::Count];
+    glm::mat4 _view {1.0f};
 };
 
 }    // namespace bty
+
+using GFX = bty::SingletonProvider<bty::Gfx>;
 
 #endif    // BTY_GFX_GFX_HPP_

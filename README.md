@@ -30,6 +30,7 @@
 - Alternative way of animating the tiles? Loading 10 full tilesets seems excessive.
 - Implement "can_move" for mob and hero in terms of virtual functions instead of a function pointer.
 - Can't mount boat when it's on a diagonal tile
+- Make garrison cost gold
 
 ### Battle
 

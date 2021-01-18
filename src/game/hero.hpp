@@ -15,31 +15,27 @@ enum class Mount {
 
 class Hero : public Entity {
 public:
-    Hero(int &boat_x, int &boat_y, int &boat_c);
     void load();
-    bool can_move(int id, int x, int y, int c) override;
-    void set_mount(Mount mount);
-    Mount get_mount() const;
-    void set_moving(bool val);
+    bool canMove(int id, int x, int y, int c) override;
+    void setMount(Mount mount);
+    Mount getMount() const;
+    void setMoving(bool val);
 
-    float get_speed_multiplier() const;
-    void set_speed_multiplier(float n);
-
-private:
-    void update_texture();
+    float getSpeedMul() const;
+    void setSpeedMul(float n);
 
 private:
-    bool moving_ {false};
-    Mount mount_ {Mount::Walk};
-    const bty::Texture *tex_walk_moving_;
-    const bty::Texture *tex_walk_stationary_;
-    const bty::Texture *tex_boat_moving_;
-    const bty::Texture *tex_boat_stationary_;
-    const bty::Texture *tex_flying;
-    int &boat_x;
-    int &boat_y;
-    int &boat_c;
-    float speed_multiplier {1};
+    void updateTexture();
+
+private:
+    bool _moving {false};
+    Mount _mount {Mount::Walk};
+    const bty::Texture *_texWalkMoving;
+    const bty::Texture *_texWalkStationary;
+    const bty::Texture *_texBoatMoving;
+    const bty::Texture *_texBoatStationary;
+    const bty::Texture *_texFlying;
+    float _speedMul {1};
 };
 
 #endif    // BTY_GAME_HERO_HPP_

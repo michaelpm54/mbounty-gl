@@ -1,19 +1,22 @@
 #ifndef BTY_GAME_INGAME_HPP_
 #define BTY_GAME_INGAME_HPP_
 
-struct GameOptions;
-
-#include "engine/dialog-stack.hpp"
+#include "engine/component.hpp"
 #include "engine/dialog.hpp"
-#include "engine/scene.hpp"
+#include "engine/engine.hpp"
 #include "engine/textbox.hpp"
 #include "engine/timer.hpp"
 #include "game/battle.hpp"
+#include "game/chest-commission.hpp"
+#include "game/chest-generator.hpp"
+#include "game/chest-gold.hpp"
+#include "game/chest-spell-capacity.hpp"
+#include "game/chest-spell-power.hpp"
+#include "game/chest-spell.hpp"
 #include "game/defeat.hpp"
 #include "game/dir-flags.hpp"
 #include "game/game-controls.hpp"
 #include "game/garrison.hpp"
-#include "game/gen-variables.hpp"
 #include "game/hero.hpp"
 #include "game/kings-castle.hpp"
 #include "game/map.hpp"
@@ -22,7 +25,7 @@ struct GameOptions;
 #include "game/shop-info.hpp"
 #include "game/shop.hpp"
 #include "game/town.hpp"
-#include "game/variables.hpp"
+#include "game/use-magic.hpp"
 #include "game/victory.hpp"
 #include "game/view-army.hpp"
 #include "game/view-character.hpp"
@@ -36,163 +39,162 @@ struct GameOptions;
 
 namespace bty {
 class Gfx;
-class DialogStack;
-class SceneStack;
 }    // namespace bty
 
 class Hud;
 struct GLFWwindow;
 struct c2AABB;
+class Game;
 
-class Ingame : public bty::Scene {
+class Ingame : public Component {
 public:
-    Ingame(GLFWwindow *window, bty::SceneStack &ss, bty::DialogStack &ds, Hud &hud, GameOptions &game_options);
+    Ingame(bty::Engine &engine);
 
+    bool handleEvent(Event event) override;
+    bool handleKeyDown(Key key);
+    bool handleKeyUp(Key key);
     void update(float dt) override;
-    void key(int key, int action) override;
-    void draw(bty::Gfx &gfx, glm::mat4 &camera) override;
+    void render() override;
+    void renderLate() override;
+    void load() override;
+    void enter() override;
 
-    void setup(int hero, int diff);
+    void setup();
+    void updateAnimations(float dt);
+
+    void winSiegeBattle(int castleId);
+    void winEncounterBattle(int mobId);
+    void acceptWizardOffer();
+    void setBoatPosition(float x, float y);
+    void disgrace();
+
+    void saveState(std::ofstream &f);
+    void loadState(std::ifstream &f);
 
 private:
     void defeat();
     void victory();
-    void disgrace();
-    void gen_tiles();
-    void next_contract();
-    void use_spell(int spell);
-    void update_mobs(float dt);
-    void draw_mobs(bty::Gfx &gfx);
-    bool add_unit_to_army(int id, int count);
-
-    /* Adventure spells */
-    void spell_bridge();
-    void spell_timestop();
-    void spell_find_villain();
-    void spell_instant_army();
-    void spell_raise_control();
-    void spell_tc_gate(bool town);
-
-    /* Spell helpers */
-    void town_gate_confirm(int opt);
-    void castle_gate_confirm(int opt);
-    void place_bridge_at(int x, int y, int continent, bool horizontal);
-
-    /* Pause menu options */
-    void pause();
+    void genTiles();
+    void updateMobs(float dt);
+    void drawMobs();
+    bool addUnitToArmy(int id, int count);
+    void spellBridge();
+    void spellTimestop();
+    void spellFindVillain();
+    void spellInstantArmy();
+    void spellRaiseControl();
+    void spellTCGate(bool town);
+    void confirmTownGate(int opt);
+    void confirmCastleGate(int opt);
+    void placeBridgeAt(int x, int y, int continent, bool horizontal);
     void dismiss();
-    void use_magic();
-
-    /* Pause menu helpers */
-    void dismiss_slot(int slot);
-
-    void end_week_budget(bool search);
-    void end_week_astrology(bool search);
+    void useMagic();
+    void dismissSlot(int slot);
+    void endWeekBudget(bool search);
+    void endWeekAstrology(bool search);
 
     /* Timers */
-    void day_tick();
-    void timestop_tick();
-    void automove_tick();
+    void dayTick();
+    void timestopTick();
+    void automoveTick();
 
     /* Movement */
-    bool move_increment(c2AABB &box, float dx, float dy, Tile &center_tile, Tile &collided_tile, bool (Ingame::*can_move)(int), bool mob);
-    int get_move_input();
-    void update_camera();
-    void sail_to(int continent);
-    void update_visited_tiles();
-    void move_hero(int flags, float dt);
-    void move_hero_to(int x, int y, int c);
-    void move_mob(Mob &entity, float dt, const glm::vec2 &dir);
-    void fly_land();
+    bool moveIncrement(c2AABB &box, float dx, float dy, Tile &centerTile, Tile &collidedTile, bool (Ingame::*canMove)(int), bool mob);
+    void updateCamera();
+    void sailTo(int continent);
+    void updateVisitedTiles();
+    void moveHero(float dt);
+    void moveHeroTo(int x, int y, int c);
+    void moveMob(Mob &entity, float dt, const glm::vec2 &dir);
+    void flyLand();
     void automove(float dt);
 
     /* Collision */
-    bool hero_can_move(int id);
-    bool mob_can_move(int id);
+    bool heroCanMove(int id);
+    bool mobCanMove(int id);
     bool events(const Tile &tile, bool &teleport);
-    void collide_sign(const Tile &tile);
-    void collide_town(const Tile &tile);
-    void collide_shop(const Tile &tile);
-    void collide_chest(const Tile &tile);
-    void collide_castle(const Tile &tile);
-    void collide_artifact(const Tile &tile);
-    void collide_teleport_cave(const Tile &tile);
-    void wizard();
+    void collideSign(const Tile &tile);
+    void collideTown(const Tile &tile);
+    void collideShop(const Tile &tile);
+    void collideChest(const Tile &tile);
+    void collideCastle(const Tile &tile);
+    void collideArtifact(const Tile &tile);
+    void collideTeleportCave(const Tile &tile);
 
-    void defeat_pop(int ret);
-    void battle_pop(int ret);
+    void doSearch();
+    void failSearch();
 
-    void search_area();
-    void do_search();
-    void search_fail();
+    void endWeek(bool search);
 
-    void end_week(bool search);
+    std::vector<Mob *> getMobsInRange(int x, int y, int range);
 
-    std::vector<Mob *> get_mobs_in_range(int x, int y, int range);
+    void handlePauseOptions(int opt);
+    void pause();
 
-    void save_state(const std::string &filename);
-    void load_state(const std::string &filename);
+    void moveCameraToSceptre();
+    void tryJoin(int id, int count, std::function<void()> onOption);
+    void bridgeDir(DirFlags dir);
 
 private:
-    Variables v;
-    GenVariables gen;
+    bty::Engine &_engine;
 
-    GLFWwindow *window;
-    GameOptions &game_options;
-    bty::SceneStack &ss;
-    bty::DialogStack &ds;
-    Hud &hud;
-    Map map;
-    Hero hero;
-    glm::mat4 ui_cam;
-    glm::mat4 map_cam;
-    DirFlags move_flags;
-    std::array<const bty::Texture *, 25> unit_textures;
+    UseMagic *_useMagic;
 
-    /* Pause */
-    ViewArmy view_army;
-    ViewCharacter view_char;
-    ViewContinent view_continent;
-    ViewContract view_contract;
-    ViewPuzzle view_puzzle;
+    bty::Dialog _dlgPause;
+    bty::Dialog _dlgJoin;
+    bty::Dialog _dlgSailMap;
+    bty::Dialog _dlgContMap;
+    bty::Dialog _dlgArtifact;
+    bty::Dialog _dlgSearch;
+    bty::Dialog _dlgSearchFail;
+    bty::Dialog _dlgBridge;
+    bty::Dialog _dlgTCGate;
+
+    bty::Text *_btSignText;
+    bty::Text *_btFleeDescriptor;
+    bty::Text *_btJoinDescriptor;
+    bty::Text *_btSailMapDest;
+    bty::Text *_btArtifactMessage;
+    bty::Text *_btTCGate0;
+    bty::Text *_btTCGate1;
+
+    int _moveFlags {DIR_FLAG_NONE};
+    bool _loaded {false};
+    bool _paused {false};
+
+    Map _map;
+    Hero _spHero;
+    glm::mat4 _uiView;
+    glm::mat4 _mapView;
+    std::array<const bty::Texture *, 25> _texUnits;
 
     /* Clocks */
-    bty::Timer day_timer;
-    bty::Timer timestop_timer;
-    bty::Timer automove_timer;
+    bty::Timer _dayTimer;
+    bty::Timer _timestopTimer;
+    bty::Timer _automoveTimer;
 
-    /* Collision */
-    KingsCastle kings_castle;
-    Shop shop;
-    Town town;
-    Wizard s_wizard;
+    int _sceptreContinent {-1};
+    int _sceptreX {-1};
+    int _sceptreY {-1};
 
-    Defeat s_defeat;
-    Garrison s_garrison;
-    Victory s_victory;
-    GameControls s_controls;
-    Battle s_battle;
+    int _tempPuzzleContinent {-1};
 
-    int battle_mob {-1};
-    int garrison_castle_id {-1};
+    bty::Sprite _spBoat;
 
-    int sceptre_continent {-1};
-    int sceptre_x {-1};
-    int sceptre_y {-1};
+    int _lastWaterX {-1};
+    int _lastWaterY {-1};
 
-    int temp_continent = -1;
+    bty::Rect _dbgCollisionRect;
+    bty::Text _dbgTileText;
+    Tile _dbgLastTile {-1, -1, -1};
+    Tile _dbgLastEventTile {-1, -1, -1};
 
-    bty::Sprite boat;
-
-    int last_water_x {-1};
-    int last_water_y {-1};
-
-    bty::Rect cr;
-    bty::Text tile_text;
-    Tile last_tile {-1, -1, -1};
-    Tile last_event_tile {-1, -1, -1};
-
-    SaveManager save_manager;
+    ChestGenerator _chestGenerator;
+    ChestGold _chestGold;
+    ChestCommission _chestCommission;
+    ChestSpellPower _chestSpellPower;
+    ChestSpellCapacity _chestSpellCapacity;
+    ChestSpell _chestSpell;
 };
 
 #endif    // BTY_GAME_INGAME_HPP_

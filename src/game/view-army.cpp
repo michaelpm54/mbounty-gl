@@ -2,85 +2,75 @@
 
 #include <spdlog/spdlog.h>
 
-#include <algorithm>
-
 #include "data/bounty.hpp"
-#include "engine/scene-stack.hpp"
+#include "engine/engine.hpp"
+#include "engine/scene-manager.hpp"
 #include "engine/texture-cache.hpp"
+#include "game/state.hpp"
 #include "gfx/gfx.hpp"
 #include "gfx/texture.hpp"
-#include "window/glfw.hpp"
 
-ViewArmy::ViewArmy(bty::SceneStack &ss)
-    : ss(ss)
+ViewArmy::ViewArmy(bty::Engine &engine)
+    : _engine(engine)
 {
+}
+
+void ViewArmy::load()
+{
+    _engine.getGUI().getHUD().setBlankFrame();
+
     auto &textures {Textures::instance()};
 
     for (int i = 0; i < 25; i++) {
-        unit_textures_[i] = textures.get(fmt::format("units/{}.png", i), {2, 2});
+        _texUnits[i] = textures.get(fmt::format("units/{}.png", i), {2, 2});
     }
 
-    frame_.set_texture(textures.get("frame/army.png"));
-    frame_.set_position(0, 16);
+    _spFrame.setTexture(textures.get("frame/army.png"));
+    _spFrame.setPosition(0, 16);
 
-    const auto &font = textures.get_font();
+    const auto &font = textures.getFont();
 
     for (int i = 0; i < 5; i++) {
-        rects_[i].set_color(bty::BoxColor::Intro);
-        rects_[i].set_size(253, 32);
-        rects_[i].set_position(59, 24.0f + i * 40);
-        units_[i].set_position(8, 24.0f + i * 40);
+        _fillRects[i].setColor(bty::BoxColor::Intro);
+        _fillRects[i].setSize(253, 32);
+        _fillRects[i].setPosition(59, 24.0f + i * 40);
+        _spUnits[i].setPosition(8, 24.0f + i * 40);
 
         for (int j = 0; j < 7; j++) {
-            info_[i][j].set_font(font);
+            _btInfo[i][j].setFont(font);
         }
 
         float x = 64;
         float y = 32.0f + i * 40;
-        info_[i][0].set_position(x, y);
-        info_[i][1].set_position(x + 120, y);
-        info_[i][2].set_position(x, y + 8);
-        info_[i][3].set_position(x + 56, y + 8);
-        info_[i][4].set_position(x + 120, y + 8);
-        info_[i][5].set_position(x, y + 16);
-        info_[i][6].set_position(x + 120, y + 16);
+        _btInfo[i][0].setPosition(x, y);
+        _btInfo[i][1].setPosition(x + 120, y);
+        _btInfo[i][2].setPosition(x, y + 8);
+        _btInfo[i][3].setPosition(x + 56, y + 8);
+        _btInfo[i][4].setPosition(x + 120, y + 8);
+        _btInfo[i][5].setPosition(x, y + 16);
+        _btInfo[i][6].setPosition(x + 120, y + 16);
     }
-}
-
-void ViewArmy::draw(bty::Gfx &gfx, glm::mat4 &camera)
-{
-    gfx.draw_sprite(frame_, camera);
-    for (int i = 0; i < 5; i++) {
-        gfx.draw_rect(rects_[i], camera);
-    }
-    for (int i = 0; i < num_units_; i++) {
-        gfx.draw_sprite(units_[i], camera);
-        for (int j = 0; j < 7; j++) {
-            gfx.draw_text(info_[i][j], camera);
-        }
-    }
-}
-
-void ViewArmy::update_info(int *army, int *counts, int *morales, int diff)
-{
-    set_color(bty::get_box_color(diff));
-
-    num_units_ = 0;
 
     for (int i = 0; i < 5; i++) {
-        if (army[i] != -1) {
-            num_units_++;
+        _fillRects[i].setColor(bty::getBoxColor(State::difficulty));
+    }
+
+    _armySize = 0;
+
+    for (int i = 0; i < 5; i++) {
+        if (State::army[i] != -1) {
+            _armySize++;
         }
     }
 
-    for (int i = 0; i < num_units_; i++) {
-        int unit_id = army[i];
+    for (int i = 0; i < _armySize; i++) {
+        int unit_id = State::army[i];
         const auto &unit = kUnits[unit_id];
         if (unit_id != -1) {
-            int hp = counts[i] * unit.hp;
-            int min_dmg = counts[i] * unit.melee_damage_min;
-            int max_dmg = counts[i] * unit.melee_damage_max;
-            int g_cost = counts[i] * unit.weekly_cost;
+            int hp = State::counts[i] * unit.hp;
+            int minDmg = State::counts[i] * unit.meleeMinDmg;
+            int maxDmg = State::counts[i] * unit.meleeMaxDmg;
+            int weeklyCost = State::counts[i] * unit.weeklyCost;
 
             static const std::array<std::string, 4> kMoraleStrings = {{
                 "Morale: Norm",
@@ -90,43 +80,57 @@ void ViewArmy::update_info(int *army, int *counts, int *morales, int diff)
             }};
 
             assert(unit_id < 25);
-            units_[i].set_texture(unit_textures_[unit_id]);
-            info_[i][0].set_string(fmt::format("{} {}", counts[i], unit.name_plural));
-            info_[i][1].set_string(fmt::format("HitPts: {}", hp));
-            info_[i][2].set_string(fmt::format("SL: {}", unit.skill_level));
-            info_[i][3].set_string(fmt::format("MV: {}", unit.initial_moves));
-            info_[i][4].set_string(fmt::format("Damage: {}-{}", min_dmg, max_dmg));
-            info_[i][5].set_string(fmt::format(kMoraleStrings[morales[i]]));
-            info_[i][6].set_string(fmt::format("G-Cost: {}", g_cost));
+            _spUnits[i].setTexture(_texUnits[unit_id]);
+            _btInfo[i][0].setString(fmt::format("{} {}", State::counts[i], unit.namePlural));
+            _btInfo[i][1].setString(fmt::format("HitPts: {}", hp));
+            _btInfo[i][2].setString(fmt::format("SL: {}", unit.skillLevel));
+            _btInfo[i][3].setString(fmt::format("MV: {}", unit.initialMoves));
+            _btInfo[i][4].setString(fmt::format("Damage: {}-{}", minDmg, maxDmg));
+            _btInfo[i][5].setString(fmt::format(kMoraleStrings[State::morales[i]]));
+            _btInfo[i][6].setString(fmt::format("G-Cost: {}", weeklyCost));
+        }
+    }
+}
+
+void ViewArmy::render()
+{
+    GFX::instance().drawSprite(_spFrame);
+    for (int i = 0; i < 5; i++) {
+        GFX::instance().drawRect(_fillRects[i]);
+    }
+    for (int i = 0; i < _armySize; i++) {
+        GFX::instance().drawSprite(_spUnits[i]);
+        for (int j = 0; j < 7; j++) {
+            GFX::instance().drawText(_btInfo[i][j]);
         }
     }
 }
 
 void ViewArmy::update(float dt)
 {
-    for (int i = 0; i < num_units_; i++) {
-        units_[i].update(dt);
+    for (int i = 0; i < _armySize; i++) {
+        _spUnits[i].update(dt);
     }
 }
 
-void ViewArmy::set_color(bty::BoxColor color)
+bool ViewArmy::handleEvent(Event event)
 {
-    for (int i = 0; i < 5; i++) {
-        rects_[i].set_color(color);
+    if (event.id == EventId::KeyDown) {
+        return handleKey(event.key);
     }
+    return false;
 }
 
-void ViewArmy::key(int key, int action)
+bool ViewArmy::handleKey(Key key)
 {
-    if (action == GLFW_PRESS) {
-        switch (key) {
-            case GLFW_KEY_BACKSPACE:
-                [[fallthrough]];
-            case GLFW_KEY_ENTER:
-                ss.pop(0);
-                break;
-            default:
-                break;
-        }
+    switch (key) {
+        case Key::Backspace:
+            [[fallthrough]];
+        case Key::Enter:
+            SceneMan::instance().back();
+            break;
+        default:
+            return false;
     }
+    return true;
 }

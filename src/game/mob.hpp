@@ -13,7 +13,7 @@ struct Mob {
     std::array<int, 5> army;
     std::array<int, 5> counts;
     int id {-1};
-    int sprite_id {-1};
+    int spriteId {-1};
 };
 
 #endif    // BTY_GAME_MOB_HPP_

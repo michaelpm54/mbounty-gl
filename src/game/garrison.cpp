@@ -3,14 +3,12 @@
 #include <spdlog/spdlog.h>
 
 #include "data/castles.hpp"
-#include "engine/dialog-stack.hpp"
-#include "engine/scene-stack.hpp"
+#include "engine/engine.hpp"
+#include "engine/scene-manager.hpp"
 #include "engine/texture-cache.hpp"
-#include "game/gen-variables.hpp"
 #include "game/hud.hpp"
-#include "game/variables.hpp"
+#include "game/state.hpp"
 #include "gfx/gfx.hpp"
-#include "window/glfw.hpp"
 
 static constexpr int kKingsCastleUnits[5] = {
     Militias,
@@ -20,254 +18,238 @@ static constexpr int kKingsCastleUnits[5] = {
     Knights,
 };
 
-Garrison::Garrison(bty::SceneStack &ss, bty::DialogStack &ds, Hud &hud, Variables &v, GenVariables &gen)
-    : ss(ss)
-    , ds(ds)
-    , hud(hud)
-    , v(v)
-    , gen(gen)
+Garrison::Garrison(bty::Engine &engine)
+    : _engine(engine)
 {
-    dialog_.create(1, 18, 30, 9, bty::BoxColor::Intro);
-    t_castle_name = dialog_.add_line(1, 1, "");
-    t_gp = dialog_.add_line(22, 1, "");    // Gold
-    dialog_.add_option(21, 3, "Garrison");
-    dialog_.add_option(21, 4, "Remove");
+}
+
+void Garrison::load()
+{
+    _dlgMain.create(1, 18, 30, 9, false);
+    _dlgMain.addOption(21, 3, "Garrison");
+    _dlgMain.addOption(21, 4, "Remove");
+    _dlgMain.bind(Key::Backspace, [this](int) {
+        _engine.getGUI().popDialog();
+        SceneMan::instance().back();
+    });
+    _dlgMain.bind(Key::Enter, [this](int opt) {
+        if (opt == 0) {
+            _engine.getGUI().pushDialog(_dlgGarrison);
+        }
+        else if (opt == 1) {
+            _dlgRemove.next();
+            _dlgRemove.prev();
+
+            if (!_dlgRemove.get_options()[_dlgRemove.getSelection()].enabled()) {
+                _engine.getGUI().getHUD().setError("    There are no armies to remove!", [this]() {
+                    _engine.getGUI().popDialog();
+                });
+            }
+
+            _engine.getGUI().pushDialog(_dlgRemove);
+        }
+    });
+    _dlgMain.bind(Key::Up, [this](int) {
+        _dlgMain.prev();
+        int opt = _dlgMain.getSelection();
+        if (opt == 0) {
+            showArmyUnits();
+        }
+        else if (opt == 1) {
+            showCastleUnits();
+        }
+    });
+    _dlgMain.bind(Key::Down, [this](int) {
+        _dlgMain.next();
+        int opt = _dlgMain.getSelection();
+        if (opt == 0) {
+            showArmyUnits();
+        }
+        else if (opt == 1) {
+            showCastleUnits();
+        }
+    });
+
+    _dlgGarrison.create(1, 18, 30, 9);
+    _dlgRemove.create(1, 18, 30, 9);
     for (int i = 0; i < 5; i++) {
-        t_units[i] = dialog_.add_line(3, 3 + i, "");
+        _optGarrisonUnits[i] = _dlgGarrison.addOption(3, 3 + i);
+        _optRemoveUnits[i] = _dlgRemove.addOption(3, 3 + i);
+    }
+    _dlgGarrison.bind(Key::Backspace, [this](int) {
+        _engine.getGUI().popDialog();
+    });
+    _dlgGarrison.addString(21, 4, " Select\narmy  to\ngarrison");
+    _dlgGarrison.bind(Key::Enter, std::bind(&Garrison::tryGarrisonUnit, this, std::placeholders::_1));
+
+    _dlgRemove.addString(21, 4, " Select\narmy  to\n remove");
+    _dlgRemove.bind(Key::Backspace, [this](int) {
+        _engine.getGUI().popDialog();
+    });
+    _dlgRemove.bind(Key::Enter, std::bind(&Garrison::tryRemoveUnit, this, std::placeholders::_1));
+
+    _btCastleName.create(2, 19, "");
+    _btGP.create(23, 19, "");
+
+    for (int i = 0; i < 5; i++) {
+        _btUnits[i].create(4, 21 + i, "");
     }
 
-    unit_.set_position(64, 104);
-    bg_.set_texture(Textures::instance().get("bg/castle.png"));
-    bg_.set_position(8, 24);
+    _spBg.setTexture(Textures::instance().get("bg/castle.png"));
+    _spBg.setPosition(8, 24);
+
+    _spUnit.setPosition(64, 104);
 
     for (int i = 0; i < 5; i++) {
-        unit_textures_[i] = Textures::instance().get(fmt::format("units/{}.png", kKingsCastleUnits[i]), {2, 2});
+        _texUnits[i] = Textures::instance().get(fmt::format("units/{}.png", kKingsCastleUnits[i]), {2, 2});
     }
 }
 
-void Garrison::draw(bty::Gfx &gfx, glm::mat4 &camera)
+void Garrison::render()
 {
-    gfx.draw_sprite(bg_, camera);
-    dialog_.draw(gfx, camera);
-    gfx.draw_sprite(unit_, camera);
+    GFX::instance().drawSprite(_spBg);
+    GFX::instance().drawSprite(_spUnit);
 }
 
-void Garrison::view(int castle_id)
+void Garrison::setCastle(int castleId)
 {
-    this->castle_id = castle_id;
+    _castleId = castleId;
+}
 
-    dialog_.set_color(bty::get_box_color(v.diff));
-    unit_.set_texture(unit_textures_[rand() % 5]);
+void Garrison::renderLate()
+{
+    GFX::instance().drawText(_btCastleName);
+    GFX::instance().drawText(_btGP);
+    for (int i = 0; i < 5; i++) {
+        GFX::instance().drawText(_btUnits[i]);
+    }
+}
 
-    t_castle_name->set_string(fmt::format("Castle {}", kCastleInfo[castle_id].name));
-    t_gp->set_string(fmt::format("GP={}", bty::number_with_ks(v.gold)));
-    update_units(0);
+void Garrison::enter()
+{
+    auto color {bty::getBoxColor(State::difficulty)};
+    _dlgMain.setColor(color);
+    _dlgGarrison.setColor(color);
+    _dlgRemove.setColor(color);
+    _spUnit.setTexture(_texUnits[rand() % 5]);
+    _btCastleName.setString(fmt::format("Castle {}", kCastleInfo[_castleId].name));
+    _btGP.setString(fmt::format("GP={}", bty::numberK(State::gold)));
+    showArmyUnits();
+    _engine.getGUI().pushDialog(_dlgMain);
 }
 
 void Garrison::update(float dt)
 {
-    dialog_.update(dt);
-    unit_.update(dt);
+    _spUnit.update(dt);
 }
 
-void Garrison::key(int key, int action)
+void Garrison::showArmyUnits()
 {
-    switch (action) {
-        case GLFW_PRESS:
-            switch (key) {
-                case GLFW_KEY_DOWN:
-                    next();
-                    break;
-                case GLFW_KEY_UP:
-                    prev();
-                    break;
-                case GLFW_KEY_ENTER:
-                    select(dialog_.get_selection());
-                    break;
-                case GLFW_KEY_BACKSPACE:
-                    ss.pop(0);
-                    break;
-                default:
-                    break;
-            }
-        default:
+    for (int i = 0; i < 5; i++) {
+        if (State::army[i] == -1) {
+            _btUnits[i].setString("empty");
+            _optGarrisonUnits[i]->disable();
+        }
+        else {
+            auto cost = bty::numberK(kUnits[State::army[i]].weeklyCost * State::counts[i]);
+            auto name = kUnits[State::army[i]].namePlural;
+            std::string spaces(15 - cost.size() - name.size(), ' ');
+            _btUnits[i].setString(fmt::format("{}{}{}", name, spaces, cost));
+            _optGarrisonUnits[i]->enable();
+        }
+    }
+}
+
+void Garrison::showCastleUnits()
+{
+    for (int i = 0; i < 5; i++) {
+        if (State::garrison_armies[_castleId][i] == -1) {
+            _btUnits[i].setString("empty");
+            _optRemoveUnits[i]->disable();
+        }
+        else {
+            auto count = std::to_string(State::garrison_counts[_castleId][i]);
+            auto name = kUnits[State::garrison_armies[_castleId][i]].namePlural;
+            std::string spaces(15 - count.size() - name.size(), ' ');
+            _btUnits[i].setString(fmt::format("{}{}{}", name, spaces, count));
+            _optRemoveUnits[i]->enable();
+        }
+    }
+}
+
+void Garrison::tryGarrisonUnit(int index)
+{
+    int armySize = 0;
+    for (int i = 0; i < 5; i++) {
+        if (State::army[i] != -1) {
+            armySize++;
+        }
+    }
+
+    if (armySize == 1) {
+        _engine.getGUI().getHUD().setError(" You may not garrison your last army!");
+        return;
+    }
+
+    bool did_garrison {false};
+    for (int i = 0; i < 5; i++) {
+        if (State::garrison_armies[_castleId][i] == -1) {
+            did_garrison = true;
+            State::garrison_armies[_castleId][i] = State::army[index];
+            State::garrison_counts[_castleId][i] = State::counts[index];
+            // TODO: Gold error?
+            State::gold -= kUnits[State::army[index]].weeklyCost * State::counts[index];
+            State::army[index] = -1;
+            State::counts[index] = 0;
+            State::castle_occupants[_castleId] = -1;
             break;
+        }
     }
+    if (!did_garrison) {
+        // TODO: Slots error?
+    }
+    bty::sortArmy(State::army, State::counts);
+    showArmyUnits();
 }
 
-void Garrison::select(int opt)
+void Garrison::tryRemoveUnit(int index)
 {
-    std::vector<bty::DialogDef::StringDef> strings;
-    std::vector<bty::DialogDef::StringDef> options;
-
-    strings.push_back({1, 1, fmt::format("Castle {}", kCastleInfo[castle_id].name)});
-    strings.push_back({22, 1, fmt::format("GP={}", bty::number_with_ks(v.gold))});
-
-    if (opt == 0) {
-        int army_size = 0;
-        for (int i = 0; i < 5; i++) {
-            if (v.army[i] != -1) {
-                army_size++;
-            }
+    int armySize = 0;
+    for (int i = 0; i < 5; i++) {
+        if (State::garrison_armies[_castleId][i] != -1) {
+            armySize++;
         }
+    }
 
-        if (army_size == 1) {
-            hud.set_error(" You may not garrison your last army!");
-            return;
+    if (armySize == 0) {
+        _engine.getGUI().getHUD().setError("    There are no armies to remove!");
+        return;
+    }
+
+    bool did_remove {false};
+    for (int i = 0; i < 5; i++) {
+        if (State::army[i] == -1) {
+            did_remove = true;
+            State::army[i] = State::garrison_armies[_castleId][index];
+            State::counts[i] = State::garrison_counts[_castleId][index];
+            State::garrison_armies[_castleId][index] = -1;
+            State::garrison_counts[_castleId][index] = 0;
+            break;
         }
-
-        strings.push_back({21, 4, " Select\narmy  to\ngarrison"});
-
-        for (int i = 0; i < 5; i++) {
-            if (v.army[i] == -1) {
-                strings.push_back({3, 3 + i, "empty"});
-            }
-            else {
-                auto cost = bty::number_with_ks(kUnits[v.army[i]].weekly_cost * v.counts[i]);
-                auto name = kUnits[v.army[i]].name_plural;
-                std::string spaces(15 - cost.size() - name.size(), ' ');
-                options.push_back({3, 3 + i, fmt::format("{}{}{}", name, spaces, cost)});
-            }
+        else if (State::army[i] == State::garrison_armies[_castleId][i]) {
+            did_remove = true;
+            State::counts[i] += State::garrison_counts[_castleId][index];
+            State::garrison_armies[_castleId][index] = -1;
+            State::garrison_counts[_castleId][index] = 0;
+            break;
         }
-
-        ds.show_dialog({
-            .x = 1,
-            .y = 18,
-            .w = 30,
-            .h = 9,
-            .strings = strings,
-            .options = options,
-            .callbacks = {
-                .confirm = [this](int opt) {
-                    bool did_garrison {false};
-                    for (int i = 0; i < 5; i++) {
-                        if (gen.garrison_armies[castle_id][i] == -1) {
-                            did_garrison = true;
-                            gen.garrison_armies[castle_id][i] = v.army[opt];
-                            gen.garrison_counts[castle_id][i] = v.counts[opt];
-                            // TODO: Gold error?
-                            v.gold -= kUnits[v.army[opt]].weekly_cost * v.counts[opt];
-                            v.army[opt] = -1;
-                            v.counts[opt] = 0;
-                            gen.castle_occupants[castle_id] = -1;
-                            break;
-                        }
-                    }
-                    if (!did_garrison) {
-                        // TODO: Slots error?
-                    }
-                    bty::sort_army(v.army, v.counts);
-                    view(castle_id);
-                },
-            },
-        });
+    }
+    if (!did_remove) {
+        // TODO: Slot error?
+        _engine.getGUI().getHUD().setError("Failed to remove!");
     }
     else {
-        int army_size = 0;
-        for (int i = 0; i < 5; i++) {
-            if (gen.garrison_armies[castle_id][i] != -1) {
-                army_size++;
-            }
-        }
-
-        if (army_size == 0) {
-            hud.set_error("    There are no armies to remove!");
-            return;
-        }
-
-        strings.push_back({21, 4, " Select\narmy  to\n remove"});
-
-        for (int i = 0; i < 5; i++) {
-            if (gen.garrison_armies[castle_id][i] == -1) {
-                strings.push_back({3, 3 + i, "empty"});
-            }
-            else {
-                auto count = std::to_string(gen.garrison_counts[castle_id][i]);
-                auto name = kUnits[gen.garrison_armies[castle_id][i]].name_plural;
-                std::string spaces(15 - count.size() - name.size(), ' ');
-                options.push_back({3, 3 + i, fmt::format("{}{}{}", name, spaces, count)});
-            }
-        }
-
-        ds.show_dialog({
-            .x = 1,
-            .y = 18,
-            .w = 30,
-            .h = 9,
-            .strings = strings,
-            .options = options,
-            .callbacks = {
-                .confirm = [this](int opt) {
-                    bool did_remove {false};
-                    for (int i = 0; i < 5; i++) {
-                        if (v.army[i] == -1) {
-                            did_remove = true;
-                            v.army[i] = gen.garrison_armies[castle_id][opt];
-                            v.counts[i] = gen.garrison_counts[castle_id][opt];
-                            gen.garrison_armies[castle_id][opt] = -1;
-                            gen.garrison_counts[castle_id][opt] = 0;
-                            break;
-                        }
-                        else if (v.army[i] == gen.garrison_armies[castle_id][i]) {
-                            did_remove = true;
-                            v.counts[i] += gen.garrison_counts[castle_id][opt];
-                            gen.garrison_armies[castle_id][opt] = -1;
-                            gen.garrison_counts[castle_id][opt] = 0;
-                            break;
-                        }
-                    }
-                    if (!did_remove) {
-                        // TODO: Slot error?
-                        hud.set_error("Failed to remove!");
-                    }
-                    else {
-                        bty::sort_army(v.army, v.counts);
-                    }
-                    view(castle_id);
-                },
-            },
-        });
+        bty::sortArmy(State::army, State::counts);
     }
-}
-
-void Garrison::next()
-{
-    dialog_.next();
-    update_units(dialog_.get_selection());
-}
-
-void Garrison::prev()
-{
-    dialog_.prev();
-    update_units(dialog_.get_selection());
-}
-
-void Garrison::update_units(int opt)
-{
-    if (opt == 0) {
-        for (int i = 0; i < 5; i++) {
-            if (v.army[i] == -1) {
-                t_units[i]->set_string("empty");
-            }
-            else {
-                auto cost = bty::number_with_ks(kUnits[v.army[i]].weekly_cost * v.counts[i]);
-                auto name = kUnits[v.army[i]].name_plural;
-                std::string spaces(15 - cost.size() - name.size(), ' ');
-                t_units[i]->set_string(fmt::format("{}{}{}", name, spaces, cost));
-            }
-        }
-    }
-    else {
-        for (int i = 0; i < 5; i++) {
-            if (gen.garrison_armies[castle_id][i] == -1) {
-                t_units[i]->set_string("empty");
-            }
-            else {
-                auto count = std::to_string(gen.garrison_counts[castle_id][i]);
-                auto name = kUnits[gen.garrison_armies[castle_id][i]].name_plural;
-                std::string spaces(15 - count.size() - name.size(), ' ');
-                t_units[i]->set_string(fmt::format("{}{}{}", name, spaces, count));
-            }
-        }
-    }
+    showCastleUnits();
 }

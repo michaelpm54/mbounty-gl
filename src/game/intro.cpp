@@ -2,101 +2,101 @@
 
 #include <spdlog/spdlog.h>
 
-#include <glm/gtc/matrix_transform.hpp>
-
-#include "data/bounty.hpp"
+#include "data/color.hpp"
 #include "data/hero.hpp"
-#include "engine/dialog-stack.hpp"
-#include "engine/scene-stack.hpp"
+#include "engine/engine.hpp"
 #include "engine/texture-cache.hpp"
+#include "game/state.hpp"
 #include "gfx/gfx.hpp"
-#include "window/glfw.hpp"
 
-Intro::Intro(bty::SceneStack &ss, bty::DialogStack &ds, Ingame &ingame)
-    : ss(ss)
-    , ds(ds)
-    , ingame(ingame)
+Intro::Intro(bty::Engine &engine)
+    : _engine(engine)
 {
-    bg_.set_texture(Textures::instance().get("bg/intro.png"));
-    name_box_.create(7, 1, 27, 3, bty::BoxColor::Intro);
-    name_box_.add_line(2, 1, kHeroNames[0][0]);
-    help_box_.create(1, 24, 38, 3, bty::BoxColor::Intro);
-    help_box_.add_line(2, 1, "Select a character and press Enter");
 }
 
-void Intro::draw(bty::Gfx &gfx, glm::mat4 &camera)
+void Intro::load()
 {
-    gfx.draw_sprite(bg_, camera);
-    name_box_.draw(gfx, camera);
-    ds.draw(gfx, camera);
-    help_box_.draw(gfx, camera);
-}
+    State::hero = 0;
+    State::difficulty = 1;
 
-void Intro::key(int key, int action)
-{
-    if (ds.empty()) {
-        if (action == GLFW_PRESS) {
-            switch (key) {
-                case GLFW_KEY_LEFT:
-                    hero = (hero - 1 + 4) % 4;
-                    name_box_.set_line(0, kHeroNames[hero][0]);
-                    break;
-                case GLFW_KEY_RIGHT:
-                    hero = (hero + 1) % 4;
-                    name_box_.set_line(0, kHeroNames[hero][0]);
-                    break;
-                case GLFW_KEY_ENTER:
-                    show_difficulty();
-                    break;
-                default:
-                    break;
-            }
-        }
-    }
-    else {
-        ds.key(key, action);
-    }
-}
+    _spBg.setTexture(Textures::instance().get("bg/intro.png"));
 
-void Intro::update(float dt)
-{
-    (void)dt;
-}
+    _nameBox.create(7, 1, 27, 3);
+    _btName = _nameBox.addString(2, 1, kHeroNames[0][0]);
+    _helpBox.create(1, 24, 38, 3);
+    _btHelp = _helpBox.addString(2, 1, "Select a character and press Enter");
 
-void Intro::show_difficulty()
-{
-    auto *dialog = ds.show_dialog({
-        .x = 7,
-        .y = 10,
-        .w = 27,
-        .h = 8,
-        .strings = {
-            {2, 1, "Difficulty   Days  Score"},
-        },
-        .options = {
-            {3, 3, "Easy         900   x.5"},
-            {3, 4, "Normal       600    x1"},
-            {3, 5, "Hard         400    x2"},
-            {3, 6, "Impossible?  200    x4"},
-        },
-        .callbacks = {
-            .confirm = [this](int opt) {
-                ss.pop(0);
-                ingame.setup(hero, opt);
-                ss.push(&ingame, [this](int ret) {
-                    switch (ret) {
-                        case 0:    // reset
-                            ss.push(this, nullptr);
-                            break;
-                        case 1:    // battle
-                            break;
-                        default:
-                            break;
-                    }
-                });
-            },
-        },
+    _dlgDifficulty.create(7, 10, 27, 8);
+    _dlgDifficulty.addString(2, 1, "Difficulty   Days  Score");
+    _dlgDifficulty.addOption(3, 3, "Easy         900   x.5");
+    _dlgDifficulty.addOption(3, 4, "Normal       600    x1");
+    _dlgDifficulty.addOption(3, 5, "Hard         400    x2");
+    _dlgDifficulty.addOption(3, 6, "Impossible?  200    x4");
+    _dlgDifficulty.bind(Key::Backspace, [this](int) {
+        _pickedHero = false;
+        _btHelp->setString("Select a character and press Enter");
+        _engine.getGUI().popDialog();
+        State::difficulty = 1;
     });
-    dialog->set_selection(1);
-    dialog->set_color(bty::BoxColor::Intro);
+    _dlgDifficulty.bind(Key::Enter, [this](int opt) {
+        State::difficulty = opt;
+        _engine.getGUI().popDialog();
+        SceneMan::instance().setScene("ingame");
+    });
+}
+
+void Intro::enter()
+{
+    _pickedHero = false;
+    State::hero = 0;
+    State::difficulty = 1;
+    _dlgDifficulty.setSelection(1);
+    _btName->setString(kHeroNames[State::hero][0]);
+    _btHelp->setString("Select a character and press Enter");
+}
+
+void Intro::render()
+{
+    GFX::instance().drawSprite(_spBg);
+    _nameBox.render();
+    _helpBox.render();
+}
+
+bool Intro::handleEvent(Event event)
+{
+    switch (event.id) {
+        case EventId::KeyDown:
+            return handleKey(event.key);
+        default:
+            break;
+    }
+    return false;
+}
+
+bool Intro::handleKey(Key key)
+{
+    bool handled = true;
+
+    if (!_pickedHero) {
+        switch (key) {
+            case Key::Left:
+                State::hero = (State::hero + 1) % 4;
+                break;
+            case Key::Right:
+                State::hero = (State::hero - 1 + 4) % 4;
+                break;
+            case Key::Enter:
+                _btHelp->setString("Select a difficulty and press Enter");
+                _pickedHero = true;
+                _dlgDifficulty.setSelection(State::difficulty);
+                _engine.getGUI().pushDialog(_dlgDifficulty);
+                break;
+            default:
+                handled = false;
+                break;
+        }
+        _btName->setString(kHeroNames[State::hero][0]);
+    }
+
+    return handled;
 }
