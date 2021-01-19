@@ -104,26 +104,25 @@ bool GUI::hasDialog() const
     return !_dialogs.empty();
 }
 
-bty::Dialog &GUI::showMessage(int x, int y, int w, int h, const std::string &message, std::function<void()> onClose)
+void GUI::showMessage(int x, int y, int w, int h, const std::string &message)
 {
-    _message.create(x, y, w, h);
-    _message.addString(1, 1, message);
-    _message.bind(Key::Enter, [this, onClose](int) {
+    auto dialog = makeDialog(x, y, w, h);
+    dialog->addString(1, 1, message);
+    dialog->bind(Key::Enter, [this](int) {
         popDialog();
-        if (onClose) {
-            onClose();
-        }
     });
-    _message.setColor(bty::getBoxColor(State::difficulty));
-    pushDialog(_message);
-    return _message;
 }
 
-std::shared_ptr<Dialog> GUI::makeDialog(int x, int y, int w, int h)
+std::shared_ptr<Dialog> GUI::makeDialog(int x, int y, int w, int h, bool backspacePops)
 {
     auto dialog = std::make_shared<Dialog>();
     dialog->create(x, y, w, h);
     dialog->setColor(bty::getBoxColor(State::difficulty));
+    if (backspacePops) {
+        dialog->bind(Key::Backspace, [this](int) {
+            popDialog();
+        });
+    }
     _madeDialogs.push_back(dialog);
     _dialogs.push_back(dialog.get());
     return dialog;

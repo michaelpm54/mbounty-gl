@@ -1202,7 +1202,10 @@ void Ingame::endWeekAstrology(bool search)
         "repopulated.",
     };
 
-    _engine.getGUI().showMessage(1, 18, 30, 9, fmt::format(kAstrologyMessage, State::weeks_passed, name, name), [this, search]() {
+    auto dialog = _engine.getGUI().makeDialog(1, 18, 30, 9);
+    dialog->addString(1, 1, fmt::format(kAstrologyMessage, State::weeks_passed, name, name));
+    dialog->bind(Key::Enter, [this, search](int) {
+        _engine.getGUI().popDialog();
         endWeekBudget(search);
     });
 
@@ -1285,8 +1288,9 @@ void Ingame::endWeekBudget(bool search)
 
     State::gold = balance;
 
-    auto &dialog = _engine.getGUI().showMessage(1, 18, 30, 9, fmt::format(kBudgetMessage, State::weeks_passed, bty::numberK(State::gold), commission, boat, armyTotalCost, bty::numberK(balance)));
-    dialog.addString(15, 3, armyInfo);
+    auto dialog = _engine.getGUI().makeDialog(1, 18, 30, 9);
+    dialog->addString(1, 1, fmt::format(kBudgetMessage, State::weeks_passed, bty::numberK(State::gold), commission, boat, armyTotalCost, bty::numberK(balance)));
+    dialog->addString(15, 3, armyInfo);
 
     if (State::army[0] == -1 || outOfGold) {
         disgrace();
@@ -1895,21 +1899,11 @@ void Ingame::collideCastle(const Tile &tile)
     dialog->addString(2, 4, lineTwo);
     dialog->addOption(11, 6, "Lay siege.");
     dialog->addOption(11, 7, "Venture on.");
-    dialog->onKey([this, dialog, castleId](Key key) {
-        switch (key) {
-            case Key::Backspace:
-                _engine.getGUI().popDialog();
-                break;
-            case Key::Enter:
-                _engine.getGUI().popDialog();
-                if (dialog->getSelection() == 0) {
-                    _engine.startSiegeBattle(castleId);
-                }
-                break;
-            default:
-                return false;
+    dialog->bind(Key::Enter, [this, castleId](int opt) {
+        _engine.getGUI().popDialog();
+        if (opt == 0) {
+            _engine.startSiegeBattle(castleId);
         }
-        return true;
     });
 
     State::visited_castles[castleId] = true;
@@ -2526,7 +2520,10 @@ void Ingame::tryJoin(int id, int count, std::function<void()> onOption)
     }
 
     if (heroArmySize == 5) {
-        _engine.getGUI().showMessage(1, 21, 30, 6, fmt::format(kFleeMessage, descriptor), [this, onOption]() {
+        auto dialog = _engine.getGUI().makeDialog(1, 21, 30, 6);
+        dialog->addString(1, 1, fmt::format(kFleeMessage, descriptor));
+        dialog->bind(Key::Enter, [this, onOption](int) {
+            _engine.getGUI().popDialog();
             onOption();
         });
     }

@@ -31,7 +31,10 @@ void UseMagic::load()
     _dlg.bind(Key::Enter, [this](int opt) {
         if (!_engine.getGameOptions().debug && !State::magic) {
             _engine.getGUI().popDialog();
-            _engine.getGUI().showMessage(State::combat ? 10 : 6, 10, 20, 10, kUntrainedMessage, []() {
+            auto dialog = _engine.getGUI().makeDialog(State::combat ? 10 : 6, 10, 20, 10);
+            dialog->addString(1, 1, kUntrainedMessage);
+            dialog->bind(Key::Enter, [this](int) {
+                _engine.getGUI().popDialog();
                 SceneMan::instance().back();
             });
             return;

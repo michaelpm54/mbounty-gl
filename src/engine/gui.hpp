@@ -19,8 +19,8 @@ public:
     void hideHUD();
     Hud &getHUD();
     bool hasDialog() const;
-    bty::Dialog &showMessage(int x, int y, int w, int h, const std::string &message, std::function<void()> onClose = nullptr);
-    std::shared_ptr<Dialog> makeDialog(int x, int y, int w, int h);
+    void showMessage(int x, int y, int w, int h, const std::string &message);
+    std::shared_ptr<Dialog> makeDialog(int x, int y, int w, int h, bool backspacePops = true);
 
 private:
     Hud _hud;
@@ -28,7 +28,6 @@ private:
     std::vector<Dialog *> _dialogs;
     std::vector<std::shared_ptr<Dialog>> _madeDialogs;
     glm::mat4 _view {1.0f};
-    Dialog _message;
 };
 
 }    // namespace bty
