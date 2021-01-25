@@ -527,9 +527,13 @@ void Ingame::update(float dt)
         automove(dt);
         _automoveTimer.tick(dt);
     }
-
-    if (!State::auto_move) {
-        moveHero(dt);
+	else {
+		if (_moveFlags == DIR_FLAG_NONE) {
+			_spHero.setMoving(false);
+		}
+		else {
+        	moveHero(dt);
+		}
     }
 
     if (State::timestop) {
@@ -1460,11 +1464,6 @@ void Ingame::moveHero(float dt)
 {
     if (_engine.getGameOptions().debug) {
         _dbgCollisionRect.setColor({0.0f, 0.0f, 0.7f, 0.9f});
-    }
-
-    if (_moveFlags == DIR_FLAG_NONE) {
-        _spHero.setMoving(false);
-        return;
     }
 
     _spHero.setMoving(true);
@@ -2537,4 +2536,6 @@ void Ingame::tryJoin(int id, int count, std::function<void()> onOption)
             onOption();
         });
     }
+
+	_moveFlags = DIR_FLAG_NONE;
 }

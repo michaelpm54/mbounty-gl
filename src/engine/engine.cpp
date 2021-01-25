@@ -44,7 +44,8 @@ void Engine::run()
         saveState(filename);
     });
 
-    sceneMan.init({
+    sceneMan.init(
+		_window, {
         {
             "intro",
             new Intro(*this),
@@ -140,9 +141,8 @@ void Engine::run()
 
         window_events(_window);
 
-        if (!_gui.update(dt)) {
-            sceneMan.update(dt);
-        }
+		_gui.update(dt);
+        sceneMan.update(dt);
 
         if (_gameOptions.debug) {
             _btFPS.setString(std::to_string(frameRate));
@@ -203,25 +203,27 @@ GUI &Engine::getGUI()
 
 void Engine::startSiegeBattle(int castleId)
 {
-    SceneMan::instance().setScene("battle");
-    _battle->startSiegeBattle(castleId);
+    SceneMan::instance().setScene("battle", true, [this, castleId]() {
+    	_battle->startSiegeBattle(castleId);
+	});
 }
 
 void Engine::startEncounterBattle(int mobId)
 {
-    SceneMan::instance().setScene("battle");
-    _battle->startEncounterBattle(mobId);
+    SceneMan::instance().setScene("battle", true, [this, mobId]() {
+		_battle->startEncounterBattle(mobId);
+	});
 }
 
 void Engine::winSiegeBattle(int castleId)
 {
-    SceneMan::instance().setScene("ingame");
+    SceneMan::instance().setScene("ingame", true);
     _ingame->winSiegeBattle(castleId);
 }
 
 void Engine::winEncounterBattle(int mobId)
 {
-    SceneMan::instance().setScene("ingame");
+    SceneMan::instance().setScene("ingame", true);
     _ingame->winEncounterBattle(mobId);
 }
 
@@ -257,7 +259,7 @@ void Engine::setBoatPosition(float x, float y)
 void Engine::loseBattle()
 {
     _ingame->disgrace();
-    SceneMan::instance().setScene("ingame");
+    SceneMan::instance().setScene("ingame", true);
 }
 
 void Engine::loadState(const std::string &filename)

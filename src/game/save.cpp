@@ -119,7 +119,7 @@ void SaveManager::show()
         return;
     }
 
-    auto dialog = _engine.getGUI().makeDialog(4, 5, 24, 20);
+    auto dialog = _engine.getGUI().makeDialog(4, 5, 24, 20, false);
 
     int i = 1;
     for (const auto save : sf.saves) {

@@ -10,8 +10,6 @@
 - Music
 - Sounds
 - Replace assets with free ones
-- Maybe cleaner "scene" handling. I don't like how you have to pass everything you want to use
-	into the class, but it's okay for now.
 - Remove all the debug keys:
 	- K in game to win
 	- E in game to lose
@@ -20,7 +18,6 @@
 	- B to toggle boat
 	- D to toggle puzzle pieces
 	- R to regen RNG tiles
-- Add fading between battle, victory, loss, intro, etc.
 
 ### In-game
 
@@ -30,7 +27,6 @@
 - Alternative way of animating the tiles? Loading 10 full tilesets seems excessive.
 - Implement "can_move" for mob and hero in terms of virtual functions instead of a function pointer.
 - Can't mount boat when it's on a diagonal tile
-- Make garrison cost gold
 
 ### Battle
 

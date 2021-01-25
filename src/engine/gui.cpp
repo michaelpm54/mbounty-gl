@@ -86,7 +86,7 @@ Hud &GUI::getHUD()
     return _hud;
 }
 
-bool GUI::update(float dt)
+void GUI::update(float dt)
 {
     if (_hudVisible) {
         _hud.update(dt);
@@ -95,8 +95,6 @@ bool GUI::update(float dt)
     for (auto *dialog : _dialogs) {
         dialog->update(dt);
     }
-
-    return !_dialogs.empty();
 }
 
 bool GUI::hasDialog() const

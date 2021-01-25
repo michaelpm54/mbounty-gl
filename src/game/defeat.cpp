@@ -75,7 +75,7 @@ bool Defeat::handleKey(Key key)
             }
             else {
                 _engine.getGUI().hideHUD();
-                SceneMan::instance().setScene("intro");
+                SceneMan::instance().setScene("intro", true);
             }
             break;
         default:

@@ -14,7 +14,7 @@ public:
     void popDialog();
     bool handleEvent(Event event);
     void render();
-    bool update(float dt);
+    void update(float dt);
     void showHUD();
     void hideHUD();
     Hud &getHUD();

@@ -41,7 +41,7 @@ void Intro::load()
     _dlgDifficulty.bind(Key::Enter, [this](int opt) {
         State::difficulty = opt;
         _engine.getGUI().popDialog();
-        SceneMan::instance().setScene("ingame");
+        SceneMan::instance().setScene("ingame", true);
     });
 }
 
