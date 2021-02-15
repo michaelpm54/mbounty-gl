@@ -1899,10 +1899,10 @@ void Ingame::collideCastle(const Tile &tile)
     dialog->addOption(11, 6, "Lay siege.");
     dialog->addOption(11, 7, "Venture on.");
     dialog->bind(Key::Enter, [this, castleId](int opt) {
-        _engine.getGUI().popDialog();
         if (opt == 0) {
             _engine.startSiegeBattle(castleId);
         }
+        _engine.getGUI().popDialog();
     });
 
     State::visited_castles[castleId] = true;
